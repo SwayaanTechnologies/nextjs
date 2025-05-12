@@ -7,6 +7,7 @@
 * [**Project Structure**](#project-structure)
 * [**React Server Components**](#react-server-components)
 * [**Routing**](#routing)
+* [**Nested Routes**](#nested-routes)
 
 ## **Introduction**
 
@@ -512,3 +513,87 @@ export default function Profile() {
 * If a user navigates to a route that doesn’t exist (e.g., `/dashboard`), Next.js automatically returns a **404 Not Found** page.
 
 ---
+
+## **Nested Routes**
+
+Routing uses a **file-based routing system**, where folders and files under the `app/` directory determine the structure of your application’s URLs. Now, let’s explore **nested routing** by implementing a `blog` section with its own sub-routes.
+
+* [**Scenario 3 Create a Blog Route with Nested Pages**](#scenario-3-create-a-blog-route-with-nested-pages)
+* [**Creating Nested Routes**](#creating-nested-routes)
+* [**Route Structure Summary**](#route-structure-summary)
+
+---
+
+### **Scenario 3 Create a Blog Route with Nested Pages**
+
+We want to implement the following routes:
+
+* `/blog` – Main blog landing page
+* `/blog/first` – First blog post
+* `/blog/second` – Second blog post
+
+**Steps:**
+
+1. Inside the `app/` directory, create a folder named `blog/`.
+2. Inside `blog/`, create a `page.tsx` file:
+
+```tsx
+export default function Blog() {
+  return <h1>My Blog</h1>;
+}
+```
+
+3. This will render at `http://localhost:3000/blog`.
+
+---
+
+### **Creating Nested Routes**
+
+To handle `/blog/first` and `/blog/second`, follow these steps:
+
+1. Inside the `blog/` folder, create two subfolders: `first/` and `second/`.
+2. In each of those folders, create a `page.tsx` file:
+
+**`app/blog/first/page.tsx`**
+
+```tsx
+export default function FirstBlogPost() {
+  return <h1>First Blog Post</h1>;
+}
+```
+
+`app/blog/second/page.tsx`
+
+```tsx
+export default function SecondBlogPost() {
+  return <h1>Second Blog Post</h1>;
+}
+```
+
+3. Now the following routes are available:
+
+   * `http://localhost:3000/blog/first` → shows *First Blog Post*
+   * `http://localhost:3000/blog/second` → shows *Second Blog Post*
+
+---
+
+### **Route Structure Summary**
+
+Your folder and file structure now looks like this:
+
+```
+src/
+└── app/
+    └── blog/
+        ├── page.tsx           → /blog
+        ├── first/
+        │   └── page.tsx       → /blog/first
+        └── second/
+            └── page.tsx       → /blog/second
+```
+
+**Key Takeaway**
+
+Next.js automatically mirrors your folder structure into URL routes. You don’t need to write route configuration files or install any extra libraries—**just follow the folder and file naming conventions**, and routing will work out of the box.
+
+Next, we’ll explore something even more powerful: **Dynamic Routes**.
