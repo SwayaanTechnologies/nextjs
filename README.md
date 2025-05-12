@@ -14,6 +14,7 @@
 * [**Not Found Page**](#not-found-page)
 * [**File Colocation**](#file-colocation)
 * [**Private Folders**](#private-folders)
+* [**Route Groups**](#route-groups)
 
 ## **Introduction**
 
@@ -1187,5 +1188,98 @@ Private folders are a great way to:
 * **Avoid naming conflicts** with future Next.js reserved filenames.
 * **Group utilities and internal components** for easier navigation in editors.
 * **Maintain a consistent project structure** for teams and large projects.
+
+---
+
+## **Route Groups**
+
+**Route Groups** are a powerful way to **organize your project’s routing structure without affecting the URL paths**. They help teams manage complex apps while keeping URLs clean and intuitive.
+
+* [**What Are Route Groups?**](#what-are-route-groups?)
+* [**Scenario Organizing Auth Routes**](#scenario-organizing-auth-routes)
+* [**Grouping Auth Routes**](#grouping-auth-routes)
+
+---
+
+### **What Are Route Groups?**
+
+* A **route group** is a folder wrapped in parentheses like `(group-name)` inside the `app/` directory.
+* Files inside a route group behave **exactly the same** as regular routes.
+* The **folder name is excluded from the URL**.
+
+> Route groups are also the **only way to share layouts** between multiple routes **without changing the URL structure**.
+
+---
+
+### **Scenario Organizing Auth Routes**
+
+Let’s say we are building the following auth routes:
+
+* `/register`
+* `/login`
+* `/forgot-password`
+
+First, create individual folders for each:
+
+```
+app/
+├── register/
+│   └── page.tsx
+├── login/
+│   └── page.tsx
+└── forgot-password/
+    └── page.tsx
+```
+
+Each `page.tsx`:
+
+```tsx
+// app/register/page.tsx
+export default function Register() {
+  return <h1>Register</h1>;
+}
+```
+
+```tsx
+// app/login/page.tsx
+export default function Login() {
+  return <h1>Login</h1>;
+}
+```
+
+```tsx
+// app/forgot-password/page.tsx
+export default function ForgotPassword() {
+  return <h1>ForgotPassword</h1>;
+}
+```
+
+So far, everything works great — but the auth routes are scattered.
+
+---
+
+### **Grouping Auth Routes**
+
+To improve structure, let’s move these into a logical group:
+
+```
+app/
+└── (auth)/
+    ├── register/
+    ├── login/
+    └── forgot-password/
+```
+
+> Rename the folder as `(auth)` – **parentheses indicate a route group**.
+
+**Resulting URLs:**
+
+* `/register`
+* `/login`
+* `/forgot-password`
+
+> URLs stay clean — just like before.
+>
+> Internally, code is now much better organized.
 
 ---
