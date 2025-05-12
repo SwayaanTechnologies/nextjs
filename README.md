@@ -3,9 +3,9 @@
 ## **Table of Content**
 
 * [**Introduction**](#introduction)
-* [**Getting Started: Hello World Application**](#getting-started:-hello-world-application)
+* [**Getting Started: Hello World Application**](#getting-started-hello-world-application)
 * [**Project Structure**](#project-structure)
-* [**Before We Start**](#before-we-start)
+* [**React Server Components**](#react-server-components)
 
 ## **Introduction**
 
@@ -115,15 +115,15 @@ Before starting with Next.js, you should be familiar with:
 
 ---
 
-## **Getting Started: Hello World Application**
+## **Getting Started Hello World Application**
 
 Let's begin by setting up a simple **Hello World** application using Next.js. This step will walk you through setting up your development environment and creating your first project.
 
 * [**Prerequisites**](#prerequisites)
-* [**Step 1: Create a Project Folder**](#step-1:-create-a-project-folder)
-* [**Step 2: Create a New Next.js App**](#step-2:-create-a-new-next.js-app)
-* [**Step 3: Run the Development Server**](#step-3:-run-the-development-server)
-* [**Step 4: Make Your First Edit**](#step-4:-make-your-first-edit)
+* [**Step 1: Create a Project Folder**](#step-1-create-a-project-folder)
+* [**Step 2: Create a New Next.js App**](#step-2-create-a-new-next.js-app)
+* [**Step 3: Run the Development Server**](#step-3-run-the-development-server)
+* [**Step 4: Make Your First Edit**](#step-4-make-your-first-edit)
 
 ---
 
@@ -136,7 +136,7 @@ Before creating a Next.js app, ensure the following are installed on your system
 
 ---
 
-### **Step 1: Create a Project Folder**
+### **Step 1 Create a Project Folder**
 
 Create a folder to store your project files:
 
@@ -153,7 +153,7 @@ code .
 
 ---
 
-### **Step 2: Create a New Next.js App**
+### **Step 2 Create a New Next.js App**
 
 Run the following command in your terminal to scaffold a new Next.js project:
 
@@ -178,7 +178,7 @@ Once completed, a new folder called `hello-world` will be created with your Next
 
 ---
 
-### **Step 3: Run the Development Server**
+### **Step 3 Run the Development Server**
 
 Navigate into the project folder:
 
@@ -200,7 +200,7 @@ You should see the default Next.js welcome page with the message:
 
 ---
 
-### **Step 4: Make Your First Edit**
+### **Step 4 Make Your First Edit**
 
 To test live editing, follow these steps:
 
@@ -334,7 +334,7 @@ This is how the base UI is constructed and served at `http://localhost:3000`.
 
 ---
 
-## **Before We Start**
+## **React Server Components**
 
 Before diving into routing in Next.js, it's important to understand a core concept introduced in modern React and adopted by Next.js: **React Server Components (RSC)**.
 
