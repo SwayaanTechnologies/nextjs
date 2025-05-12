@@ -12,6 +12,7 @@
 * [**Nested Dynamic Routes**](#nested-dynamic-routes)
 * [**Catch-all Segments**](#catch-all-segments)
 * [**Not Found Page**](#not-found-page)
+* [**File Colocation**](#file-colocation)
 
 ## **Introduction**
 
@@ -1055,5 +1056,81 @@ export default function NotFound() {
 ```
 
 > **Note:** Since you're using the `usePathname()` hook, mark this file as a **client component** with `'use client'`.
+
+---
+
+## **File Colocation**
+
+While Next.js follows a **file-system based routing** convention, it’s also **flexible** about how you organize your files and folders. This concept is known as **file colocation**, and it plays a key role in keeping your project maintainable and scalable.
+
+* [**Understanding File Colocation**](#understanding-file-colocation)
+* [**Organizing Your Project**](#organizing-your-project)
+
+---
+
+### **Understanding File Colocation**
+
+Each folder in the `app/` directory represents a **route segment** that maps directly to a URL path. But **a route only becomes accessible if a `page.tsx` file exists within that folder**.
+
+* [**Example Creating a Route**](#example-creating-a-route)
+* [**Making the Route Public**](#making-the-route-public)
+
+---
+
+#### **Example Creating a Route**
+
+Suppose we create a folder and a component like this:
+
+```
+app/
+└── dashboard/
+    └── LineChart.tsx
+```
+
+```tsx
+// app/dashboard/LineChart.tsx
+
+export default function LineChart() {
+  return <h1>Line Chart</h1>;
+}
+```
+
+Now, if you visit `/dashboard` in the browser, you’ll get a **404 error**.
+
+Why? Because there's **no `page.tsx`** in the `dashboard` folder yet.
+
+---
+
+#### **Making the Route Public**
+
+Now add a `page.tsx` file:
+
+```tsx
+// app/dashboard/page.tsx
+
+export default function Dashboard() {
+  return <h1>Dashboard</h1>;
+}
+```
+
+Now `/dashboard` will render correctly in the browser, showing the "Dashboard" heading.
+
+
+> * Only files named `page.tsx` (or `layout.tsx`, `loading.tsx`, etc.) are **treated as special** by the router.
+>
+> * Any other file (e.g. `BarChart.tsx`, `utils.ts`) **can be safely colocated** inside the same folder without making it a route.
+> 
+> * These files won't be publicly accessible or interfere with routing, unless explicitly used by a `page.tsx` or another component.
+
+---
+
+### **Organizing Your Project**
+
+Next.js allows flexibility in how you organize supporting files:
+
+* You **can colocate** components, helpers, and modules inside the `app/` route folders for tight cohesion.
+* Alternatively, you **can separate** UI components into a dedicated `components/` or `src/` folder outside of `app/`, which is a common pattern in many large-scale projects.
+
+> Example: The `shadcn/ui` library follows the separate `components/` structure for clean separation of concerns.
 
 ---
