@@ -11,6 +11,7 @@
 * [**Dynamic Routes**](#dynamic-routes)
 * [**Nested Dynamic Routes**](#nested-dynamic-routes)
 * [**Catch-all Segments**](#catch-all-segments)
+* [**Not Found Page**](#not-found-page)
 
 ## **Introduction**
 
@@ -953,5 +954,106 @@ app/
 * **Optional catch-all segments** (`[[...slug]]`) also match when no segments are present.
 * Use `params.slug` to access the segments in your component.
 * Ideal for documentation sites, blogs, and pages with variable depth.
+
+---
+
+## **Not Found Page**
+
+Next.js makes it simple to define a **custom 404 page** using the App Router. This allows you to provide a more branded and user-friendly experience when users navigate to a route that doesn’t exist.
+
+By default, visiting an unknown route (e.g. `http://localhost:3000/building`) will display a generic Next.js 404 page, which is fine for development but insufficient for production environments.
+
+* [**Step 1 Create a Global Not Found Page**](#step-1-create-a-global-not-found-page)
+* [**Triggering Not Found Programmatically**](#triggering-not-found-programmatically)
+* [**Route-Specific Not Found**](#route-specific-not-found)
+
+---
+
+### **Step 1 Create a Global Not Found Page**
+
+Create a `not-found.tsx` file in the `app/` directory:
+
+```
+app/
+├── not-found.tsx
+```
+
+```tsx
+// app/not-found.tsx
+
+export default function NotFound() {
+  return (
+    <div>
+      <h2>Page Not Found</h2>
+      <p>Could not find the requested resource.</p>
+    </div>
+  );
+}
+```
+
+This file will **automatically** be used by Next.js for all unmatched routes.
+
+---
+
+### **Triggering Not Found Programmatically**
+
+Sometimes you want to manually show a 404 page from within a page. For example, if your product review system should not show reviews above ID 1000, use the `notFound()` function:
+
+```tsx
+// app/products/[productId]/reviews/[reviewId]/page.tsx
+import { notFound } from 'next/navigation';
+
+export default function ProductReview({ params }: { params: { reviewId: string } }) {
+  const reviewId = parseInt(params.reviewId);
+
+  if (reviewId > 1000) {
+    notFound();
+  }
+
+  return <h1>Review ID: {reviewId}</h1>;
+}
+```
+
+---
+
+### **Route-Specific Not Found**
+
+You can also create **section-specific** not-found pages by adding `not-found.tsx` within route folders. Next.js will use the **closest** matching `not-found.tsx`.
+
+For example:
+
+```
+app/
+└── products/
+    └── [productId]/
+        └── reviews/
+            └── [reviewId]/
+                ├── page.tsx
+                └── not-found.tsx   ← More specific 404
+```
+
+```tsx
+// app/products/[productId]/reviews/[reviewId]/not-found.tsx
+
+'use client';
+
+import { usePathname } from 'next/navigation';
+
+export default function NotFound() {
+  const pathname = usePathname();
+  const segments = pathname.split('/');
+
+  const productId = segments[2];
+  const reviewId = segments[4];
+
+  return (
+    <div>
+      <h2>Review {reviewId} Not Found for Product {productId}</h2>
+    </div>
+  );
+}
+```
+
+> **Note:** Since you're using the `usePathname()` hook, mark this file as a **client component** with `'use client'`.
 
 ---
