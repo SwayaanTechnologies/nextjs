@@ -13,6 +13,7 @@
 * [**Catch-all Segments**](#catch-all-segments)
 * [**Not Found Page**](#not-found-page)
 * [**File Colocation**](#file-colocation)
+* [**Private Folders**](#private-folders)
 
 ## **Introduction**
 
@@ -1132,5 +1133,59 @@ Next.js allows flexibility in how you organize supporting files:
 * Alternatively, you **can separate** UI components into a dedicated `components/` or `src/` folder outside of `app/`, which is a common pattern in many large-scale projects.
 
 > Example: The `shadcn/ui` library follows the separate `components/` structure for clean separation of concerns.
+
+---
+
+## **Private Folders**
+
+As we just explored file collocation, let’s now dive into a **Next.js-exclusive organizational feature** called **private folders**. This pattern helps keep your project clean and focused by **excluding internal folders from routing**.
+
+* [**What is a Private Folder?**](#what-is-a-private-folder?)
+* [**Example Creating a Private Folder**](#example-creating-a-private-folder)
+* [**Why Use Private Folders?**](#why-use-private-folders?)
+
+---
+
+### **What is a Private Folder?**
+
+A **private folder** in Next.js is any folder **prefixed with an underscore (`_`)**. These folders and their contents are **ignored by the routing system**.
+
+> Useful for keeping internal utilities, helpers, or non-UI logic separate from your app’s public routing structure.
+
+---
+
+### **Example Creating a Private Folder**
+
+Let’s walk through it.
+
+```
+app/
+└── _lib/
+    ├── formatDate.ts
+    └── page.tsx ← This won't be routable
+```
+
+```tsx
+// app/_lib/page.tsx
+
+export default function PrivateRoute() {
+  return <h1>You cannot view this in the browser</h1>;
+}
+```
+
+If you now navigate to `/lib` in the browser, you’ll get a **404 error** – because `_lib` is a private folder.
+
+Even though it contains a valid `page.tsx` file, **Next.js excludes it from route generation**.
+
+---
+
+### **Why Use Private Folders?**
+
+Private folders are a great way to:
+
+* **Keep routing logic clean** by isolating internal logic.
+* **Avoid naming conflicts** with future Next.js reserved filenames.
+* **Group utilities and internal components** for easier navigation in editors.
+* **Maintain a consistent project structure** for teams and large projects.
 
 ---
