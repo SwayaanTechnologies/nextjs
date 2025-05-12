@@ -9,6 +9,7 @@
 * [**Routing**](#routing)
 * [**Nested Routes**](#nested-routes)
 * [**Dynamic Routes**](#dynamic-routes)
+* [**Nested Dynamic Routes**](#nested-dynamic-routes)
 
 ## **Introduction**
 
@@ -706,5 +707,118 @@ Now any route that matches `/products/*` is handled dynamically.
 
 * Visiting `/products/1` shows: **Details about Product 1**
 * Visiting `/products/abc` shows: **Details about Product abc**
+
+---
+
+## **Nested Dynamic Routes**
+
+In many real-world applications, you'll often need to handle **multiple dynamic segments** in a single URL. That’s where **nested dynamic routing** becomes incredibly useful.
+
+* [**Scenario 5 Product Reviews**](#scenario-5-product-reviews)
+* [**Step-by-Step Setup**](#step-by-step-setup)
+* [**Nested Dynamic Routing Structure Summary**](#nested-dynamic-routing-structure-summary)
+
+---
+
+### **Scenario 5 Product Reviews**
+
+We’ve already implemented dynamic product detail pages at:
+
+```
+/products/[productId]
+```
+
+Now, we want to extend this further to support product reviews like:
+
+```
+/products/[productId]/reviews/[reviewId]
+```
+
+This means:
+
+* `/products/1` shows **Product 1 details**
+* `/products/1/reviews/1` shows **Review 1 for Product 1**
+
+---
+
+### **Step-by-Step Setup**
+
+* [**Step 1 Start from Existing Dynamic Route**](#step-1-start-from-existing-dynamic-route)
+* [**Step 2 Add `reviews/` Folder**](#step-2-add-reviews/-folder)
+* [**Step 3 Add Dynamic `[reviewId]/` Folder**](#step-3-add-dynamic-[reviewid]/-folder)
+
+#### **Step 1 Start from Existing Dynamic Route**
+
+We already have this structure:
+
+```
+app/
+└── products/
+    └── [productId]/
+        └── page.tsx   → /products/:productId
+```
+
+#### **Step 2 Add `reviews/` Folder**
+
+Inside `app/products/[productId]/`, create a folder named `reviews`. This will map to:
+
+```
+/products/:productId/reviews
+```
+
+#### **Step 3 Add Dynamic `[reviewId]/` Folder**
+
+Inside the `reviews/` folder, create a new folder named `[reviewId]`.
+
+Inside `[reviewId]/`, add a `page.tsx` file:
+
+```tsx
+// app/products/[productId]/reviews/[reviewId]/page.tsx
+
+type Params = {
+  params: {
+    productId: string;
+    reviewId: string;
+  };
+};
+
+export default async function ProductReview({ params }: Params) {
+  const { productId, reviewId } = params;
+
+  return <h1>Review {reviewId} for Product {productId}</h1>;
+}
+```
+
+Now, when you visit:
+
+* `/products/1/reviews/1` → You’ll see **Review 1 for Product 1**
+
+* `/products/100/reviews/5` → You’ll see **Review 5 for Product 100**
+
+---
+
+### **Nested Dynamic Routing Structure Summary**
+
+```
+src/
+└── app/
+    └── products/
+        └── [productId]/
+            ├── page.tsx              → /products/:productId
+            └── reviews/
+                └── [reviewId]/
+                    └── page.tsx      → /products/:productId/reviews/:reviewId
+```
+
+---
+
+**Key Takeaway**
+
+You can create nested dynamic routes easily using folders with square brackets:
+
+* `[productId]` is the first dynamic segment
+* `[reviewId]` is a nested dynamic segment
+
+Each segment corresponds to a part of the URL and is made available through the `params` object in your component.
 
 ---
