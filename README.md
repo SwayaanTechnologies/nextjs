@@ -15,6 +15,7 @@
 * [**File Colocation**](#file-colocation)
 * [**Private Folders**](#private-folders)
 * [**Route Groups**](#route-groups)
+* [**Layouts**](#layouts)
 
 ## **Introduction**
 
@@ -1281,5 +1282,86 @@ app/
 > URLs stay clean — just like before.
 >
 > Internally, code is now much better organized.
+
+---
+
+## **Layouts**
+
+**Layouts** allow you to define **shared UI** that stays consistent across multiple routes — such as headers, footers, navigation menus, and more. Next.js makes working with layouts simple and powerful.
+
+* [**What Is a Layout?**](#what-is-a-layout?)
+* [**The Root Layout**](#the-root-layout)
+* [**Example Basic Layout**](#example-basic-layout)
+* [**How It Renders**](#how-it-renders)
+
+---
+
+### **What Is a Layout?**
+
+A layout is a **React component** that wraps your route-specific page content using the `children` prop.
+
+**Common use cases:**
+
+* Headers and footers
+* Sidebars
+* Authentication wrappers
+* Global layout styles
+
+---
+
+### **The Root Layout**
+
+Every Next.js project using the App Router **must** include a `layout.tsx` file in the root of the `app/` directory.
+
+```bash
+app/
+├── layout.tsx   ← Root layout (mandatory)
+├── page.tsx     ← Home page content
+```
+
+> If you delete `layout.tsx`, Next.js **automatically regenerates it**.
+
+---
+
+### **Example Basic Layout**
+
+Here's a minimal `layout.tsx` file with shared layout content:
+
+```tsx
+// app/layout.tsx
+export default function RootLayout({ children }: { children: React.ReactNode }) {
+  return (
+    <html lang="en">
+      <body>
+        <header style={{ backgroundColor: "lightblue", padding: "1rem" }}>
+          <p>Header</p>
+        </header>
+
+        {children}  {/* Page-specific content gets rendered here */}
+
+        <footer style={{ backgroundColor: "ghostwhite", padding: "1rem" }}>
+          <p>Footer</p>
+        </footer>
+      </body>
+    </html>
+  );
+}
+```
+
+- The `children` prop dynamically renders the content of `page.tsx` for the current route.
+
+---
+
+### **How It Renders**
+
+When you visit:
+
+* `/` → content from `app/page.tsx` is injected into `layout.tsx`
+* `/about` → content from `app/about/page.tsx` is injected
+* `/profile` → content from `app/profile/page.tsx` is injected
+
+But the **layout remains constant** — with the same header and footer.
+
+> This helps maintain consistent structure and styling across all pages.
 
 ---
