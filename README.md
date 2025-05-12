@@ -6,6 +6,7 @@
 * [**Getting Started: Hello World Application**](#getting-started-hello-world-application)
 * [**Project Structure**](#project-structure)
 * [**React Server Components**](#react-server-components)
+* [**Routing**](#routing)
 
 ## **Introduction**
 
@@ -402,5 +403,112 @@ This model is fully supported in **Next.js 13+**, and is a default behavior in *
 ### **Why This Matters for Routing**
 
 Understanding the distinction between server and client components is critical before learning how **routing** works in Next.js. Many routing features (like transitions, navigation hooks, or loading indicators) rely on using client components effectively.
+
+---
+
+## **Routing**
+
+Routing is one of the core features of **Next.js**, and it follows a **file-based routing** system. This means your app’s URL structure is directly mapped from how you organize folders and files within the `app` directory.
+
+* [**Key Routing Conventions in Next.js**](#key-routing-conventions-in-next.js)
+* [**Scenario 1 Create a Homepage**](#scenario-1-create-a-homepage)
+* [**Scenario 2 Create `About` and `Profile` Routes**](#scenario-2-create-about-and-profile-routes)
+* [**Summary of Key Routing Concepts**](#summary-of-key-routing-concepts)
+
+---
+
+### **Key Routing Conventions in Next.js**
+
+Next.js routing is based on a few important conventions:
+
+1. **All routes must live inside the `app/` folder** (which itself lives inside `src/`).
+2. **Each route must be defined in a file named `page.tsx`** (or `page.js` if not using TypeScript).
+3. **Each folder represents a segment of the URL path.**
+
+---
+
+### **Scenario 1 Create a Homepage**
+
+We want a simple homepage available at: `http://localhost:3000/`.
+
+**Steps:**
+
+1. Inside the `src/` directory, create a new folder called `app/`.
+2. Inside the `app/` folder, create a file named `page.tsx`.
+3. Add the following code:
+
+```tsx
+export default function Home() {
+  return <h1>Welcome Home</h1>;
+}
+```
+
+4. Start the dev server:
+
+```bash
+npm run dev
+```
+
+Visit `http://localhost:3000/` in your browser—you'll see "Welcome Home" rendered.
+
+> **Note**: Even though we deleted the original `layout.tsx`, Next.js will regenerate it behind the scenes as part of its default behavior. We'll cover layouts in detail later.
+
+---
+
+### **Scenario 2 Create `About` and `Profile` Routes**
+
+We’ll now create two new routes:
+
+* `/about` → shows an About page
+* `/profile` → shows a Profile page
+
+**Steps:**
+
+1. In the `app/` folder, create a new folder named `about/`.
+2. Inside `about/`, create a file named `page.tsx` with:
+
+```tsx
+export default function About() {
+  return <h1>About Me</h1>;
+}
+```
+
+3. Similarly, create another folder inside `app/` called `profile/`.
+4. Inside `profile/`, create `page.tsx` with:
+
+```tsx
+export default function Profile() {
+  return <h1>My Profile</h1>;
+}
+```
+
+5. Save the files and navigate to the URLs:
+
+   * `http://localhost:3000/about` → displays "About Me"
+   * `http://localhost:3000/profile` → displays "My Profile"
+
+---
+
+### **Summary of Key Routing Concepts**
+
+* `page.tsx` inside the `app/` folder maps to the root route `/`.
+
+* Each folder in `app/` represents a **URL segment**.
+
+* A `page.tsx` file inside a folder maps to that folder's **route path**.
+
+  For example:
+
+  ```
+  src/
+  └── app/
+      ├── page.tsx              --> /
+      ├── about/
+      │   └── page.tsx          --> /about
+      └── profile/
+          └── page.tsx          --> /profile
+  ```
+
+* If a user navigates to a route that doesn’t exist (e.g., `/dashboard`), Next.js automatically returns a **404 Not Found** page.
 
 ---
