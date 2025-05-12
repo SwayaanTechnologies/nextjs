@@ -8,6 +8,7 @@
 * [**React Server Components**](#react-server-components)
 * [**Routing**](#routing)
 * [**Nested Routes**](#nested-routes)
+* [**Dynamic Routes**](#dynamic-routes)
 
 ## **Introduction**
 
@@ -597,3 +598,113 @@ src/
 Next.js automatically mirrors your folder structure into URL routes. You don’t need to write route configuration files or install any extra libraries—**just follow the folder and file naming conventions**, and routing will work out of the box.
 
 Next, we’ll explore something even more powerful: **Dynamic Routes**.
+
+Here is the **Dynamic Routes** section of your tutorial, rewritten clearly and professionally for your README:
+
+---
+
+## **Dynamic Routes**
+
+Previous example, we've seen how **nested routing** works by creating folders like `/blog/first` and `/blog/second`. However, this approach doesn't scale well for large datasets or content fetched dynamically. That’s where **dynamic routes** come in.
+
+* [**Scenario 4 Product Listing and Dynamic Detail Pages**](#scenario-4-product-listing-and-dynamic-detail-pages)
+* [**Step 1 Create the Static Product List**](#step-1-create-the-static-product-list)
+* [**Step 2 Set Up the Dynamic Route**](#step-2-set-up-the-dynamic-route)
+* [**Dynamic Segments**](#dynamic-segments)
+* [**Dynamic Routing Structure Summary**](#dynamic-routing-structure-summary)
+
+---
+
+### **Scenario 4 Product Listing and Dynamic Detail Pages**
+
+We want to implement two types of routes:
+
+* `/products` – A static list of products
+* `/products/[productId]` – A dynamic route that displays product details based on the ID
+
+---
+
+### **Step 1 Create the Static Product List**
+
+1. Inside the `app/` directory, create a `products/` folder.
+2. Inside `products/`, create a `page.tsx` file:
+
+```tsx
+export default function ProductList() {
+  return (
+    <div>
+      <h1>Product List</h1>
+      <h2>Product 1</h2>
+      <h2>Product 2</h2>
+      <h2>Product 3</h2>
+    </div>
+  );
+}
+```
+
+* This page will render at `http://localhost:3000/products`.
+
+---
+
+### **Step 2 Set Up the Dynamic Route**
+
+Manually creating a folder for every product ID (like `/products/1`, `/products/2`, etc.) isn’t scalable. Instead, we use **dynamic segments**.
+
+1. Inside the `products/` folder, create a new folder named `[productId]/`.
+2. Inside `[productId]/`, create a `page.tsx` file:
+
+```tsx
+// app/products/[productId]/page.tsx
+
+type Params = {
+  params: {
+    productId: string;
+  };
+};
+
+export default async function ProductDetails({ params }: Params) {
+  const { productId } = params;
+
+  return <h1>Details about Product {productId}</h1>;
+}
+```
+
+* This file handles all routes like:
+
+  * `/products/1`
+  * `/products/2`
+  * `/products/iPhone`
+  * `/products/abc123`
+
+---
+
+### **Dynamic Segments**
+
+* A folder name in square brackets like `[productId]` tells Next.js to treat it as a **dynamic route parameter**.
+* The `params` object contains all route parameters and is **available to server components** as a prop.
+
+---
+
+### **Dynamic Routing Structure Summary**
+
+Here’s what your folder structure looks like now:
+
+```
+src/
+└── app/
+    └── products/
+        ├── page.tsx              → /products
+        └── [productId]/
+            └── page.tsx          → /products/:productId
+```
+
+Now any route that matches `/products/*` is handled dynamically.
+
+---
+
+**Example Output**
+
+* Visiting `/products/1` shows: **Details about Product 1**
+* Visiting `/products/abc` shows: **Details about Product abc**
+
+---
