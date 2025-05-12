@@ -16,6 +16,7 @@
 * [**Private Folders**](#private-folders)
 * [**Route Groups**](#route-groups)
 * [**Layouts**](#layouts)
+* [**Nested Layouts**](#nested-layouts)
 
 ## **Introduction**
 
@@ -1363,5 +1364,80 @@ When you visit:
 But the **layout remains constant** — with the same header and footer.
 
 > This helps maintain consistent structure and styling across all pages.
+
+---
+
+## **Nested Layouts**
+
+In addition to the required **root layout**, Next.js allows you to create **nested layouts** — layouts that apply to a specific route or group of routes. This gives you fine-grained control over the UI for different sections of your app.
+
+* [**Why Use Nested Layouts?**](#why-use-nested-layouts?)
+* [**Example Nested Layout for Product Details**](#example-nested-layout-for-product-details)
+* [**Nested Layout How It Renders**](#nested-layout-how-it-renders)
+
+---
+
+### **Why Use Nested Layouts?**
+
+You might want:
+
+* A custom layout for product details pages
+* A cleaner layout for authentication routes
+* Unique sidebars or headers for specific sections
+
+Nested layouts make that possible.
+
+---
+
+### **Example Nested Layout for Product Details**
+
+Let’s build a special layout for product detail pages:
+
+* [**File structure**](#file-structure)
+* [**`products/[productId]/layout.tsx`**](#products/[productid]/layout.tsx)
+
+#### **File structure**
+
+```
+app/
+├── layout.tsx                   # Root layout (with header/footer)
+├── products/
+│   ├── page.tsx                 # Product list page
+│   └── [productId]/
+│       ├── page.tsx            # Product detail by ID
+│       └── layout.tsx          # Custom layout for product details
+```
+
+#### **`products/[productId]/layout.tsx`**
+
+Create `layout.tsx` in [productId]
+
+```tsx
+// app/products/[id]/layout.tsx
+export default function ProductDetailsLayout({ children }: { children: React.ReactNode }) {
+  return (
+    <>
+      {children}
+      <h2>Featured Products</h2>
+    </>
+  );
+}
+```
+
+This layout will **wrap around** the page at `products/[productId]/page.tsx`.
+
+---
+
+### **Nested Layout How It Renders**
+
+Let’s walk through what happens when you visit different routes:
+
+| URL           | Layouts Applied                               | Content Rendered                                   |
+| ------------- | --------------------------------------------- | -------------------------------------------------- |
+| `/`           | `app/layout.tsx`                              | Root layout → `app/page.tsx`                       |
+| `/products`   | `app/layout.tsx`                              | Root layout → `products/page.tsx`                  |
+| `/products/1` | `app/layout.tsx` → `products/[productId]/layout.tsx` | Root layout → ProductDetails layout → Product page |
+
+- The `products/[productId]/layout.tsx` file only applies to dynamic product routes — it adds the `Featured Products` heading above the main page content.
 
 ---
