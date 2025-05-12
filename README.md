@@ -10,6 +10,7 @@
 * [**Nested Routes**](#nested-routes)
 * [**Dynamic Routes**](#dynamic-routes)
 * [**Nested Dynamic Routes**](#nested-dynamic-routes)
+* [**Catch-all Segments**](#catch-all-segments)
 
 ## **Introduction**
 
@@ -820,5 +821,137 @@ You can create nested dynamic routes easily using folders with square brackets:
 * `[reviewId]` is a nested dynamic segment
 
 Each segment corresponds to a part of the URL and is made available through the `params` object in your component.
+
+---
+
+## **Catch-all Segments**
+
+Catch-all segments in Next.js allow you to handle dynamic routes with multiple path segments using just a **single file**. This is especially powerful for documentation sites, wikis, and other apps that require deeply nested or flexible routing structures.
+
+* [**Scenario 6 Documentation Site with Nested Routes**](#scenario-6-documentation-site-with-nested-routes)
+* [**Use a Catch-all Route**](#use-a-catch-all-route)
+* [**Optional Catch-all Segments**](#optional-catch-all-segments)
+* [**Catch-all Segments Structure Summary**](#catch-all-segments-structure-summary)
+
+---
+
+### **Scenario 6 Documentation Site with Nested Routes**
+
+Imagine building a documentation site where each feature contains several concepts, and each concept might have further nested examples. Example routes:
+
+```
+/docs/feature1/concept1  
+/docs/feature1/concept2  
+/docs/feature2/concept1/example1  
+...
+```
+
+Now, if you had 20 features and each had 20 concepts, you'd be looking at **400+ different routes**. File-based routing would make this hard to scale—unless we use **dynamic** and **catch-all segments**.
+
+---
+
+### **Use a Catch-all Route**
+
+We can simplify this setup to just **one** route handler using a catch-all segment.
+
+* [**Step 1 Create the Catch-all Folder**](#step-1-create-the-catch-all-folder)
+* [**Step 2 Implement the Component**](#step-2-implement-the-component)
+
+#### **Step 1 Create the Catch-all Folder**
+
+In your `app` directory, create the following structure:
+
+```
+app/
+└── docs/
+    └── [...slug]/
+        └── page.tsx
+```
+
+* The folder `[...slug]` uses the `...` syntax (like the JavaScript spread operator), which means: “match **any number of path segments**.”
+* Inside `[...slug]`, create a `page.tsx` file.
+
+---
+
+#### **Step 2 Implement the Component**
+
+Here’s a simple example of how to access and display the segments:
+
+```tsx
+// app/docs/[...slug]/page.tsx
+
+type Params = {
+  params: {
+    slug?: string[];
+  };
+};
+
+export default async function DocsPage({ params }: Params) {
+  const slug = params.slug ?? [];
+
+  if (slug.length === 2) {
+    return <h1>Viewing docs for feature "{slug[0]}" and concept "{slug[1]}"</h1>;
+  }
+
+  if (slug.length === 1) {
+    return <h1>Viewing docs for feature "{slug[0]}"</h1>;
+  }
+
+  return <h1>Docs homepage</h1>;
+}
+```
+
+Now try visiting these routes:
+
+* `/docs/routing` → Viewing docs for feature **routing**
+
+* `/docs/routing/catch-all-segments` → Viewing docs for feature **routing** and concept **catch-all-segments**
+
+* `/docs` → You’ll see a **404** error (but we’ll fix that next!)
+
+---
+
+### **Optional Catch-all Segments**
+
+To handle even `/docs` using the same file, make the segment **optional** by renaming the folder to:
+
+```
+[[...slug]]
+```
+
+So now the structure becomes:
+
+```
+app/
+└── docs/
+    └── [[...slug]]/
+        └── page.tsx
+```
+
+Now, `/docs` will also be matched and render the same page component.
+
+**Use Cases**
+
+Use **optional catch-all segments** when:
+
+* You want a single page to handle multiple levels of routes.
+* The layout or logic of the page depends on the depth or content of the route.
+
+---
+
+### **Catch-all Segments Structure Summary**
+
+```
+app/
+├── page.tsx                  → /
+└── docs/
+    └── [[...slug]]/
+        └── page.tsx          → /docs/* (all depths)
+```
+
+* **Catch-all segments** (`[...slug]`) match any number of nested route segments.
+* **Optional catch-all segments** (`[[...slug]]`) also match when no segments are present.
+* Use `params.slug` to access the segments in your component.
+* Ideal for documentation sites, blogs, and pages with variable depth.
 
 ---
