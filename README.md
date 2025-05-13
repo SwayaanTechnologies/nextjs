@@ -33,6 +33,7 @@
 * [**Parallel Routes**](#parallel-routes)
 * [**Handling Unmatched Routes**](#handling-unmatched-routes)
 * [**Intercepting Routes**](#intercepting-routes)
+* [**Parallel Intercepting Routes**](#parallel-intercepting-routes)
 
 ## **Introduction**
 
@@ -3411,5 +3412,103 @@ app/
 * URL remains shareable and refresh-safe
 * Clean UX for modals, previews, and nested views
 * Keeps layouts and route logic clean and modular
+
+---
+
+## **Parallel Intercepting Routes**
+
+Combine **parallel** and **intercepting** routes for modals with persistent layout.
+
+### **Demo**
+
+At `/photo-feed`, you see a photo grid.
+
+Clicking a photo updates the URL to `/photo-feed/[id]` and opens a **modal** (instead of navigating away). The background (feed) remains visible.
+
+> **Benefits**: Shareable URLs, refresh support, browser back/forward works as expected.
+
+* [**Step 1 Add Images**](#step-1-add-images)
+* [**Step 2 Create Metadata**](#step-2-create-metadata)
+* [**Step 3 Create Photo Feed Page**](#step-3-create-photo-feed-page)
+* [**Step 4 Create Dynamic ID Page**](#step-4-create-dynamic-id-page)
+* [**Step 5 Create Modal Parallel Route**](#step-5-create-modal-parallel-route)
+* [**Step 6 Add Default for Modal**](#step-6-add-default-for-modal)
+
+---
+
+#### **Step 1 Add Images**
+
+Store photos in `app/photo-feed/photos`.
+
+#### **Step 2 Create Metadata**
+
+`wonders.ts`
+
+```ts
+export const wonders = [
+  { id: '1', name: 'Great Wall', src: '/photos/1.jpg', photographer: 'Alice', location: 'China' },
+  // ...
+]
+```
+
+#### **Step 3 Create Photo Feed Page**
+
+```tsx
+// app/photo-feed/page.tsx
+export default function PhotoFeed() {
+  return wonders.map((photo) => (
+    <Link href={`/photo-feed/${photo.id}`}>
+      <Image src={photo.src} alt={photo.name} />
+    </Link>
+  ))
+}
+```
+
+#### **Step 4 Create Dynamic ID Page**
+
+```tsx
+// app/photo-feed/[id]/page.tsx
+export default function PhotoDetails({ params }) {
+  const photo = wonders.find(p => p.id === params.id)
+  return <div>{photo.name}</div>
+}
+```
+
+#### **Step 5 Create Modal Parallel Route**
+
+```tsx
+// app/photo-feed/@modal/[id]/page.tsx
+export default function ModalPhotoDetails({ params }) {
+  const photo = wonders.find(p => p.id === params.id)
+  return (
+    <div className="modal">
+      <Image src={photo.src} alt={photo.name} />
+      <div>{photo.name}</div>
+    </div>
+  )
+}
+```
+
+In `photo-feed/layout.tsx`, receive parallel routes:
+
+```tsx
+export default function Layout({ children, modal }) {
+  return (
+    <>
+      {children}
+      {modal}
+    </>
+  )
+}
+```
+
+#### **Step 6 Add Default for Modal**
+
+```tsx
+// app/photo-feed/@modal/default.tsx
+export default function Default() {
+  return null // Modal starts empty
+}
+```
 
 ---
