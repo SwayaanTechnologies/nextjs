@@ -25,6 +25,7 @@
 * [**Navigating Programmatically**](#navigating-programmatically)
 * [**Templates**](#templates)
 * [**Loading UI**](#loading-ui)
+* [**Error Handling**](#error-handling)
 
 ## **Introduction**
 
@@ -2345,5 +2346,116 @@ export default function Loading() {
 | Instant feedback        | Lets users know their action triggered navigation           |
 | Smarter UX              | Keeps shared layouts (e.g., navigation/sidebar) interactive |
 | Suspense integration    | Simplifies async transitions and data fetching              |
+
+---
+
+## **Error Handling**
+
+In real-world apps, **errors are inevitable** — network issues, data unavailability, or unexpected edge cases. Thankfully, the **App Router** in Next.js makes it easy to **gracefully handle runtime errors** using the special file: `error.tsx`.
+
+* [**Simulating an Error**](#simulating-an-error)
+* [**Adding an `error.tsx` Component**](#adding-an-error.tsx-component)
+* [**Why Use `error.tsx`?**](#why-use-error.tsx?)
+* [**Component Hierarchy Recap**](#component-hierarchy-recap)
+
+---
+
+### **Simulating an Error**
+
+Let’s simulate an error in our `review/[reviewId]/page.tsx` to see how it behaves:
+
+```tsx
+function getRandomInt(max: number) {
+  return Math.floor(Math.random() * max);
+}
+
+export default function ReviewPage() {
+  const random = getRandomInt(2);
+  if (random === 1) {
+    throw new Error("Error loading review");
+  }
+
+  return <h1>Review Page</h1>;
+}
+```
+
+On refresh, you’ll **occasionally see an unhandled error** in development. In production (`npm run build` + `npm run start`), it shows:
+
+> "A server-side exception has occurred"
+
+That’s **not user-friendly**, and worse — **it breaks the entire application**.
+
+---
+
+### **Adding an `error.tsx` Component**
+
+Let’s fix this by isolating the error using a route-specific error boundary.
+
+1. Create an `error.tsx` in the same folder as `page.tsx`:
+
+```bash
+app/
+└── product/
+    └── [productId]/
+        └── reviews/
+            └── [reviewId]/
+                ├── page.tsx
+                └── error.tsx
+```
+
+2. Create the component:
+
+**`error.tsx`**:
+
+```tsx
+"use client";
+
+type ErrorProps = {
+  error: Error;
+  reset: () => void;
+};
+
+export default function ErrorBoundary({ error, reset }: ErrorProps) {
+  return (
+    <div className="text-red-600 p-4">
+      <h2>Error loading review:</h2>
+      <p>{error.message}</p>
+      <button onClick={reset} className="mt-2 text-blue-600 underline">
+        Try again
+      </button>
+    </div>
+  );
+}
+```
+
+> `error.tsx` **must** be a **Client Component** (`"use client"` is required)
+
+---
+
+### **Why Use `error.tsx`?**
+
+| Feature              | Description                                                                     |
+| -------------------- | ------------------------------------------------------------------------------- |
+| Scoped boundaries    | Errors are **isolated to specific segments** — rest of the app still works      |
+| Recovery support     | Built-in `reset()` function allows users to retry                               |
+| Enhanced UX          | Display **helpful, user-friendly error messages** instead of blank or broken UI |
+| Integrated           | Automatically wraps the segment with a **React error boundary**                 |
+
+---
+
+### **Component Hierarchy Recap**
+
+Here's how the App Router handles fallback and errors:
+
+```
+layout.tsx
+└── template.tsx (optional)
+    └── error.tsx (runtime errors)
+        └── loading.tsx (suspense fallback)
+            └── not-found.tsx (404 handling)
+                └── page.tsx (core content)
+```
+
+Each file provides **isolation and control** for a better user experience and developer ergonomics.
 
 ---
