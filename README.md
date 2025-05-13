@@ -20,6 +20,7 @@
 * [**Multiple Root Layouts**](#multiple-root-layouts)
 * [**Routing Metadata**](#routing-metadata)
 * [**`title` Metadata**](#title-metadata)
+* [**Active Links**](#active-links)
 
 ## **Introduction**
 
@@ -1806,5 +1807,101 @@ Result: The title will simply be `Blog`, ignoring any template logic from higher
 | Consistent formatting needed  | `title.template` + child titles |
 | Break template inheritance    | `title.absolute`                |
 | Global fallback for all pages | `title.default`                 |
+
+---
+
+## **Active Links**
+
+Styling **active navigation links** improves UX by showing users where they are in the app. Let’s walk through how to highlight the **current route** using Tailwind CSS and the `usePathname()` hook.
+
+---
+
+### **Example Setup**
+
+In our `/auth` route group, we have a `layout.tsx` file that renders a simple navigation bar:
+
+```tsx
+// File: app/auth/layout.tsx
+'use client';
+
+import Link from 'next/link';
+import { usePathname } from 'next/navigation';
+import './styles.css'; // Tailwind imports
+
+const navLinks = [
+  { name: 'Register', href: '/auth/register' },
+  { name: 'Login', href: '/auth/login' },
+  { name: 'Forgot Password', href: '/auth/forgot-password' },
+];
+
+export default function AuthLayout({ children }: { children: React.ReactNode }) {
+  const pathname = usePathname();
+
+  return (
+    <>
+      <nav className="mb-4">
+        {navLinks.map((link) => {
+          const isActive =
+            pathname === link.href ||
+            (pathname.startsWith(link.href) && link.href !== '/');
+
+          return (
+            <Link
+              key={link.name}
+              href={link.href}
+              className={isActive ? 'font-bold mr-4' : 'text-blue-500 mr-4'}
+            >
+              {link.name}
+            </Link>
+          );
+        })}
+      </nav>
+      {children}
+    </>
+  );
+}
+```
+
+---
+
+### **Breakdown**
+
+| Concept          | Explanation                                                        |
+| ---------------- | ------------------------------------------------------------------ |
+| `usePathname()`  | Hook from `next/navigation` to get the current URL                 |
+| `use client`     | Needed because hooks are not allowed in server components          |
+| `isActive` logic | Compares `pathname` to the link's `href`                           |
+| Tailwind classes | `font-bold` (active), `text-blue-500` (inactive), `mr-4` (spacing) |
+
+---
+
+### **Add Tailwind Styling**
+
+If you don’t already have global styles set up, create a local `styles.css` file:
+
+**File**: `app/auth/styles.css`
+
+```css
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+```
+
+Then import it into `layout.tsx`:
+
+```tsx
+import './styles.css';
+```
+
+> Alternatively, you can bring back your `globals.css` from the root `app` directory.
+
+---
+
+### **Try It Out**
+
+1. Navigate to `/auth/register`
+2. You’ll see **Register** link is bold; others are blue
+3. Click **Login** → Login becomes bold
+4. Works dynamically without page reload
 
 ---
