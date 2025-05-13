@@ -31,6 +31,7 @@
 * [**Handling Errors in Layouts**](#handling-errors-in-layouts)
 * [**Handling Global Errors**](#handling-global-errors)
 * [**Parallel Routes**](#parallel-routes)
+* [**Handling Unmatched Routes**](#handling-unmatched-routes)
 
 ## **Introduction**
 
@@ -3010,5 +3011,140 @@ When you visit `/complex-dashboard`, you will see your dashboard with three sect
 - Parallel routes allow for **independent subnavigation** within each section. For example, users can filter data in **Revenue Metrics** while still being able to view notifications or user analytics. Each section can handle its own state and navigation without affecting others.
 
 - Example: In the **Notifications** section, users can switch between **default** and **archived** views, and the URL will update to reflect the change.
+
+---
+
+## **Handling Unmatched Routes**
+
+When using **parallel routes** with subnavigation, it's common to encounter scenarios where only some slots match the current URL. In such cases, **unmatched routes** must be handled properly to avoid rendering issues or 404 errors.
+
+Let's explore how to handle **unmatched slots** using `default.tsx` and ensure your application remains stable across navigation and reloads.
+
+* [**Subnavigation in Slots**](#subnavigation-in-slots)
+* [**What Are Unmatched Routes?**](#what-are-unmatched-routes?)
+* [**Fixing with `default.tsx`**](#fixing-with-default.tsx)
+* [**Add `default.tsx` for All Unmatched Slots**](#add-default.tsx-for-all-unmatched-slots)
+
+---
+
+### **Subnavigation in Slots**
+
+One benefit of parallel routing is that each slot can have its **own navigation** and behave independently.
+
+**Add Subnavigation to Notifications**
+
+We’ll add subnavigation in the `@notifications` slot to switch between default and archived views.
+
+`app/complex-dashboard/@notifications/page.tsx`
+
+```tsx
+import Link from 'next/link';
+
+export default function Notifications() {
+  return (
+    <div>
+      <h2>Notifications</h2>
+      <Link href="/complex-dashboard/archived">Go to Archived</Link>
+    </div>
+  );
+}
+```
+
+Then create the **archived view**:
+
+`app/complex-dashboard/@notifications/archived/page.tsx`
+
+```tsx
+import Link from 'next/link';
+
+export default function ArchivedNotifications() {
+  return (
+    <div>
+      <h2>Archived Notifications</h2>
+      <Link href="/complex-dashboard">Back to Notifications</Link>
+    </div>
+  );
+}
+```
+
+Now visiting:
+
+* `/complex-dashboard` shows the **default notifications view**
+* `/complex-dashboard/archived` shows the **archived notifications view**
+
+The **rest of the dashboard** (users, revenue, etc.) remains unchanged during this navigation — a major strength of parallel routing.
+
+---
+
+### **What Are Unmatched Routes?**
+
+When you navigate to a sub-path like `/complex-dashboard/archived`, only the `@notifications` slot matches the route.
+
+The other slots — `@users`, `@revenue`, and even `children` — do **not** match this new route.
+
+**What Happens on Navigation vs Reload?**
+
+* **When Navigating via Links**:
+
+  * Next.js **retains the previous content** of unmatched slots.
+  * Only the slot that matches the new URL is re-rendered (e.g., `@notifications`).
+
+* **When Reloading the Page**:
+
+  * Next.js attempts to load all slot content for the current URL.
+  * Slots without matching content result in a `404 - Not Found`.
+
+---
+
+### **Fixing with `default.tsx`**
+
+To prevent 404 errors during reloads or deep links, we must define a `default.tsx` file in **every unmatched slot**.
+
+The `default.tsx` acts as a **fallback** component when a slot has no matching route segment in the URL.
+
+---
+
+### **Add `default.tsx` for All Unmatched Slots**
+
+* [**Children Slot**](#children-slot)
+* [**Users Slot**](#users-slot)
+* [**Revenue Slot**](#revenue-slot)
+
+#### **Children Slot**
+
+`app/complex-dashboard/default.tsx`
+
+```tsx
+export default function DashboardDefault() {
+  return <h2>Complex Dashboard Default</h2>;
+}
+```
+
+#### **Users Slot**
+
+`app/complex-dashboard/@users/default.tsx`
+
+```tsx
+export default function UsersDefault() {
+  return <div>User Analytics Default Content</div>;
+}
+```
+
+#### **Revenue Slot**
+
+`app/complex-dashboard/@revenue/default.tsx`
+
+```tsx
+export default function RevenueDefault() {
+  return <div>Revenue Metrics</div>;
+}
+```
+
+Now, when visiting `/complex-dashboard/archived` directly or reloading it:
+
+* `@notifications` renders `archived/page.tsx`
+* Other slots render their respective `default.tsx`
+
+> This avoids any 404 errors and gives you full control over fallback content.
 
 ---
