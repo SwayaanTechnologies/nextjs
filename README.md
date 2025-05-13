@@ -37,6 +37,7 @@
 * [**Route Handlers**](#route-handlers)
 * [**GET Requests**](#get-requests)
 * [**POST Requests**](#post-requests)
+* [**Dynamic Route Handlers**](#dynamic-route-handlers)
 
 ## **Introduction**
 
@@ -3832,5 +3833,91 @@ You should now see the fourth comment appended to the list:
   { "id": 4, "text": "New comment" }
 ]
 ```
+
+---
+
+## **Dynamic Route Handlers**
+
+We’ve already handled `GET` and `POST` requests for our `/comments` endpoint. Now, let’s explore **dynamic route handlers** — a necessary step before implementing `PATCH` and `DELETE` requests, which operate on **individual comments by ID**.
+
+* [**Why Dynamic Routes**](#why-dynamic-routes)
+* [**Step 1 Set Up the Dynamic Route Folder**](#step-1-set-up-the-dynamic-route-folder)
+* [**Step 2 Create the GET Handler for a Specific Comment**](#step-2-create-the-get-handler-for-a-specific-comment)
+* [**Step 3 Test with Thunder Client Dynamic Route**](#step-3-test-with-thunder-client-dynamic-route)
+
+---
+
+### **Why Dynamic Routes**
+
+To update or delete a specific comment (e.g., comment with ID `1`), the request must target a route like:
+
+```
+/comments/1
+/comments/2
+```
+
+Each `ID` is a **dynamic segment**, and we handle this in Next.js just like dynamic pages — using `[id]` in the folder name.
+
+---
+
+### **Step 1 Set Up the Dynamic Route Folder**
+
+Within the `app/comments` directory:
+
+1. Create a folder named `[id]` (square brackets indicate dynamic route).
+2. Inside `[id]`, create a file named `route.ts`.
+
+The structure should look like:
+
+```
+app/
+  comments/
+    [id]/
+      route.ts
+```
+
+---
+
+### **Step 2 Create the GET Handler for a Specific Comment**
+
+Edit `app/comments/[id]/route.ts`:
+
+```ts
+// app/comments/[id]/route.ts
+import { comments } from "../data";
+
+export async function GET(
+  _request: Request,
+  context: { params: { id: string } }
+) {
+  const { id } = context.params;
+
+  const comment = comments.find(c => c.id === parseInt(id));
+
+  return Response.json(comment);
+}
+```
+
+> `context.params.id` provides the dynamic segment from the URL.
+> We use `parseInt(id)` because comment IDs are numbers.
+
+---
+
+### **Step 3 Test with Thunder Client Dynamic Route**
+
+1. Open your `GET` request in Thunder Client.
+2. Update the URL to: `http://localhost:3000/comments/1`
+3. Click **Send**.
+
+✅ You should see:
+
+```json
+{
+  "id": 1,
+  "text": "First comment"
+}
+```
+
+Try `.../2` and `.../3` as well — each should return the corresponding comment.
 
 ---
