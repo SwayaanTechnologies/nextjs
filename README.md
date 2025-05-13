@@ -24,6 +24,7 @@
 * [**`params` and `searchParams`**](#params-and-searchparams)
 * [**Navigating Programmatically**](#navigating-programmatically)
 * [**Templates**](#templates)
+* [**Loading UI**](#loading-ui)
 
 ## **Introduction**
 
@@ -2247,5 +2248,102 @@ export default function AuthTemplate({ children }: { children: React.ReactNode }
 | Common default for shared UI | ✅            | ❌ (only use when needed) |
 
 > You can use both `layout.tsx` and `template.tsx` **together**. In this case, the layout wraps the page, and the template renders fresh content per route.
+
+---
+
+## **Loading UI**
+
+In the App Router, Next.js provides a special file called `loading.tsx` that helps show **instant feedback** when navigating between pages. This is useful for improving **user experience** during **data fetching delays**.
+
+* [**How It Works**](#how-it-works)
+* [**Basic Setup**](#basic-setup)
+* [**Simulate a Delay**](#simulate-a-delay)
+* [**Make It Beautiful**](#make-it-beautiful)
+* [**Benefits of `loading.tsx`**](#benefits-of-loading.tsx)
+
+---
+
+### **How It Works**
+
+When you add a `loading.tsx` file inside a route segment, Next.js:
+
+* **Wraps your `page.tsx` and children in a `React.Suspense` boundary**
+* Automatically displays your `loading.tsx` component **while the page content is being fetched or rendered**
+
+---
+
+### **Basic Setup**
+
+Let’s add a loading UI to the blog page.
+
+```bash
+app/
+└── blog/
+    ├── page.tsx
+    └── loading.tsx
+```
+
+**`loading.tsx`**:
+
+```tsx
+export default function Loading() {
+  return <h1>Loading...</h1>;
+}
+```
+
+If the `page.tsx` loads quickly, you might not even notice the loading state. Let’s simulate a delay.
+
+---
+
+### **Simulate a Delay**
+
+**`page.tsx`** with an artificial delay:
+
+```tsx
+export default async function BlogPage() {
+  await new Promise((resolve) => setTimeout(resolve, 2000)); // 2 sec delay
+  return <h1>Blog Page Content</h1>;
+}
+```
+
+Now, reload the `/blog` route. You’ll see:
+
+1. `"Loading..."` for 2 seconds
+2. Then `"Blog Page Content"`
+
+---
+
+### **Make It Beautiful**
+
+You’re not limited to text. Common UI patterns include:
+
+* Skeleton loaders
+* Spinners
+* Image previews
+* UI placeholders
+
+```tsx
+import { Skeleton } from "@/components/ui/skeleton";
+
+export default function Loading() {
+  return (
+    <div className="space-y-4">
+      <Skeleton className="h-6 w-1/2" />
+      <Skeleton className="h-4 w-full" />
+      <Skeleton className="h-4 w-full" />
+    </div>
+  );
+}
+```
+
+---
+
+### **Benefits of `loading.tsx`**
+
+| Feature                 | Benefit                                                     |
+| ----------------------- | ----------------------------------------------------------- |
+| Instant feedback        | Lets users know their action triggered navigation           |
+| Smarter UX              | Keeps shared layouts (e.g., navigation/sidebar) interactive |
+| Suspense integration    | Simplifies async transitions and data fetching              |
 
 ---
