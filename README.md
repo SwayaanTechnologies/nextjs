@@ -34,6 +34,7 @@
 * [**Handling Unmatched Routes**](#handling-unmatched-routes)
 * [**Intercepting Routes**](#intercepting-routes)
 * [**Parallel Intercepting Routes**](#parallel-intercepting-routes)
+* [**Route Handlers**](#route-handlers)
 
 ## **Introduction**
 
@@ -3510,5 +3511,136 @@ export default function Default() {
   return null // Modal starts empty
 }
 ```
+
+---
+
+## **Route Handlers**
+
+Next.js Route Handlers let you build **custom RESTful API endpoints** directly inside your app—no need for Express or a separate server. They are a powerful alternative to `pages/api` in the old Pages Router and work seamlessly within the App Router structure.
+
+* [**What Are Route Handlers**](#what-are-route-handlers)
+* [**Benefits of Route Handlers**](#benefits-of-route-handlers)
+* [**Getting Started Your First Route Handler**](#getting-started-your-first-route-handler)
+* [**Folder Organization**](#folder-organization)
+* [**Avoid Route Handler Conflicts**](#avoid-route-handler-conflicts)
+
+---
+
+### **What Are Route Handlers**
+
+* **Defined in**: `route.ts` (or `route.js`)
+* **Located in**: Any folder inside `/app`
+* **Purpose**: Handle HTTP requests like GET, POST, PUT, PATCH, DELETE, HEAD, OPTIONS
+* **Use Cases**:
+
+  * CRUD operations with a database
+  * Calling third-party APIs
+  * Securing server-side logic like secret keys
+
+---
+
+### **Benefits of Route Handlers**
+
+- Fully integrated—no need for a separate backend
+- Keeps secrets server-side (e.g., API keys)
+- Supports RESTful conventions out of the box
+- Share folder structure with page routes (but no conflicts!)
+
+---
+
+### **Getting Started Your First Route Handler**
+
+* [**Create a New App**](#create-a-new-app)
+* [**Create a Simple GET Handler**](#create-a-simple-get-handler)
+* [**Test It**](#test-it)
+
+#### **Create a New App**
+
+```bash
+npx create-next-app@latest route-handlers-demo
+cd route-handlers-demo
+```
+
+#### **Create a Simple GET Handler**
+
+```bash
+mkdir app/hello
+touch app/hello/route.ts
+```
+
+```ts
+// app/hello/route.ts
+export async function GET() {
+  return new Response("Hello World")
+}
+```
+
+#### **Test It**
+
+Visit: [http://localhost:3000/hello](http://localhost:3000/hello)
+
+- You should see: `Hello World`
+
+---
+
+### **Folder Organization**
+
+Route handlers can be nested just like page routes:
+
+```bash
+app/
+├── hello/
+│   └── route.ts       # GET /hello
+├── dashboard/
+│   └── route.ts       # GET /dashboard
+│   └── users/
+│       └── route.ts   # GET /dashboard/users
+```
+
+**Example**
+
+```ts
+// app/dashboard/route.ts
+export async function GET() {
+  return new Response("Dashboard data")
+}
+```
+
+```ts
+// app/dashboard/users/route.ts
+export async function GET() {
+  return new Response("User data")
+}
+```
+
+---
+
+### **Avoid Route Handler Conflicts**
+
+If you define both a `page.tsx` and a `route.ts` in the same folder, the **route handler will take precedence**.
+
+* [**Conflict Example**](#conflict-example)
+* [**Fix Use an `api` Subfolder**](#fix-use-an-api-subfolder)
+
+#### **Conflict Example**
+
+```
+app/
+└── profile/
+    ├── page.tsx       # Won't be used
+    └── route.ts       # Takes over
+```
+
+#### **Fix Use an `api` Subfolder**
+
+```bash
+mkdir app/profile/api
+mv app/profile/route.ts app/profile/api/route.ts
+```
+
+Now:
+
+* `/profile` renders your page.
+* `/profile/api` handles API requests.
 
 ---
