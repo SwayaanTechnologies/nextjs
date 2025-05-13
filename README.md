@@ -36,6 +36,7 @@
 * [**Parallel Intercepting Routes**](#parallel-intercepting-routes)
 * [**Route Handlers**](#route-handlers)
 * [**GET Requests**](#get-requests)
+* [**POST Requests**](#post-requests)
 
 ## **Introduction**
 
@@ -3730,5 +3731,106 @@ You should see:
 
 >  Response status: **200 OK**
 >  Your GET route handler is working as expected!
+
+---
+
+## **POST Requests**
+
+In this section, we'll learn how to create and test a **POST request** using Route Handlers in the App Router. We’ll continue using **Thunder Client** to simulate API calls.
+
+* [**Step 1 Prepare Your POST Request in Thunder Client**](#step-1-prepare-your-post-request-in-thunder-client)
+* [**Step 2 Define the POST Handler**](#step-2-define-the-post-handler)
+* [**Step 3 Test POST Request**](#step-3-test-post-request)
+* [**Step 4 Verify with GET**](#step-4-verify-with-get)
+
+---
+
+### **Step 1 Prepare Your POST Request in Thunder Client**
+
+1. Open Thunder Client in VS Code.
+2. Create a **New Request**.
+3. Set **HTTP Method** to `POST`.
+4. Set the **URL** to: `http://localhost:3000/comments`.
+5. Switch to the **Body** tab, select `JSON`, and enter:
+
+```json
+{
+  "text": "New comment"
+}
+```
+
+> At this point, if you hit **Send**, you’ll get a `405 Method Not Allowed` error — because we haven’t defined a `POST` handler yet.
+
+---
+
+### **Step 2 Define the POST Handler**
+
+Open the `app/comments/route.ts` file, and add a `POST` handler:
+
+```ts
+// app/comments/route.ts
+import { comments } from "./data";
+
+// GET handler (already defined)
+export async function GET() {
+  return Response.json(comments);
+}
+
+// POST handler
+export async function POST(request: Request) {
+  const comment = await request.json();
+
+  const newComment = {
+    id: comments.length + 1,
+    text: comment.text,
+  };
+
+  comments.push(newComment);
+
+  return new Response(JSON.stringify(newComment), {
+    status: 201,
+    headers: { "Content-Type": "application/json" },
+  });
+}
+```
+
+> The function name **must match** the HTTP verb (`POST`).
+> We use `Response` to return a proper JSON response with status `201 Created`.
+
+---
+
+### **Step 3 Test POST Request**
+
+1. Go back to your POST request in Thunder Client.
+2. Click **Send**.
+
+You should get a response like:
+
+```json
+{
+  "id": 4,
+  "text": "New comment"
+}
+```
+
+> Status: **201 Created**
+
+---
+
+### **Step 4 Verify with GET**
+
+1. Switch back to your earlier `GET` request tab.
+2. Click **Send** again.
+
+You should now see the fourth comment appended to the list:
+
+```json
+[
+  { "id": 1, "text": "First comment" },
+  { "id": 2, "text": "Second comment" },
+  { "id": 3, "text": "Third comment" },
+  { "id": 4, "text": "New comment" }
+]
+```
 
 ---
