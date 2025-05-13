@@ -38,6 +38,7 @@
 * [**GET Requests**](#get-requests)
 * [**POST Requests**](#post-requests)
 * [**Dynamic Route Handlers**](#dynamic-route-handlers)
+* [**PATCH Request**](#patch-request)
 
 ## **Introduction**
 
@@ -3909,7 +3910,7 @@ export async function GET(
 2. Update the URL to: `http://localhost:3000/comments/1`
 3. Click **Send**.
 
-✅ You should see:
+> You should see:
 
 ```json
 {
@@ -3919,5 +3920,98 @@ export async function GET(
 ```
 
 Try `.../2` and `.../3` as well — each should return the corresponding comment.
+
+---
+
+## **PATCH Request**
+
+Now that we can fetch a single comment using dynamic routes, let’s learn how to **update** one using the `PATCH` method. This is useful for making **partial changes**—like updating just the `text` of a comment.
+
+* [**Step 1 Test a PATCH Request in Thunder Client**](#step-1-test-a-patch-request-in-thunder-client)
+* [**Step 2 Add PATCH Handler**](#step-2-add-patch-handler)
+* [**Step 3 Re-Test in Thunder Client**](#step-3-re-test-in-thunder-client)
+
+---
+
+### **Step 1 Test a PATCH Request in Thunder Client**
+
+1. Open Thunder Client and create a **new request**.
+
+2. Set the HTTP method to `PATCH`.
+
+3. Use this URL:
+
+   ```
+   http://localhost:3000/comments/3
+   ```
+
+4. Go to the **Body** tab → Select `JSON`, and paste:
+
+   ```json
+   {
+     "text": "Updated comment"
+   }
+   ```
+
+5. Click **Send** — you’ll see a `405 Method Not Allowed` error for now.
+
+Let’s fix that.
+
+---
+
+### **Step 2 Add PATCH Handler**
+
+In `app/comments/[id]/route.ts`, add the following handler:
+
+```ts
+import { comments } from "../data";
+
+export async function PATCH(
+  request: Request,
+  context: { params: { id: string } }
+) {
+  const { id } = context.params;
+  const body = await request.json();
+  const { text } = body;
+
+  const index = comments.findIndex(c => c.id === parseInt(id));
+
+  if (index === -1) {
+    return new Response("Comment not found", { status: 404 });
+  }
+
+  comments[index].text = text;
+
+  return Response.json(comments[index]);
+}
+```
+
+---
+
+**Happening Here**
+
+* We extract the `id` from the dynamic route using `context.params.id`.
+* We parse the request body to get the new `text`.
+* We locate the comment’s **index** using `findIndex()`.
+* If the comment exists, we update its text and return it in the response.
+* If it doesn’t exist, we return a `404 Not Found`.
+
+---
+
+### **Step 3 Re-Test in Thunder Client**
+
+* Send the `PATCH` request again with the new text.
+* You’ll receive a `200 OK` response and see:
+
+```json
+{
+  "id": 3,
+  "text": "Updated comment"
+}
+```
+
+* Switch to your `GET /comments` tab and hit **Send**:
+
+  * You’ll see the updated text reflected for comment ID `3`.
 
 ---
