@@ -32,6 +32,7 @@
 * [**Handling Global Errors**](#handling-global-errors)
 * [**Parallel Routes**](#parallel-routes)
 * [**Handling Unmatched Routes**](#handling-unmatched-routes)
+* [**Intercepting Routes**](#intercepting-routes)
 
 ## **Introduction**
 
@@ -3261,5 +3262,154 @@ You could extend this pattern for:
 ---
 
 > **Pro Tip:** In a real-world app, use `getServerSession()` from **auth.js** or a custom auth hook to determine `isLoggedIn`.
+
+---
+
+## **Intercepting Routes**
+
+**Intercepting Routes** are an advanced feature of the App Router in Next.js that let you display content from another part of your app **within the current layout context**, while still updating the **URL**. This is perfect for features like **modals**, **previews**, or **lightboxes**, where you want users to stay in context.
+
+* [**Real-world Examples**](#real-world-examples)
+* [**How Intercepting Routes Work**](#how-intercepting-routes-work)
+* [**Examples**](#examples)
+* [**Intercepting Routes Cheat Sheet**](#intercepting-routes-cheat-sheet)
+* [**Why Use Intercepting Routes**](#why-use-intercepting-routes)
+
+---
+
+### **Real-world Examples**
+
+* Clicking "Login" opens a **modal**, but the URL becomes `/login`. Refreshing this URL loads the **full login page**.
+* Clicking a photo in a gallery opens an **overlay with details**, but visiting the photo URL directly shows the **full photo page**.
+
+---
+
+### **How Intercepting Routes Work**
+
+Intercepting Routes are based on **folder naming conventions** that tell Next.js to intercept navigation based on relative path **level differences**.
+
+**Folder Setup Basics**
+
+We’ll walk through four routing levels:
+
+| Convention    | Prefix Syntax                | When to Use                          |
+| ------------- | ---------------------------- | ------------------------------------ |
+| Same level    | `(.)`                        | Intercept sibling routes             |
+| One level up  | `(..)`                       | Intercept parent-level routes        |
+| Two levels up | `(../..)` (i.e., `(..)(..)`) | Intercept grandparent-level routes   |
+| From app root | `(...)`                      | Intercept any route relative to root |
+
+---
+
+### **Examples**
+
+* [**Intercepting Same-Level Routes**](#intercepting-same-level-routes)
+* [**Intercepting One Level Up**](#intercepting-one-level-up)
+* [**Intercepting Two Levels Up**](#intercepting-two-levels-up)
+* [**Intercepting From Root**](#intercepting-from-root)
+
+---
+
+#### **Intercepting Same-Level Routes**
+
+**Goal Intercept `f1/f2` when navigating from `f1`**
+
+```
+app/
+  f1/
+    page.tsx
+    f2/            ← target route
+      page.tsx
+    (.)f2/         ← intercepting route
+      page.tsx
+```
+
+* Add a `Link` to `/f1/f2` inside `f1/page.tsx`.
+* Inside `(.)f2/page.tsx`, show an alternate layout: e.g. modal or lightbox.
+* Visiting `/f1/f2` via `Link` from `f1` → shows intercepted route.
+* Refreshing `/f1/f2` → shows original `f2` page.
+
+---
+
+#### **Intercepting One Level Up**
+
+**Goal: Intercept `/f3` when navigating from `/f1`**
+
+```
+app/
+  f1/
+    page.tsx
+    (..)/f3/        ← intercepting route
+      page.tsx
+  f3/
+    page.tsx        ← target
+```
+
+* Add a `Link` to `/f3` inside `f1/page.tsx`.
+* Inside `(..)/f3/page.tsx`, return alternate content.
+* Refreshing `/f3` still loads `f3/page.tsx`.
+
+---
+
+#### **Intercepting Two Levels Up**
+
+**Goal: Intercept `/f4` when navigating from `/f1/f2`**
+
+```
+app/
+  f1/
+    f2/
+      page.tsx
+      (..)(..)/f4/   ← intercepting route
+        page.tsx
+  f4/
+    page.tsx         ← target
+```
+
+* Add a `Link` to `/f4` in `f1/f2/page.tsx`.
+* `(..)(..)/f4/page.tsx` handles intercepted view.
+* URL updates, context stays, full page on refresh.
+
+---
+
+#### **Intercepting From Root**
+
+**Goal: Intercept `/f5` from `/f1/f2/inner-f2`**
+
+```
+app/
+  f1/
+    f2/
+      inner-f2/
+        page.tsx
+        (...)f5/     ← intercepting route
+          page.tsx
+  f5/
+    page.tsx         ← target
+```
+
+* Use `(...)` to intercept from anywhere in app back to root route.
+* Add a `Link` to `/f5` in `inner-f2/page.tsx`.
+* Shows intercepted view on click, real route on refresh.
+
+---
+
+### **Intercepting Routes Cheat Sheet**
+
+| Use Case                 | Folder Prefix | Notes                     |
+| ------------------------ | ------------- | ------------------------- |
+| Intercept sibling routes | `(.)`         | Same folder level         |
+| Intercept parent folder  | `(..)`        | One level above           |
+| Intercept grandparent    | `(..)(..)`    | Two levels up             |
+| Intercept from app root  | `(...)`       | Any route from root level |
+
+---
+
+### **Why Use Intercepting Routes**
+
+* Preserve user context (e.g., modal overlays)
+* URL remains shareable and refresh-safe
+* Clean UX for modals, previews, and nested views
+* Keeps layouts and route logic clean and modular
 
 ---
