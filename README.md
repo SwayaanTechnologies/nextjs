@@ -3148,3 +3148,118 @@ Now, when visiting `/complex-dashboard/archived` directly or reloading it:
 > This avoids any 404 errors and gives you full control over fallback content.
 
 ---
+
+## **Conditional Routes**
+
+One of the most compelling use cases for **parallel routing** in Next.js is **conditional UI rendering** based on application state — like **authentication**.
+
+With **conditional routes**, you can render completely separate components under the **same URL** based on dynamic conditions, such as whether a user is logged in or not. This keeps your logic **clean** and **declarative**, without complex if/else rendering in your components.
+
+* [**Scenario Authenticated vs Unauthenticated Users**](#scenario-authenticated-vs-unauthenticated-users)
+* [**Step 1 Create a `@login` Slot**](#step-1-create-a-@login-slot)
+* [**Step 2 Update the Layout to Conditionally Render**](#step-2-update-the-layout-to-conditionally-render)
+* [**Benefits of Conditional Routes**](#benefits-of-conditional-routes)
+* [**Extendability**](#extendability)
+
+---
+
+### **Scenario Authenticated vs Unauthenticated Users**
+
+We’ll implement a basic authentication check that determines whether to show:
+
+* 📊 A dashboard (for authenticated users), or
+* 🔐 A login page (for unauthenticated users)
+  All at the **same route**: `/complex-dashboard`
+
+---
+
+### **Step 1 Create a `@login` Slot**
+
+`app/complex-dashboard/@login/page.tsx`
+
+```tsx
+export default function Login() {
+  return (
+    <div className="card">
+      <h2>Please log in to continue</h2>
+    </div>
+  );
+}
+```
+
+> In a real app, this would include a form and login logic. For demo purposes, this static message is enough.
+
+---
+
+### **Step 2 Update the Layout to Conditionally Render**
+
+`app/complex-dashboard/layout.tsx`
+
+Update the layout file to accept the `login` slot and conditionally render it based on a fake `isLoggedIn` flag.
+
+```tsx
+type Props = {
+  children: React.ReactNode;
+  users: React.ReactNode;
+  revenue: React.ReactNode;
+  notifications: React.ReactNode;
+  login: React.ReactNode;
+};
+
+export default function ComplexDashboardLayout({
+  children,
+  users,
+  revenue,
+  notifications,
+  login,
+}: Props) {
+  const isLoggedIn = false; // simulate login check
+
+  if (!isLoggedIn) {
+    return <>{login}</>; // Show login slot
+  }
+
+  return (
+    <div className="dashboard">
+      <h1>Complex Dashboard</h1>
+      <div className="cards">
+        {children}
+        {users}
+        {revenue}
+        {notifications}
+      </div>
+    </div>
+  );
+}
+```
+
+- Now, when `isLoggedIn` is `false`, only the login page is rendered — at the same `/complex-dashboard` URL. 
+- If you switch `isLoggedIn` to `true`, your dashboard content (users, revenue, notifications, and main page) will render as expected.
+
+---
+
+### **Benefits of Conditional Routes**
+
+| Feature                         | Description                                                                |
+| ------------------------------- | -------------------------------------------------------------------------- |
+| Seamless Switching              | Render different UIs under the same URL based on dynamic logic             |
+| Slot Isolation                  | Each view is fully isolated — no shared code required between slots        |
+| Fine-Grained Control            | Each slot still gets its own loading/error handling and subnavigation      |
+| Clean Separation of Concerns    | No spaghetti conditional rendering logic inside one giant layout component |
+
+---
+
+### **Extendability**
+
+You could extend this pattern for:
+
+* Role-based dashboards (admin vs user views)
+* A/B testing different UI components
+* Conditional onboarding experiences
+* Multi-tenant interfaces
+
+---
+
+> **Pro Tip:** In a real-world app, use `getServerSession()` from **auth.js** or a custom auth hook to determine `isLoggedIn`.
+
+---
