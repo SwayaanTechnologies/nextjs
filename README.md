@@ -28,6 +28,7 @@
 * [**Error Handling**](#error-handling)
 * [**Recovering from Errors**](#recovering-from-errors)
 * [**Handling Errors in Nested Routes**](#handling-errors-in-nested-routes)
+* [**Handling Errors in Layouts**](#handling-errors-in-layouts)
 
 ## **Introduction**
 
@@ -2630,5 +2631,85 @@ Only the **review component** is replaced when it fails — the rest of the app 
 
 * You can **scope** your error boundaries by placing `error.tsx` at the right level.
 * Each boundary **isolates errors** to just its segment and prevents them from crashing the entire app.
+
+---
+
+## **Handling Errors in Layouts**
+
+After mastering error handling in nested routes, it’s time to look at a **tricky but important scenario**: handling **errors inside `layout.tsx`** files.
+
+* [**Behavior**](#behavior)
+* [**Example Scenario**](#example-scenario)
+* [**The Fix Move `error.tsx` to the Parent**](#the-fix-move-error.tsx-to-the-parent)
+* [**Visual Hierarchy**](#visual-hierarchy)
+
+---
+
+### **Behavior**
+
+Unlike `page.tsx`, if an error occurs **inside a `layout.tsx` file**, the `error.tsx` file in the **same segment** **will not** catch it.
+
+This is due to the **component hierarchy**:
+
+> In the App Router, `layout.tsx` is rendered **above** `error.tsx`.
+> Therefore, errors thrown in a layout file bypass its own segment’s `error.tsx`.
+
+---
+
+### **Example Scenario**
+
+Assume the following structure:
+
+```
+/products
+  ├─ layout.tsx
+  ├─ error.tsx
+  └─ [productId]
+       ├─ layout.tsx (throws an error)
+       ├─ error.tsx
+       └─ [reviewId]
+            └─ page.tsx
+```
+
+If the `productId/layout.tsx` throws an error — for instance:
+
+```tsx
+// Simulate random failure
+if (Math.random() < 0.5) {
+  throw new Error("Error loading product");
+}
+```
+
+You might expect the `[productId]/error.tsx` to catch it. But:
+
+> It won’t work — the error breaks the app because the layout renders **before** the error boundary.
+
+---
+
+### **The Fix Move `error.tsx` to the Parent**
+
+To properly handle layout errors:
+
+* **Move `error.tsx` up to the parent segment** — in this case, to the `products/` folder.
+* That way, the error in `productId/layout.tsx` bubbles up and is caught by `products/error.tsx`.
+
+---
+
+### **Visual Hierarchy**
+
+```
+App Root
+ └── products/layout.tsx
+      └── products/error.tsx        Catches layout errors
+           └── [productId]/layout.tsx    Bypasses [productId]/error.tsx
+                └── [productId]/error.tsx (only catches page/review errors)
+```
+
+**Result**
+
+With the `error.tsx` file placed at the **`products/` level**:
+
+* Errors in `[productId]/layout.tsx` are **caught cleanly**.
+* The UI gracefully degrades — e.g., shows "Error loading product" — while keeping the global layout (header/footer) intact.
 
 ---
