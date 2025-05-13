@@ -22,6 +22,7 @@
 * [**`title` Metadata**](#title-metadata)
 * [**Active Links**](#active-links)
 * [**`params` and `searchParams`**](#params-and-searchparams)
+* [**Navigating Programmatically**](#navigating-programmatically)
 
 ## **Introduction**
 
@@ -2037,5 +2038,108 @@ export default function NewsClient() {
 | `searchParams` in layouts | Not supported—**only `params`** are accessible in `layout.tsx` |
 | Server components         | Can use async/await directly on props                          |
 | Client components         | Must use `useParams()` and `useSearchParams()` hooks           |
+
+---
+
+## **Navigating Programmatically**
+
+While links (`<Link>`) are great for typical navigation, sometimes you need to **navigate based on logic**—such as after a form submission or conditionally based on user input. That’s where **programmatic navigation** comes in.
+
+* [**Example Order Placement Redirect**](#example-order-placement-redirect)
+* [**Router Methods**](#router-methods)
+* [**Example Redirect in Server Component**](#example-redirect-in-server-component)
+
+---
+
+### **Example Order Placement Redirect**
+
+We’ll simulate a product order flow: clicking a **“Place Order”** button takes the user to the homepage.
+
+* [**Step 1 Create the Route**](#step-1-create-the-route)
+* [**Step 2 Implement Client-Side Navigation**](#step-2-implement-client-side-navigation)
+
+---
+
+#### **Step 1 Create the Route**
+
+Create a folder and file for the new route:
+
+```
+app/
+└── order-product/
+    └── page.tsx
+```
+
+---
+
+#### **Step 2 Implement Client-Side Navigation**
+
+```tsx
+'use client';
+
+import { useRouter } from 'next/navigation';
+
+export default function OrderProduct() {
+  const router = useRouter();
+
+  const handleClick = () => {
+    console.log('Placing your order...');
+    router.push('/'); // Navigate to homepage
+  };
+
+  return (
+    <>
+      <h1>Order Product</h1>
+      <button onClick={handleClick}>Place Order</button>
+    </>
+  );
+}
+```
+
+> Don't forget the `'use client'` directive—`useRouter()` only works in **client components**.
+
+---
+
+### **Router Methods**
+
+| Method             | Description                                                                |
+| ------------------ | -------------------------------------------------------------------------- |
+| `router.push()`    | Navigate to a new route (adds to browser history)                          |
+| `router.replace()` | Navigate and replace the current entry in browser history (no back button) |
+| `router.back()`    | Navigate to the **previous page**                                          |
+| `router.forward()` | Move forward in browser history                                            |
+
+---
+
+### **Example Redirect in Server Component**
+
+Sometimes, you want to **redirect in server logic**. For example, redirect users with invalid IDs.
+
+```tsx
+// File: app/products/[productId]/reviews/[reviewId]/page.tsx
+import { redirect } from 'next/navigation';
+
+export default function ProductReview({
+  params,
+}: {
+  params: { productId: string; reviewId: string };
+}) {
+  const reviewId = parseInt(params.reviewId);
+
+  if (reviewId > 100) {
+    // Instead of showing a not-found page, redirect to product list
+    redirect('/products');
+  }
+
+  return (
+    <>
+      <h1>Product Review</h1>
+      <p>Review ID: {reviewId}</p>
+    </>
+  );
+}
+```
+
+> This only works in **server components**—the `redirect()` function is not available in client code.
 
 ---
