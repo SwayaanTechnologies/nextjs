@@ -29,6 +29,7 @@
 * [**Recovering from Errors**](#recovering-from-errors)
 * [**Handling Errors in Nested Routes**](#handling-errors-in-nested-routes)
 * [**Handling Errors in Layouts**](#handling-errors-in-layouts)
+* [**Handling Global Errors**](#handling-global-errors)
 
 ## **Introduction**
 
@@ -2711,5 +2712,138 @@ With the `error.tsx` file placed at the **`products/` level**:
 
 * Errors in `[productId]/layout.tsx` are **caught cleanly**.
 * The UI gracefully degrades — e.g., shows "Error loading product" — while keeping the global layout (header/footer) intact.
+
+---
+
+## **Handling Global Errors**
+
+We’ve already explored error handling at the **segment** and **layout** level — but what happens when things go wrong at the **very top** of your application?
+
+This is where **global error boundaries** come in.
+
+* [**The Global `error.tsx` File**](#the-global-error.tsx-file)
+* [**Simulating a Root Layout Error**](#simulating-a-root-layout-error)
+* [**Important Notes Global Error**](#important-notes-global-error)
+* [**Testing the Global Error UI**](#testing-the-global-error-ui)
+
+---
+
+### **The Global `error.tsx` File**
+
+* Next.js provides a special file: **`app/global-error.tsx`**
+* This is your **last line of defense** — it catches **uncaught runtime errors** in the **root layout** or anywhere else that doesn’t have an error boundary.
+
+---
+
+### **Simulating a Root Layout Error**
+
+To test global error handling, let’s intentionally cause an error in the root layout:
+
+* [**Create an `ErrorWrapper` component**](#create-an-errorwrapper-component)
+* [**Wrap Root Layout in the `ErrorWrapper`**](#wrap-root-layout-in-the-errorwrapper)
+* [**Create `global-error.tsx`**](#create-global-error.tsx)
+
+#### **Create an `ErrorWrapper` component**
+
+`app/ErrorWrapper.tsx`
+
+```tsx
+'use client';
+
+import { useState } from 'react';
+
+export default function ErrorWrapper({ children }: { children: React.ReactNode }) {
+  const [error, setError] = useState(false);
+
+  if (error) {
+    throw new Error("Simulated error in root layout");
+  }
+
+  return (
+    <div className="p-4 border">
+      <button onClick={() => setError(true)} className="bg-red-500 text-white px-3 py-1 mb-4">
+        Simulate Error
+      </button>
+      {children}
+    </div>
+  );
+}
+```
+
+---
+
+#### **Wrap Root Layout in the `ErrorWrapper`**
+
+In your `app/layout.tsx`, import and wrap the layout:
+
+```tsx
+import './globals.css';
+import ErrorWrapper from './ErrorWrapper';
+
+export default function RootLayout({ children }: { children: React.ReactNode }) {
+  return (
+    <html lang="en">
+      <body>
+        <ErrorWrapper>
+          {children}
+        </ErrorWrapper>
+      </body>
+    </html>
+  );
+}
+```
+
+---
+
+#### **Create `global-error.tsx`**
+
+**`app/global-error.tsx`**
+
+```tsx
+'use client';
+
+export default function GlobalError({ error, reset }: { error: Error; reset: () => void }) {
+  return (
+    <html>
+      <body className="flex flex-col items-center justify-center min-h-screen p-6 text-center bg-red-50 text-red-800">
+        <h2 className="text-2xl font-bold mb-4">Something went wrong</h2>
+        <p className="mb-4">{error.message}</p>
+        <button
+          onClick={() => window.location.reload()}
+          className="bg-red-600 text-white px-4 py-2 rounded"
+        >
+          Refresh
+        </button>
+      </body>
+    </html>
+  );
+}
+```
+
+---
+
+### **Important Notes Global Error**
+
+* The `global-error.tsx` **must include** its own `<html>` and `<body>` tags. It **replaces** your root layout entirely on failure.
+* It **only works in production mode**. In development (`npm run dev`), Next.js will show the standard red error overlay.
+* Keep the global error boundary **minimal** — don’t introduce more points of failure here.
+
+---
+
+### **Testing the Global Error UI**
+
+```bash
+# Stop dev server
+Ctrl + C
+
+# Build the app
+npm run build
+
+# Start production server
+npm start
+```
+
+* Now simulate the error using the button from the `ErrorWrapper`.
+* You should see your **custom global error UI** with the message and a refresh button.
 
 ---
