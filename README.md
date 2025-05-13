@@ -27,6 +27,7 @@
 * [**Loading UI**](#loading-ui)
 * [**Error Handling**](#error-handling)
 * [**Recovering from Errors**](#recovering-from-errors)
+* [**Handling Errors in Nested Routes**](#handling-errors-in-nested-routes)
 
 ## **Introduction**
 
@@ -2563,5 +2564,71 @@ This combination ensures a **complete retry cycle**, both server and client-side
 1. Refresh the page until you see the simulated error.
 2. Click **Try Again**.
 3. If the random number check passes, the component will recover and render successfully.
+
+---
+
+## **Handling Errors in Nested Routes**
+
+Error handling in the App Router isn’t just about catching failures — it’s about **where** you catch them.
+
+The placement of the `error.tsx` file **directly impacts which parts of your app are affected** when an error occurs. Let’s understand how errors bubble in a nested route hierarchy.
+
+* [**Route Structure Example**](#route-structure-example)
+* [**Case 1 `error.tsx` in `products/`**](#case-1-error.tsx-in-products/)
+* [**Case 2 `error.tsx` in `reviewId/`**](#case-2-error.tsx-in-reviewid/)
+* [**Key Concept Error Bubbling**](#key-concept-error-bubbling)
+
+---
+
+### **Route Structure Example**
+
+```
+/products
+  ├─ layout.tsx
+  ├─ error.tsx         (affects all child segments)
+  └─ [productId]
+       └─ [reviewId]
+            └─ page.tsx (where error is simulated)
+```
+
+If an error occurs in the `reviewId/page.tsx`, **Next.js will look up the directory tree** for the nearest `error.tsx` to handle it.
+
+---
+
+### **Case 1 `error.tsx` in `products/`**
+
+* Placing `error.tsx` in the `products` folder handles **all errors** in:
+
+  * `[productId]`
+  * `[reviewId]`
+* An error in `reviewId/page.tsx` will **replace the entire `/products` layout** with the fallback UI.
+* This is a **broad** catch — useful for generic product-level error handling.
+
+**Result**
+
+The **entire UI under `/products`** is replaced on error.
+
+---
+
+### **Case 2 `error.tsx` in `reviewId/`**
+
+* By moving `error.tsx` into the `[reviewId]` folder:
+
+  * Only **that route segment** is replaced on error.
+  * The **rest of the page (header, product layout, etc.) remains intact**.
+* This gives users a more **granular** and **targeted error experience**.
+
+**Result**
+
+Only the **review component** is replaced when it fails — the rest of the app still works.
+
+---
+
+### **Key Concept Error Bubbling**
+
+> Errors bubble up the route hierarchy to the nearest available `error.tsx`.
+
+* You can **scope** your error boundaries by placing `error.tsx` at the right level.
+* Each boundary **isolates errors** to just its segment and prevents them from crashing the entire app.
 
 ---
