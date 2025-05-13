@@ -21,6 +21,7 @@
 * [**Routing Metadata**](#routing-metadata)
 * [**`title` Metadata**](#title-metadata)
 * [**Active Links**](#active-links)
+* [**`params` and `searchParams`**](#params-and-searchparams)
 
 ## **Introduction**
 
@@ -1903,5 +1904,138 @@ import './styles.css';
 2. You’ll see **Register** link is bold; others are blue
 3. Click **Login** → Login becomes bold
 4. Works dynamically without page reload
+
+---
+
+## **`params` and `searchParams`**
+
+In Next.js App Router, dynamic route parameters and query strings are handled through **`params`** and **`searchParams`** respectively. Let’s explore how to use them in both **server** and **client** components.
+
+* [**What Are `params` and `searchParams`?**](#what-are-params-and-searchparams?)
+* [**Example Multilingual News Article Page**](#example-multilingual-news-article-page)
+* [**Using `params` and `searchParams` in Client Components**](#using-params-and-searchparams-in-client-components)
+* [**Important Notes**](#important-notes)
+
+---
+
+### **What Are `params` and `searchParams`?**
+
+| Feature        | Description                                               |
+| -------------- | --------------------------------------------------------- |
+| `params`       | Object that holds **dynamic segments** in the route URL   |
+| `searchParams` | Object for **query parameters** from the URL (`?lang=en`) |
+
+---
+
+### **Example Multilingual News Article Page**
+
+* [**Step 1 Define Links**](#step-1-define-links)
+* [**Step 2 Create Dynamic Route**](#step-2-create-dynamic-route)
+* [**Step 3 Use `params` and `searchParams` in a Server Component**](#step-3-use-params-and-searchparams-in-a-server-component)
+
+
+#### **Step 1 Define Links**
+
+In your **home page**, add links with both dynamic and query parameters:
+
+```tsx
+import Link from 'next/link';
+
+export default function Home() {
+  return (
+    <>
+      <Link href="/articles/breaking-news-123?language=en">Read in English</Link>
+      <br />
+      <Link href="/articles/breaking-news-123?language=fr">Read in French</Link>
+    </>
+  );
+}
+```
+
+---
+
+#### **Step 2 Create Dynamic Route**
+
+Create the file structure:
+
+```
+app/
+└── articles/
+    └── [articleId]/
+        └── page.tsx
+```
+
+---
+
+#### **Step 3 Use `params` and `searchParams` in a Server Component**
+
+```tsx
+// File: app/articles/[articleId]/page.tsx
+import Link from 'next/link';
+
+export default async function NewsArticle({
+  params,
+  searchParams,
+}: {
+  params: { articleId: string };
+  searchParams: { language?: string };
+}) {
+  const { articleId } = params;
+  const language = searchParams.language || 'English';
+
+  return (
+    <>
+      <h1>News Article: {articleId}</h1>
+      <p>Reading in: {language}</p>
+
+      <div className="mt-4">
+        <Link href={`/articles/${articleId}?language=en`}>English</Link> |{' '}
+        <Link href={`/articles/${articleId}?language=es`}>Spanish</Link> |{' '}
+        <Link href={`/articles/${articleId}?language=fr`}>French</Link>
+      </div>
+    </>
+  );
+}
+```
+
+> Since this is a **server component**, `params` and `searchParams` can be **awaited directly**.
+
+---
+
+### **Using `params` and `searchParams` in Client Components**
+
+1. **Server components** allow async/await on props.
+2. **Client components** must use the `useParams()` and `useSearchParams()` hooks from `next/navigation`.
+
+```tsx
+'use client';
+
+import { useParams, useSearchParams } from 'next/navigation';
+
+export default function NewsClient() {
+  const params = useParams();
+  const searchParams = useSearchParams();
+
+  const articleId = params.articleId;
+  const language = searchParams.get('language') || 'English';
+
+  return (
+    <>
+      <h1>News Article: {articleId}</h1>
+      <p>Reading in: {language}</p>
+    </>
+  );
+}
+```
+
+---
+
+### **Important Notes**
+
+| Limitation                | Explanation                                                    |
+| ------------------------- | -------------------------------------------------------------- |
+| `searchParams` in layouts | Not supported—**only `params`** are accessible in `layout.tsx` |
+| Server components         | Can use async/await directly on props                          |
+| Client components         | Must use `useParams()` and `useSearchParams()` hooks           |
 
 ---
