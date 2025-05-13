@@ -23,6 +23,7 @@
 * [**Active Links**](#active-links)
 * [**`params` and `searchParams`**](#params-and-searchparams)
 * [**Navigating Programmatically**](#navigating-programmatically)
+* [**Templates**](#templates)
 
 ## **Introduction**
 
@@ -2141,5 +2142,110 @@ export default function ProductReview({
 ```
 
 > This only works in **server components**—the `redirect()` function is not available in client code.
+
+---
+
+## **Templates**
+
+In the App Router, `layout.tsx` is commonly used to share UI across routes. But sometimes, you need the **UI to reset completely** between route changes. That’s where `template.tsx` comes in.
+
+* [**The Problem with Layout State Persistence**](#the-problem-with-layout-state-persistence)
+* [**When You Need State Reset**](#when-you-need-state-reset)
+* [**How to Use Templates**](#how-to-use-templates)
+* [**Template vs Layout**](#template-vs-layout)
+
+---
+
+### **The Problem with Layout State Persistence**
+
+By design, layouts in Next.js **persist state** across route changes. Consider this structure:
+
+```
+app/
+└── (auth)/
+    ├── layout.tsx   ← Shared layout
+    ├── register/
+    ├── login/
+    └── forgot-password/
+```
+
+If you add an input in `layout.tsx` with a React state:
+
+```tsx
+'use client';
+import { useState } from 'react';
+
+export default function AuthLayout({ children }: { children: React.ReactNode }) {
+  const [input, setInput] = useState('');
+
+  return (
+    <>
+      <input value={input} onChange={(e) => setInput(e.target.value)} />
+      {children}
+    </>
+  );
+}
+```
+
+Typing in the input, then navigating from `/register` to `/login`, **retains the input value**. This is expected behavior—**shared layouts aren’t remounted**.
+
+---
+
+### **When You Need State Reset**
+
+In some cases, you **want a fresh render** on every navigation—for example:
+
+* Resetting input fields
+* Triggering animations
+* Rerunning `useEffect` logic on route change
+
+This is where **`template.tsx`** files are useful.
+
+---
+
+### **How to Use Templates**
+
+1. Rename `layout.tsx` → `template.tsx` inside your route group.
+
+```bash
+app/
+└── (auth)/
+    └── template.tsx
+```
+
+2. `template.tsx` works just like a layout but **remounts** on each route change.
+
+```tsx
+'use client';
+import { useState } from 'react';
+
+export default function AuthTemplate({ children }: { children: React.ReactNode }) {
+  const [input, setInput] = useState('');
+
+  return (
+    <>
+      <input value={input} onChange={(e) => setInput(e.target.value)} />
+      {children}
+    </>
+  );
+}
+```
+
+3. Navigate from `/register` → `/login` → `/forgot-password`, and the input field will **reset** each time.
+
+---
+
+### **Template vs Layout**
+
+| Feature                      | `layout.tsx` | `template.tsx`           |
+| ---------------------------- | ------------ | ------------------------ |
+| Shared UI                    | ✅            | ✅                        |
+| State persists across routes | ✅            | ❌                        |
+| DOM elements reused          | ✅            | ❌                        |
+| `useEffect` re-runs on nav   | ❌            | ✅                        |
+| Good for animations / resets | ❌            | ✅                        |
+| Common default for shared UI | ✅            | ❌ (only use when needed) |
+
+> You can use both `layout.tsx` and `template.tsx` **together**. In this case, the layout wraps the page, and the template renders fresh content per route.
 
 ---
