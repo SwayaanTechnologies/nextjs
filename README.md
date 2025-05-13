@@ -35,6 +35,7 @@
 * [**Intercepting Routes**](#intercepting-routes)
 * [**Parallel Intercepting Routes**](#parallel-intercepting-routes)
 * [**Route Handlers**](#route-handlers)
+* [**GET Requests**](#get-requests)
 
 ## **Introduction**
 
@@ -3642,5 +3643,92 @@ Now:
 
 * `/profile` renders your page.
 * `/profile/api` handles API requests.
+
+---
+
+## **GET Requests**
+
+In this section, we'll explore how to handle `GET` requests using **Route Handlers** in the **App Router**. Rather than building a UI, we’ll use **Thunder Client**, a REST API client for VS Code, to test our endpoints.
+
+* [**Setup Install Thunder Client**](#setup-install-thunder-client)
+* [**Step 1 Create Sample Data**](#step-1-create-sample-data)
+* [**Step 2 Create the GET Route Handler**](#step-2-create-the-get-route-handler)
+* [**Step 3 Test with Thunder Client**](#step-3-test-with-thunder-client)
+
+---
+
+### **Setup Install Thunder Client**
+
+Install the [Thunder Client](https://marketplace.visualstudio.com/items?itemName=rangav.vscode-thunder-client) VS Code extension if you haven't already. It allows you to quickly send requests to your local server for testing API endpoints.
+
+---
+
+### **Step 1 Create Sample Data**
+
+Create a folder for storing comments:
+
+```bash
+mkdir app/comments
+touch app/comments/data.ts
+```
+
+Add some sample data in `data.ts`:
+
+```ts
+// app/comments/data.ts
+export const comments = [
+  { id: 1, text: "First comment" },
+  { id: 2, text: "Second comment" },
+  { id: 3, text: "Third comment" },
+];
+```
+
+> These comments are stored in memory. They will reset every time the app restarts or reloads—which is fine for learning purposes.
+
+---
+
+### **Step 2 Create the GET Route Handler**
+
+Create the route handler file:
+
+```bash
+touch app/comments/route.ts
+```
+
+Then define the `GET` handler:
+
+```ts
+// app/comments/route.ts
+import { comments } from "./data";
+
+export async function GET() {
+  return Response.json(comments);
+}
+```
+
+> `Response.json(data)` is a shortcut for returning a JSON-formatted HTTP response in Next.js.
+
+---
+
+### **Step 3 Test with Thunder Client**
+
+1. Open the Thunder Client tab in VS Code.
+2. Click **New Request**.
+3. Set method to `GET`.
+4. Enter the URL: `http://localhost:3000/comments`.
+5. Click **Send**.
+
+You should see:
+
+```json
+[
+  { "id": 1, "text": "First comment" },
+  { "id": 2, "text": "Second comment" },
+  { "id": 3, "text": "Third comment" }
+]
+```
+
+>  Response status: **200 OK**
+>  Your GET route handler is working as expected!
 
 ---
