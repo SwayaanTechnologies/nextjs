@@ -26,6 +26,7 @@
 * [**Templates**](#templates)
 * [**Loading UI**](#loading-ui)
 * [**Error Handling**](#error-handling)
+* [**Recovering from Errors**](#recovering-from-errors)
 
 ## **Introduction**
 
@@ -2457,5 +2458,110 @@ layout.tsx
 ```
 
 Each file provides **isolation and control** for a better user experience and developer ergonomics.
+
+---
+
+## **Recovering from Errors**
+
+In the previous section, we learned how to catch and display runtime errors using `error.tsx`. But not all errors are fatal — some might be **temporary** (like a failed fetch), and can be retried. Let’s improve our error handling with **error recovery**.
+
+* [**The `reset` Function**](#the-reset-function)
+* [**Problem Retry Keeps Failing**](#problem-retry-keeps-failing)
+* [**Solution Trigger Server-Side Recovery**](#solution-trigger-server-side-recovery)
+* [**Why Use `startTransition`?**](#why-use-starttransition?)
+
+---
+
+### **The `reset` Function**
+
+The `error.tsx` component automatically receives a `reset` function in addition to the `error` object.
+
+**Basic Retry Example**
+
+```tsx
+"use client";
+
+type ErrorProps = {
+  error: Error;
+  reset: () => void;
+};
+
+export default function ErrorBoundary({ error, reset }: ErrorProps) {
+  return (
+    <div className="text-red-600 p-4">
+      <p>{error.message}</p>
+      <button onClick={reset} className="mt-2 text-blue-600 underline">
+        Try again
+      </button>
+    </div>
+  );
+}
+```
+
+This enables **client-side recovery**. However, this may not be enough when the data fetching logic resides on the server (like in Server Components).
+
+---
+
+### **Problem Retry Keeps Failing**
+
+If you simulate an error that returns randomly, hitting the "Try Again" button repeatedly will still show the error most of the time. Why?
+
+> Because `reset()` only retries the rendering **on the client** — without re-fetching server data.
+
+---
+
+### **Solution Trigger Server-Side Recovery**
+
+To re-fetch data on retry, we need to force a **server-side render** by refreshing the route.
+
+**Updated Error Component with Server Recovery**
+
+```tsx
+"use client";
+
+import { useRouter } from "next/navigation";
+import { startTransition } from "react";
+
+type ErrorProps = {
+  error: Error;
+  reset: () => void;
+};
+
+export default function ErrorBoundary({ error, reset }: ErrorProps) {
+  const router = useRouter();
+
+  const handleRetry = () => {
+    startTransition(() => {
+      router.refresh();
+      reset();
+    });
+  };
+
+  return (
+    <div className="text-red-600 p-4">
+      <p>{error.message}</p>
+      <button onClick={handleRetry} className="mt-2 text-blue-600 underline">
+        Try again
+      </button>
+    </div>
+  );
+}
+```
+
+---
+
+### **Why Use `startTransition`?**
+
+* **`router.refresh()`** reloads the data for the current route segment (server-side).
+* **`startTransition()`** defers the refresh to the next render cycle to avoid blocking UI updates.
+* **`reset()`** re-attempts the error boundary rendering.
+
+This combination ensures a **complete retry cycle**, both server and client-side.
+
+**Testing It**
+
+1. Refresh the page until you see the simulated error.
+2. Click **Try Again**.
+3. If the random number check passes, the component will recover and render successfully.
 
 ---
