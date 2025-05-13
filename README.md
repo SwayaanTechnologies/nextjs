@@ -19,6 +19,7 @@
 * [**Nested Layouts**](#nested-layouts)
 * [**Multiple Root Layouts**](#multiple-root-layouts)
 * [**Routing Metadata**](#routing-metadata)
+* [**`title` Metadata**](#title-metadata)
 
 ## **Introduction**
 
@@ -1705,5 +1706,105 @@ export default function Page() {
 ```
 
 - Now the page renders with metadata **and** interactive logic — no errors.
+
+---
+
+## **`title` Metadata**
+
+The `title` field in metadata is essential for setting the browser tab title and optimizing search engine visibility. Next.js supports **two ways** to define it:
+
+* [**Simple Title**](#simple-title)
+* [**Advanced Title**](#advanced-title)
+
+### **Simple Title**
+
+Set a title using a plain string:
+
+```tsx
+// page.tsx
+export const metadata = {
+  title: "About | Code Evolution",
+};
+```
+
+> This directly renders the string into the `<title>` tag of the HTML document.
+
+---
+
+### **Advanced Title**
+
+For more control, define `title` as an **object** with optional fields:
+
+```tsx
+import type { Metadata } from 'next';
+
+export const metadata: Metadata = {
+  title: {
+    default: "Next.js Tutorial – Code Evolution",
+    template: "%s | Code Evolution",
+  },
+};
+```
+
+Let’s break down the options:
+
+* [**`default`**](#default)
+* [**`template`**](#template)
+* [**`absolute`**](#absolute)
+
+#### **`default`**
+
+* Acts as a **fallback** for any child routes that don’t specify their own title.
+* Useful for global defaults.
+
+```tsx
+title: {
+  default: "Next.js Tutorial – Code Evolution",
+}
+```
+
+#### **`template`**
+
+* Formats child page titles using a pattern.
+* `%s` is replaced by the child route’s title.
+
+```tsx
+title: {
+  template: "%s | Code Evolution"
+}
+```
+
+Example:
+If a page’s metadata sets `title: "Blog"`, the final title becomes:
+
+```text
+Blog | Code Evolution
+```
+
+#### **`absolute`**
+
+* Use this to **bypass inherited title templates** from parent segments.
+* Gives you a completely independent title.
+
+```tsx
+export const metadata = {
+  title: {
+    absolute: "Blog",
+  },
+};
+```
+
+Result: The title will simply be `Blog`, ignoring any template logic from higher up in the route tree.
+
+---
+
+### **Summary Choosing the Right Title Strategy**
+
+| Use Case                      | Approach                        |
+| ----------------------------- | ------------------------------- |
+| Simple, static pages          | `title: "Static Title"`         |
+| Consistent formatting needed  | `title.template` + child titles |
+| Break template inheritance    | `title.absolute`                |
+| Global fallback for all pages | `title.default`                 |
 
 ---
