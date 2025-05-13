@@ -17,6 +17,7 @@
 * [**Route Groups**](#route-groups)
 * [**Layouts**](#layouts)
 * [**Nested Layouts**](#nested-layouts)
+* [**Multiple Root Layouts**](#multiple-root-layouts)
 
 ## **Introduction**
 
@@ -1441,3 +1442,104 @@ Let’s walk through what happens when you visit different routes:
 - The `products/[productId]/layout.tsx` file only applies to dynamic product routes — it adds the `Featured Products` heading above the main page content.
 
 ---
+
+## **Multiple Root Layouts**
+
+By default, your Next.js app has **one root layout** (`layout.tsx` in the `app/` folder), which wraps every page in your application. But what if different parts of your app require **different layouts**?
+
+For example:
+
+* Marketing pages (e.g., `/revenue`, `/customers`) need a **header and footer**
+* Authentication pages (e.g., `/login`, `/register`) should be **clean and minimal**
+
+This is where **multiple root layouts** — powered by **route groups** — come in.
+
+* [**Set Up Multiple Root Layouts**](#set-up-multiple-root-layouts)
+
+---
+
+### **Set Up Multiple Root Layouts**
+
+We’ll organize our app using **route groups**, which let us apply layouts without affecting URLs.
+
+* [**Create Route Groups**](#create-route-groups)
+* [**Create Layouts for Each Route Group**](#create-layouts-for-each-route-group)
+* [**Move Pages into Route Groups**](#move-pages-into-route-groups)
+
+#### **Create Route Groups**
+
+In your `app/` folder:
+
+```
+app/
+├── (marketing)/           ← Route group for marketing pages
+│   ├── layout.tsx         ← Marketing layout (with header & footer)
+│   ├── page.tsx           ← Home page
+│   ├── revenue/
+│   └── customers/
+├── (auth)/                ← Route group for auth pages
+│   ├── layout.tsx         ← Auth layout (footer only)
+│   ├── login/
+│   └── register/
+```
+
+> Folders wrapped in `()` denote **route groups** — organizational only, ignored in the URL path.
+
+---
+
+#### **Create Layouts for Each Route Group**
+
+**`(marketing)/layout.tsx`**
+
+```tsx
+// app/(marketing)/layout.tsx
+export default function MarketingLayout({ children }: { children: React.ReactNode }) {
+  return (
+    <>
+      <header style={{ backgroundColor: "lightblue", padding: "1rem" }}>
+        <p>Header</p>
+      </header>
+      {children}
+      <footer style={{ backgroundColor: "ghostwhite", padding: "1rem" }}>
+        <p>Footer</p>
+      </footer>
+    </>
+  );
+}
+```
+
+**`(auth)/layout.tsx`**
+
+```tsx
+// app/(auth)/layout.tsx
+export default function AuthLayout({ children }: { children: React.ReactNode }) {
+  return (
+    <>
+      {children}
+      <footer style={{ backgroundColor: "ghostwhite", padding: "1rem" }}>
+        <p>Footer</p>
+      </footer>
+    </>
+  );
+}
+```
+
+---
+
+#### **Move Pages into Route Groups**
+
+* Move `login/` and `register/` into the `(auth)/` folder
+* Move `revenue/`, `customers/`, and the main `page.tsx` into the `(marketing)/` folder
+
+> Every page now lives **inside a route group**, each with its **own root layout**.
+
+**What Happens Now?**
+
+Despite changing the folder structure...
+
+* `/login` and `/register` still work — now using the **auth layout** (minimal)
+* `/revenue`, `/customers`, and `/` now use the **marketing layout** (with header & footer)
+* **URLs stay the same** — because route group names are not part of the path
+
+---
+
