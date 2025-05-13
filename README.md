@@ -30,6 +30,7 @@
 * [**Handling Errors in Nested Routes**](#handling-errors-in-nested-routes)
 * [**Handling Errors in Layouts**](#handling-errors-in-layouts)
 * [**Handling Global Errors**](#handling-global-errors)
+* [**Parallel Routes**](#parallel-routes)
 
 ## **Introduction**
 
@@ -2845,5 +2846,169 @@ npm start
 
 * Now simulate the error using the button from the `ErrorWrapper`.
 * You should see your **custom global error UI** with the message and a refresh button.
+
+---
+
+## **Parallel Routes**
+
+Parallel routes allow us to render multiple parts of a page simultaneously, improving modularity and user experience. They are especially useful for **complex dashboards**, **split view interfaces**, and **multi-pane layouts** where you need to manage multiple independent sections at once.
+
+* [**What Are Parallel Routes?**](#what-are-parallel-routes?)
+* [**Setting Up Parallel Routes**](#setting-up-parallel-routes)
+* [**Key Features of Parallel Routes**](#key-features-of-parallel-routes)
+
+### **What Are Parallel Routes?**
+
+Parallel routes in Next.js are a way to render multiple UI sections (like a complex dashboard) simultaneously within the same layout. These sections are rendered independently and can have their own loading and error states. Let's walk through the process of setting up parallel routes in your Next.js application.
+
+---
+
+### **Setting Up Parallel Routes**
+
+We will use the **slots** feature in Next.js to create parallel routes. Slots allow us to break down the content into independent, reusable pieces within the same layout.
+
+* [**Step 1 Create a Complex Dashboard Layout**](#step-1-create-a-complex-dashboard-layout)
+* [**Step 2 Create Individual Slots**](#step-2-create-individual-slots)
+* [**Step 3 Update Layout to Include Slots**](#step-3-update-layout-to-include-slots)
+* [**Step 4 Add a Card Component**](#step-4-add-a-card-component)
+* [**Step 5 View the Dashboard**](#step-5-view-the-dashboard)
+
+#### **Step 1 Create a Complex Dashboard Layout**
+
+In your `app` directory, create a new folder for the complex dashboard:
+
+```
+app/complex-dashboard/layout.tsx
+```
+
+Inside the `complex-dashboard` folder, define the layout that will display three sections: **User Analytics**, **Revenue Metrics**, and **Notifications**.
+
+#### **Step 2 Create Individual Slots**
+
+Inside the `complex-dashboard` folder, create separate subfolders for each of the sections:
+
+**1. User Analytics**:
+
+`app/complex-dashboard/@users/page.tsx`
+
+```tsx
+export default function UserAnalytics() {
+  return <div>User Analytics</div>;
+}
+```
+
+**2. Revenue Metrics**:
+
+`app/complex-dashboard/@revenue/page.tsx`
+
+```tsx
+export default function RevenueMetrics() {
+  return <div>Revenue Metrics</div>;
+}
+```
+
+**3. Notifications**:
+
+`app/complex-dashboard/@notifications/page.tsx`
+
+```tsx
+export default function Notifications() {
+  return <div>Notifications</div>;
+}
+```
+
+#### **Step 3 Update Layout to Include Slots**
+
+Now, update the `layout.tsx` file for the **complex-dashboard** to make use of these slots. You’ll reference the slots by using the folder naming convention with the `@` symbol, and each slot will be passed as props automatically.
+
+**`app/complex-dashboard/layout.tsx`**
+
+```tsx
+export default function ComplexDashboard({
+  users,
+  revenue,
+  notifications,
+}: {
+  users: React.ReactNode;
+  revenue: React.ReactNode;
+  notifications: React.ReactNode;
+}) {
+  return (
+    <div>
+      <h1>Complex Dashboard</h1>
+      <div style={{ display: 'flex', gap: '20px' }}>
+        <div>{users}</div>
+        <div>{revenue}</div>
+        <div>{notifications}</div>
+      </div>
+    </div>
+  );
+}
+```
+
+This layout will render the **User Analytics**, **Revenue Metrics**, and **Notifications** sections as separate components.
+
+#### **Step 4 Add a Card Component**
+
+To make the UI more appealing, create a reusable **Card component** to wrap each section.
+
+**`app/components/Card.tsx`**
+
+```tsx
+export default function Card({ children }: { children: React.ReactNode }) {
+  return (
+    <div style={{ padding: '20px', border: '1px solid #ccc', borderRadius: '8px' }}>
+      {children}
+    </div>
+  );
+}
+```
+
+Now, wrap each slot in the `Card` component in the `layout.tsx`:
+
+```tsx
+import Card from '../components/Card';
+
+export default function ComplexDashboard({
+  users,
+  revenue,
+  notifications,
+}: {
+  users: React.ReactNode;
+  revenue: React.ReactNode;
+  notifications: React.ReactNode;
+}) {
+  return (
+    <div>
+      <h1>Complex Dashboard</h1>
+      <div style={{ display: 'flex', gap: '20px' }}>
+        <Card>{users}</Card>
+        <Card>{revenue}</Card>
+        <Card>{notifications}</Card>
+      </div>
+    </div>
+  );
+}
+```
+
+#### **Step 5 View the Dashboard**
+
+When you visit `/complex-dashboard`, you will see your dashboard with three sections: **User Analytics**, **Revenue Metrics**, and **Notifications**.
+
+---
+
+### **Key Features of Parallel Routes**
+
+**1. Independent Route Handling**:
+
+- Each section (slot) can have its own **loading state**, **error state**, and **content**. This is particularly helpful in cases where different sections of the page take varying times to load or face different errors.
+
+- Example: If **User Analytics** takes longer to load, the other sections like **Revenue Metrics** can remain interactive without showing a loading spinner.
+
+**2. Subnavigation**:
+
+- Parallel routes allow for **independent subnavigation** within each section. For example, users can filter data in **Revenue Metrics** while still being able to view notifications or user analytics. Each section can handle its own state and navigation without affecting others.
+
+- Example: In the **Notifications** section, users can switch between **default** and **archived** views, and the URL will update to reflect the change.
 
 ---
