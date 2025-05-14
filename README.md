@@ -71,6 +71,7 @@
 * [**Loading and Error States**](#loading-and-error-states)
 * [**Sequential Data Fetching**](#sequential-data-fetching)
 * [**Parallel Data Fetching**](#parallel-data-fetching)
+* [**Fetching from a Database**](#fetching-from-a-database)
 
 ## **Introduction**
 
@@ -7219,5 +7220,198 @@ export default function UserProfilePage({ params }: { params: { id: string } }) 
   );
 }
 ```
+
+---
+
+
+## **Fetching from a Database**
+
+Now that we've learned how to fetch data from external APIs, it's time to fetch **directly from a database** using **Next.js Server Components**. This is foundational for understanding **data mutations** and **server actions** (Using Prisma + SQLite).
+
+* [**Why Fetch from a Database in Server Components**](#why-fetch-from-a-database-in-server-components)
+* [**Step-by-Step Setup for Fetching From a Database**](#step-by-step-setup-for-fetching-from-a-database)
+* [**Create the Prisma Client Wrapper**](#create-the-prisma-client-wrapper)
+* [**Create the Server Component to Fetch Data**](#create-the-server-component-to-fetch-data)
+* [**View in Browser**](#view-in-browser)
+
+---
+
+### **Why Fetch from a Database in Server Components**
+
+1. **Direct server access**: Server components can interact directly with the database—no API layer needed.
+2. **Security**: You avoid exposing sensitive logic or credentials to the client.
+
+---
+
+### **Step-by-Step Setup for Fetching From a Database**
+
+* [**Install Prisma CLI**](#install-prisma-cli)
+* [**Initialize Prisma with SQLite**](#initialize-prisma-with-sqlite)
+* [**Update the Prisma Schema**](#update-the-prisma-schema)
+* [**Run Migration**](#run-migration)
+
+---
+
+#### **Install Prisma CLI**
+
+```bash
+npm install prisma --save-dev
+```
+
+#### **Initialize Prisma with SQLite**
+
+```bash
+npx prisma init --datasource-provider sqlite
+```
+
+This creates a `/prisma` folder with a `schema.prisma` file.
+
+#### **Update the Prisma Schema**
+
+In `prisma/schema.prisma`, update the datasource:
+
+```prisma
+datasource db {
+  provider = "sqlite"
+  url      = "file:./dev.db"
+}
+```
+
+Then define a simple `Product` model:
+
+```prisma
+model Product {
+  id          Int     @id @default(autoincrement())
+  title       String
+  price       Float
+  description String?
+}
+```
+
+> Also, add `dev.db` to your `.gitignore`.
+
+---
+
+#### **Run Migration**
+
+```bash
+npx prisma migrate dev --name init
+```
+
+This command will:
+
+* Create the `dev.db` database file.
+* Create the migration and apply it.
+* Install and generate the Prisma Client.
+
+---
+
+### **Create the Prisma Client Wrapper**
+
+In the `src` folder, create a file: `src/prisma/db.ts`
+
+```ts
+import { PrismaClient } from '@prisma/client';
+
+const prisma = new PrismaClient();
+
+// Simulated delay (only for demo)
+const delay = (ms: number) => new Promise(res => setTimeout(res, ms));
+
+// Seed sample products
+export async function seedProducts() {
+  const count = await prisma.product.count();
+  if (count === 0) {
+    await prisma.product.createMany({
+      data: [
+        { title: "Product 1", price: 9.99, description: "Description for product 1" },
+        { title: "Product 2", price: 19.99, description: "Description for product 2" },
+        { title: "Product 3", price: 29.99, description: "Description for product 3" }
+      ]
+    });
+  }
+}
+
+// CRUD operations
+export async function getProducts() {
+  await delay(1500); // Simulate network latency
+  return prisma.product.findMany();
+}
+
+export async function getProduct(id: number) {
+  await delay(1500);
+  return prisma.product.findUnique({ where: { id } });
+}
+
+export async function addProduct(data: { title: string; price: number; description?: string }) {
+  await delay(1500);
+  return prisma.product.create({ data });
+}
+
+export async function updateProduct(id: number, data: { title?: string; price?: number; description?: string }) {
+  await delay(1500);
+  return prisma.product.update({ where: { id }, data });
+}
+
+export async function deleteProduct(id: number) {
+  await delay(1500);
+  return prisma.product.delete({ where: { id } });
+}
+```
+
+---
+
+### **Create the Server Component to Fetch Data**
+
+Create a new folder:
+
+```
+/app/products-db
+```
+
+Add a `page.tsx` file inside it.
+
+```tsx
+// app/products-db/page.tsx
+import { getProducts } from '@/src/prisma/db';
+
+type Product = {
+  id: number;
+  title: string;
+  price: number;
+  description?: string;
+};
+
+export default async function ProductsDBPage() {
+  const products: Product[] = await getProducts();
+
+  return (
+    <div className="p-6">
+      <h1 className="text-xl font-bold mb-4">Products from Database</h1>
+      <ul className="space-y-4">
+        {products.map(product => (
+          <li key={product.id} className="border p-4 rounded-md shadow">
+            <h2 className="text-lg font-semibold">{product.title}</h2>
+            <p className="text-gray-600">{product.description}</p>
+            <span className="text-green-600 font-medium">${product.price.toFixed(2)}</span>
+          </li>
+        ))}
+      </ul>
+    </div>
+  );
+}
+```
+
+---
+
+### **View in Browser**
+
+Run your dev server and navigate to:
+
+```
+http://localhost:3000/products-db
+```
+
+You should see 3 products loaded directly from your **SQLite** database!
 
 ---
