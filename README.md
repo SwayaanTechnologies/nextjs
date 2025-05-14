@@ -90,6 +90,7 @@
 * [**Protecting Routes**](#protecting-routes)
 * [**Reading Session and User Data**](#reading-session-and-user-data)
 * [**Role-Based Access Control**](#role-based-access-control)
+* [**Customizing Clerk Components**](#customizing-clerk-components)
 
 ## **Introduction**
 
@@ -9486,5 +9487,211 @@ export default async function AdminPage() {
 * Try visiting `/admin` → will redirect to `/`.
 * From your admin account, assign them the `admin` role.
 * Retry `/admin` with the new account → access granted!
+
+---
+
+## **Customizing Clerk Components**
+
+Clerk provides highly customizable components for authentication flows. Let's walk through how you can enhance the **sign-in** and **sign-up** experience in your app.
+
+* [**Step 1 Add Sign-Up Button**](#step-1-add-sign-up-button)
+* [**Step 2 Customize Button Styles**](#step-2-customize-button-styles)
+* [**Step 3 Use Dedicated Pages for Sign-In and Sign-Up**](#step-3-use-dedicated-pages-for-sign-in-and-sign-up)
+* [**Step 4 Update Middleware to Handle Routes**](#step-4-update-middleware-to-handle-routes)
+* [**Step 5 Update `.env` with URLs**](#step-5-update-.env-with-urls)
+* [**Step 6 Handle Redirects After Authentication**](#step-6-handle-redirects-after-authentication)
+
+---
+
+### **Step 1 Add Sign-Up Button**
+
+You can add a **dedicated sign-up button** to your navbar. This eliminates the need for a modal and takes users directly to the sign-up flow.
+
+1. Import the `SignUpButton` component from Clerk in `navigation.tsx`:
+
+```tsx
+// navigation.tsx
+import { SignUpButton } from '@clerk/nextjs';
+
+export default function Navbar() {
+  return (
+    <nav>
+      <button>Sign In</button>
+      <SignUpButton>Sign Up</SignUpButton>
+    </nav>
+  );
+}
+```
+
+This will add a sign-up button right below your sign-in button. When clicked, it triggers the sign-up modal.
+
+---
+
+### **Step 2 Customize Button Styles**
+
+You can easily **customize the appearance** of the Clerk sign-in and sign-up buttons using your own CSS.
+
+1. Modify the button styles by changing the `SignInButton` and `SignUpButton` components to regular buttons:
+
+```tsx
+// navigation.tsx
+import { SignUpButton, SignInButton } from '@clerk/nextjs';
+
+export default function Navbar() {
+  return (
+    <nav>
+      <SignInButton>
+        <button className="btn-signin">Sign In</button>
+      </SignInButton>
+      <SignUpButton>
+        <button className="btn-signup">Sign Up</button>
+      </SignUpButton>
+    </nav>
+  );
+}
+```
+
+2. Add Tailwind CSS for the custom styling:
+
+```css
+/* styles.css */
+.btn-signin {
+  background-color: #007bff;
+  color: white;
+  padding: 10px 20px;
+  border-radius: 5px;
+}
+
+.btn-signup {
+  background-color: #28a745;
+  color: white;
+  padding: 10px 20px;
+  border-radius: 5px;
+}
+```
+
+Now both buttons will use your custom styles.
+
+---
+
+### **Step 3 Use Dedicated Pages for Sign-In and Sign-Up**
+
+Instead of modals, you can create **dedicated pages** for sign-in and sign-up.
+
+1. In your app directory, create a new folder for **sign-up**:
+
+```bash
+mkdir app/signup
+touch app/signup/[...signup].tsx
+```
+
+2. Add the `SignUp` component in `signup/[...signup].tsx`:
+
+```tsx
+// app/signup/[...signup].tsx
+import { SignUp } from '@clerk/nextjs';
+
+export default function SignUpPage() {
+  return (
+    <div className="flex justify-center items-center p-8">
+      <SignUp />
+    </div>
+  );
+}
+```
+
+3. Similarly, create a **sign-in** folder:
+
+```bash
+mkdir app/signin
+touch app/signin/[...signin].tsx
+```
+
+4. Add the `SignIn` component in `signin/[...signin].tsx`:
+
+```tsx
+// app/signin/[...signin].tsx
+import { SignIn } from '@clerk/nextjs';
+
+export default function SignInPage() {
+  return (
+    <div className="flex justify-center items-center p-8">
+      <SignIn />
+    </div>
+  );
+}
+```
+
+---
+
+### **Step 4 Update Middleware to Handle Routes**
+
+Ensure both the **sign-in** and **sign-up** routes are publicly accessible in your `middleware.ts` file:
+
+```ts
+// middleware.ts
+import { auth } from "@clerk/nextjs/server";
+import { NextResponse } from "next/server";
+
+export default function middleware(req: Request) {
+  if (req.nextUrl.pathname.startsWith('/signin') || req.nextUrl.pathname.startsWith('/signup')) {
+    return NextResponse.next();
+  }
+
+  return auth(req);
+}
+```
+
+---
+
+### **Step 5 Update `.env` with URLs**
+
+Add two new environment variables for Clerk’s **sign-in** and **sign-up** URLs:
+
+```env
+NEXT_PUBLIC_CLERK_SIGNIN_URL=/signin
+NEXT_PUBLIC_CLERK_SIGNUP_URL=/signup
+```
+
+Restart your development server:
+
+```bash
+npm run dev
+```
+
+---
+
+### **Step 6 Handle Redirects After Authentication**
+
+Clerk remembers where users came from via the `redirect_url` query parameter. You can also customize where users are redirected after sign-in or sign-up.
+
+1. Create an `About` page:
+
+```tsx
+// app/about.tsx
+export default function About() {
+  return <h1>About Page</h1>;
+}
+```
+
+2. By default, if a protected page is visited without authentication, Clerk will redirect to `/signin`. The `redirect_url` query parameter will be appended to the URL.
+
+3. You can set custom **fallback redirects** using environment variables:
+
+```env
+NEXT_PUBLIC_CLERK_SIGNUP_FALLBACK_REDIRECT_URL=/welcome
+NEXT_PUBLIC_CLERK_SIGNIN_FALLBACK_REDIRECT_URL=/dashboard
+```
+
+These variables specify the URLs users are redirected to after signing up or signing in.
+
+4. Alternatively, use **force redirects**:
+
+```env
+NEXT_PUBLIC_CLERK_SIGNUP_FORCE_REDIRECT_URL=/onboarding
+NEXT_PUBLIC_CLERK_SIGNIN_FORCE_REDIRECT_URL=/dashboard
+```
+
+This will always redirect users to `/onboarding` after sign-up and `/dashboard` after sign-in, regardless of where they came from.
 
 ---
