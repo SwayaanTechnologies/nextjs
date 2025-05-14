@@ -80,6 +80,7 @@
 * [**`useFormStatus` vs `useActionState`**](#useformstatus-vs-useactionstate)
 * [**Update Server Action**](#update-server-action)
 * [**Delete Server Action**](#delete-server-action)
+* [**Optimistic Updates with `useOptimistic` Hook**](#optimistic-updates-with-useoptimistic-hook)
 
 ## **Introduction**
 
@@ -8275,5 +8276,146 @@ The call to `revalidatePath("/products-db")` ensures the UI reflects changes **i
 3. It should be removed from the list immediately after the request completes.
 
 > You may still see a 1.5-second delay due to artificial latency for demonstration purposes.
+
+---
+
+## **Optimistic Updates with `useOptimistic` Hook**
+
+When performing asynchronous operations (like deleting a product), we can make our UI feel more responsive by applying **optimistic updates**. This means **showing the expected result instantly**, before waiting for the server to respond.
+
+* [**Why Use Optimistic Updates**](#why-use-optimistic-updates)
+* [**Setup Optimistic Deletion with `useOptimistic`**](#setup-optimistic-deletion-with-useoptimistic)
+
+---
+
+### **Why Use Optimistic Updates**
+
+* Avoids visual delays.
+* Enhances perceived performance.
+* Keeps users engaged and confident.
+
+---
+
+### **Setup Optimistic Deletion with `useOptimistic`**
+
+Let’s apply `useOptimistic` to **instantly remove a product from the list** while the deletion happens in the background.
+
+---
+
+#### **Split into Client & Server Components**
+
+* Create a new **Client Component**: `product-detail.tsx`
+* Keep `page.tsx` as a **Server Component** for data fetching only.
+
+* [**Client Component – `product-detail.tsx`**](#client-component--product-detailtsx)
+* [**Server Component – `page.tsx`**](#server-component--pagetsx)
+* [**How `useOptimistic` Works**](#how-useoptimistic-works)
+* [**Result**](#result)
+* [**Folder Structure Recap**](#folder-structure-recap)
+
+---
+
+#### **Client Component – `product-detail.tsx`**
+
+```tsx
+"use client";
+
+import { useOptimistic } from "react";
+import { removeProduct } from "@/app/actions/products";
+import { Product } from "@/lib/types"; // Assuming you have a Product type
+
+type Props = {
+  products: Product[];
+};
+
+export default function ProductDetail({ products }: Props) {
+  const [optimisticProducts, setOptimisticProducts] = useOptimistic(
+    products,
+    (currentProducts: Product[], deletedId: number) =>
+      currentProducts.filter((p) => p.id !== deletedId)
+  );
+
+  async function handleDelete(id: number) {
+    setOptimisticProducts(id); // Immediate UI update
+    await removeProduct(id);   // Actual server action
+  }
+
+  return (
+    <div>
+      {optimisticProducts.map((product) => (
+        <form key={product.id} action={() => handleDelete(product.id)}>
+          <div className="flex justify-between items-center mb-2">
+            <span>{product.name} - ${product.price}</span>
+            <button
+              type="submit"
+              className="bg-red-500 hover:bg-red-600 text-white px-3 py-1 rounded"
+            >
+              Delete
+            </button>
+          </div>
+        </form>
+      ))}
+    </div>
+  );
+}
+```
+
+---
+
+#### **Server Component – `page.tsx`**
+
+```tsx
+import { getProducts } from "@/lib/db";
+import ProductDetail from "./product-detail";
+
+export default async function Page() {
+  const products = await getProducts();
+
+  return (
+    <main className="p-4">
+      <h1 className="text-2xl mb-4">Product List</h1>
+      <ProductDetail products={products} />
+    </main>
+  );
+}
+```
+
+---
+
+#### **How `useOptimistic` Works**
+
+```tsx
+const [optimisticState, setOptimisticState] = useOptimistic(
+  actualState,
+  (currentState, updatePayload) => newOptimisticState
+);
+```
+
+* `actualState`: Initial data (e.g., fetched products)
+* `setOptimisticState(payload)`: Triggers the optimistic update
+* `updatePayload`: Passed to your custom update logic
+* `optimisticState`: Shown to users immediately
+
+---
+
+#### **Result**
+
+1. User clicks **Delete**.
+2. Product disappears **instantly** from UI.
+3. Server action completes in the background (e.g., after 1.5s).
+4. Data is eventually revalidated using `revalidatePath()`.
+
+> Optimistic UI greatly improves UX without waiting for slow API round-trips.
+
+---
+
+#### **Folder Structure Recap**
+
+```
+app/
+├── products-db/
+│   ├── page.tsx           → Server Component (fetches data)
+│   ├── product-detail.tsx → Client Component (handles mutation/UI)
+```
 
 ---
