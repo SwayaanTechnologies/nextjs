@@ -49,6 +49,7 @@
 * [**Rendering**](#rendering)
 * [**Client-side Rendering**](#client-side-rendering)
 * [**Server-side Rendering**](#server-side-rendering)
+* [**Suspense SSR**](#suspense-ssr)
 
 ## **Introduction**
 
@@ -4832,5 +4833,60 @@ While SSR improves SEO and performance over CSR, it introduces several challenge
 3. **Waterfall Problem**: React hydrates the component tree in a single pass, meaning it must complete the entire hydration process before any part of the page becomes interactive. This leads to an all-or-nothing process where the entire page has to load, and the JavaScript must be executed, before any interaction can happen.
 
 These challenges can lead to inefficient performance, especially when parts of the app are slower than others, which is common in real-world applications. This led the React team to develop an improved SSR architecture, which we will explore next.
+
+---
+
+## **Suspense SSR**
+
+In our exploration of **Server-side Rendering (SSR)**, we identified several performance challenges:
+
+1. We can't start rendering HTML until all data is fetched on the server.
+2. We need to wait for all JavaScript to load before hydration can begin.
+3. Every component needs to be hydrated before any of them become interactive.
+
+These issues created an **All or Nothing** waterfall effect, which is inefficient, particularly when some parts of your application are slower than others. To address these performance drawbacks, React 18 introduced the **Suspense SSR** architecture. This new architecture unlocks two game-changing features:
+
+* **HTML Streaming on the Server**
+* **Selective Hydration on the Client**
+
+---
+
+### **HTML Streaming with Suspense**
+
+Traditionally, SSR involved rendering the entire HTML on the server and sending it to the client all at once. React 18 improves this by allowing HTML streaming. When you wrap your main content area in a **Suspense** component, you're telling React to **stream** the content. React will display a loading spinner for that section while it continues working on the rest of the page.
+
+This feature allows users to see content even before React has finished loading the necessary JavaScript, which solves our first problem — you don't need to fetch everything before you can show anything. If a particular section is slow to load, it can be integrated into the stream once it's ready, without holding up the rest of the page.
+
+---
+
+### **Selective Hydration**
+
+While HTML streaming improves the delivery of content, we still face a challenge: we can't start hydration until all the JavaScript for the main section has been loaded. To address this, React 18 introduces **Selective Hydration**.
+
+With selective hydration, you can hydrate parts of the page independently, even before the rest of the HTML and JavaScript has fully loaded. React will prioritize hydration based on which components the user is trying to interact with. For example, if a user clicks on the main content area while the side navigation is still waiting to be hydrated, React will immediately switch gears to hydrate the clicked component, making it interactive right away. The side navigation can then be hydrated later.
+
+This approach solves the **All or Nothing** hydration problem, enabling users to interact with other parts of the page — like the header or navigation — even before the main content is fully interactive.
+
+---
+
+### **Benefits of Suspense SSR**
+
+The introduction of **Suspense SSR** addresses the three major drawbacks of traditional SSR:
+
+* **Faster initial HTML delivery**: Content can be streamed in parts, allowing faster page loads.
+* **Selective hydration**: Parts of the page can be made interactive as soon as they are ready, without waiting for the entire page to load.
+* **Prioritized hydration**: React handles hydration intelligently, focusing on the parts of the page that users are interacting with first.
+
+---
+
+### **Remaining Challenges**
+
+Despite these improvements, there are still a few challenges to consider:
+
+1. **JavaScript Bundle Size**: As more features are added, the JavaScript bundle grows, leading to longer download times. This raises the question: **Do users need to download so much data?**
+2. **Hydrating Unnecessary Components**: React hydrates every component, even those that don't require interactivity. This can slow down load times and time to interactivity. **Should all components be hydrated?**
+3. **Client-Side Workload**: While servers handle the heavy lifting, client devices still bear the bulk of the JavaScript work, which can slow down performance, especially on less powerful devices. **Should we offload more work to the server?**
+
+These challenges point to the need for smarter ways to build fast applications, going beyond traditional rendering approaches. We will explore solutions to these issues in the next section.
 
 ---
