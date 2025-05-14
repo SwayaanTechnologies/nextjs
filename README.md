@@ -53,6 +53,7 @@
 * [**React Server Components**](#react-server-components)
 * [**Server and Client Components**](#server-and-client-components)
 * [**Rendering Lifecycle in React Server Components**](#rendering-lifecycle-in-react-server-components)
+* [**Static Rendering**](#static-rendering)
 
 ## **Introduction**
 
@@ -5172,5 +5173,125 @@ In **Next.js**, there are three different types of rendering strategies that can
 3. **Streaming Rendering** – The content is progressively streamed to the client.
 
 Each rendering strategy has its use cases and trade-offs, and understanding how they fit into your app can help you make the best performance optimizations.
+
+---
+
+## **Static Rendering**
+
+* [**What is Static Rendering**](#what-is-static-rendering)
+* [**How to Use Static Rendering**](#how-to-use-static-rendering)
+* [**Building and Inspecting the Output**](#building-and-inspecting-the-output)
+* [**Understanding the Build Output**](#understanding-the-build-output)
+* [**Route Indicators**](#route-indicators)
+* [**Exploring the `next` Folder**](#exploring-the-next-folder)
+* [**Serving the Application**](#serving-the-application)
+* [**Prefetching and Instant Navigation**](#prefetching-and-instant-navigation)
+* [**Key Points About Static Rendering**](#key-points-about-static-rendering)
+
+---
+
+### **What is Static Rendering**
+
+Static rendering is a server-side rendering strategy where **HTML pages are generated at build time**. Think of it as preparing all the content in advance before any user visits your site. Once built, these pages can be cached by a **CDN** and served instantly to users.
+
+The great thing about this approach is that the same pre-rendered page can be shared among different users, giving your app a significant performance boost. This makes static rendering perfect for content that doesn’t change often, such as:
+
+* Blog posts
+* E-commerce product listings
+* Documentation
+* Marketing pages
+
+---
+
+### **How to Use Static Rendering**
+
+Static rendering is **Next.js’s default behavior** for all routes. This means, out-of-the-box, every route is pre-rendered during the build process without any special setup required.
+
+However, you might be wondering how this works during **development** since we haven't built the application yet. Let's explore the difference between **development** and **production** servers:
+
+* **Production**: In production, Next.js creates one **optimized build** and deploys it. The pages are **pre-rendered once** during the build.
+* **Development**: During development, we need flexibility. To reflect changes immediately in the browser without rebuilding, Next.js pre-renders pages **on every request**.
+
+Next.js also displays a **static route indicator** during development to help you identify static routes. While it's useful to understand static rendering, the most important aspect is how it works when you build your app for **production**.
+
+---
+
+### **Building and Inspecting the Output**
+
+1. First, **stop the dev server** and clean up the generated Next.js files.
+
+2. In the `pages` directory, let's add a link to the **about page** in the root page (`index.tsx`).
+
+    * Duplicate the dashboard link, change the `href`, and update the text accordingly.
+    * Render the current time on the about page to demonstrate how content is static at build time (e.g., `new Date().toLocaleTimeString()`).
+
+3. In the terminal, run:
+
+   ```bash
+   npm run build
+   ```
+
+   This command creates an **optimized production build**. The output will be in the `next` folder, and it will differ significantly from the development setup.
+
+---
+
+### **Understanding the Build Output**
+
+Once the build is complete, check the terminal output. You'll see three columns:
+
+1. **Route** – The specific page (e.g., `/about`, `/dashboard`).
+2. **Size** – The amount of data to download when navigating to the route.
+3. **First Load JS** – The JavaScript size needed to render the page for the first time.
+
+For example:
+
+* **Root page (`index.tsx`)**: 8.4 KB
+* **Dashboard page**: 370 bytes
+
+---
+
+### **Route Indicators**
+
+In the terminal or build output, Next.js will show icons and a **legend** to indicate the rendering strategy for each route. A **hollow circle** indicates **static rendering**, meaning the page is pre-rendered during build time.
+
+---
+
+### **Exploring the `next` Folder**
+
+Within the `next` folder, the build output contains two important folders:
+
+1. **Server Folder**: Contains HTML files for each route (`index.html`, `about.html`, etc.).
+2. **Static Folder**: Contains JavaScript chunks necessary for client-side navigation and hydration (e.g., `dashboard.js`).
+
+---
+
+### **Serving the Application**
+
+Once you have the build, run:
+
+```bash
+npm run start
+```
+
+This starts the production server. Open your browser to **localhost:3000**, and with **Dev Tools open**, do a **hard reload**.
+
+1. **HTML Files**: The browser will receive pre-rendered HTML, such as `index.html`, `about.html`, and `dashboard.html`.
+2. **RSC Payloads**: Along with the HTML, **React Server Component** (RSC) payloads (in `.json` format) are sent. These contain the rendered result for server components and references for client components.
+
+---
+
+### **Prefetching and Instant Navigation**
+
+* **Prefetching**: Next.js **automatically prefetches routes** in the background as links appear in the viewport. This ensures that by the time you click a link (e.g., to navigate to `/about`), the page content is already preloaded, offering **instant navigation**.
+
+* **Client-Side Navigation**: Once the initial load is complete, navigating between static routes will happen entirely on the client side, **without additional server requests**.
+
+---
+
+### **Key Points About Static Rendering**
+
+* **Pre-rendering at build time**: HTML pages, RSC payloads, and JavaScript chunks are created ahead of time.
+* **Instant Navigation**: Client-side navigation between statically generated pages doesn’t require a round trip to the server, as everything needed is already in the browser.
+* **Optimized Performance**: Static rendering is perfect for performance, especially for content that doesn’t change frequently, such as blogs, marketing pages, and documentation.
 
 ---
