@@ -57,6 +57,7 @@
 * [**Dynamic Rendering**](#dynamic-rendering)
 * [**`generateStaticParams`**](#generatestaticparams)
 * [**`dynamicParams`**](#dynamicparams)
+* [**Streaming**](#streaming)
 
 ## **Introduction**
 
@@ -5596,5 +5597,89 @@ Let’s see this in action using the product pages example.
 * **Use `dynamicParams: false`** when:
 
   * You have a **fixed set of pages**, such as a **blog** or a specific catalog, where you want to pre-render every page at build time. This will ensure that any dynamic route that’s not included in `generateStaticParams` results in a clean **404 error** instead of waiting for the page to be generated.
+
+---
+
+## **Streaming**
+
+* [**What is Streaming**](#what-is-streaming)
+* [**How Does Streaming Work**](#how-does-streaming-work)
+* [**Example Implementing Streaming with Suspense**](#example-implementing-streaming-with-suspense)
+* [**Benefits of Streaming**](#benefits-of-streaming)
+
+---
+
+### **What is Streaming**
+
+**Streaming** is a server rendering strategy that enables **progressive UI rendering**. This means that the server sends parts of the page to the client as soon as they are ready, instead of waiting for everything to load at once. As a result, users can see and interact with parts of the page right away, significantly improving the **initial page load time**.
+
+This strategy is especially useful for rendering UI elements that depend on slower data fetches, which would normally block the entire route from rendering.
+
+---
+
+### **How Does Streaming Work**
+
+Streaming allows you to break down work into smaller chunks and send them progressively to the client. Here's how it works in Next.js with the **App Router**:
+
+1. **Component-Level Suspense Boundaries**: You can wrap parts of your page in **Suspense** boundaries, which tell React to **wait for data** or **fetching** of certain components before they render.
+
+2. **Progressive Rendering**: When components are wrapped in Suspense, Next.js will **render the static parts first**, and then stream the dynamic parts (like components fetching data) as they are ready.
+
+---
+
+### **Example Implementing Streaming with Suspense**
+
+Let's walk through an example. We’ll create a page that renders a product and its reviews, with intentional delays to simulate fetching data.
+
+1. **Setting Up Delayed Components**: We have two components:
+
+   * `ProductComponent` (with a 2-second delay)
+   * `ReviewsComponent` (with a 4-second delay)
+
+2. **The Problem**: Initially, if we visit the `/product-reviews` route, the entire page will take a while to render because everything waits for the data to be fetched before being sent to the client. In the network tab, we can see the server response time is 6 seconds (sum of both delays).
+
+3. **Improving with Streaming**: To improve this, we can use **Suspense**. By wrapping our slower components (`ProductComponent` and `ReviewsComponent`) with a `Suspense` boundary, we allow Next.js to stream the page progressively.
+
+   Here’s how to set it up:
+
+   ```tsx
+   import { Suspense } from 'react';
+   import ProductComponent from './components/ProductComponent';
+   import ReviewsComponent from './components/ReviewsComponent';
+
+   export default function ProductReviewsPage() {
+     return (
+       <div>
+         <h1>Product Reviews</h1>
+         <Suspense fallback={<p>Loading product details...</p>}>
+           <ProductComponent />
+         </Suspense>
+         <Suspense fallback={<p>Loading reviews...</p>}>
+           <ReviewsComponent />
+         </Suspense>
+       </div>
+     );
+   }
+   ```
+
+   * The `Suspense` component wraps each of the slower components.
+   * The `fallback` prop specifies what to show while each component is loading (e.g., `"Loading product details..."`).
+
+4. **Result**:
+
+   * The heading (`<h1>Product Reviews</h1>`) appears instantly.
+   * After 2 seconds, the product details are rendered.
+   * After 4 seconds, the reviews are rendered.
+   * During the loading phases, we see the fallback text: `"Loading product details..."` and `"Loading reviews..."`.
+
+   This is **Progressive Rendering in action**, where parts of the UI load as soon as they're available, significantly improving the **user experience**.
+
+---
+
+### **Benefits of Streaming**
+
+* **Faster Initial Load**: The page feels faster because users can see parts of the content immediately, without waiting for everything to load.
+* **Better UX for Slow Data Fetches**: If parts of your page depend on slow data fetches (e.g., from an external API), you can improve the page's responsiveness by streaming data instead of blocking the entire page.
+* **Built-in Support in Next.js**: Streaming is integrated with the **App Router**, which makes it easy to implement and doesn't require complex setup.
 
 ---
