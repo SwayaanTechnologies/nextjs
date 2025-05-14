@@ -56,6 +56,7 @@
 * [**Static Rendering**](#static-rendering)
 * [**Dynamic Rendering**](#dynamic-rendering)
 * [**`generateStaticParams`**](#generatestaticparams)
+* [**`dynamicParams`**](#dynamicparams)
 
 ## **Introduction**
 
@@ -5425,9 +5426,13 @@ This will ensure that Next.js renders the page dynamically, even if no dynamic f
 * [**Pre-rendering Product Details Pages with `generateStaticParams`**](#pre-rendering-product-details-pages-with-generatestaticparams)
 * [**Handling Multiple Dynamic Segments**](#handling-multiple-dynamic-segments)
 
+---
+
 ### **What is `generateStaticParams`**
 
 `generateStaticParams` is a powerful function in **Next.js** that works alongside **dynamic route segments** to generate **static routes** at **build time** instead of generating them on demand at **request time**. This feature significantly boosts the performance of the application by pre-rendering frequently accessed pages, making them available instantly when requested.
+
+---
 
 ### **Practical Example Product Listing and Details Page**
 
@@ -5466,11 +5471,15 @@ To understand how `generateStaticParams` works, let's walk through a practical e
    * **Static Rendering**: The `ProductsPage` will be pre-rendered.
    * **Dynamic Rendering**: The individual product pages will be rendered on demand when a specific product ID is requested.
 
+---
+
 ### **Inspecting the Build Output**
 
 If you check the build folder (`next/server/app`), you will find the **static HTML file** for `products.html`, but no HTML files for the individual product details pages (like `product-1.html`, etc.).
 
 When you start the app with `npm run start` and visit `/products/1`, you will notice that the page is rendered **on demand** each time you refresh, as indicated by a **changing timestamp**.
+
+---
 
 ### **Pre-rendering Product Details Pages with `generateStaticParams`**
 
@@ -5503,6 +5512,8 @@ Now, let’s improve this by pre-rendering the individual product details pages 
 
 3. Start the application with `npm run start` and visit `/products/1`. Notice how the **timestamp stays the same** upon refreshing because the page is now served as a **pre-rendered static page**.
 
+---
+
 ### **Handling Multiple Dynamic Segments**
 
 What if we have a **route with multiple dynamic segments**? For instance, a product catalog where each product belongs to a category (e.g., `/products/[category]/[product]`).
@@ -5526,5 +5537,64 @@ export default async function ProductPage({ params }) {
 ```
 
 In this case, `generateStaticParams` will pre-render routes for each **category-product** combination.
+
+---
+
+## **`dynamicParams`**
+
+* [**What is `dynamicParams`**](#what-is-dynamicparams)
+* [**How `dynamicParams` Works**](#how-dynamicparams-works)
+* [**Example Handling Dynamic Product Pages**](#example-handling-dynamic-product-pages)
+* [**When to Use `dynamicParams true` vs `false`**](#when-to-use-dynamicparams-true-vs-false)
+
+---
+
+### **What is `dynamicParams`**
+
+In Next.js, the `dynamicParams` setting controls how **dynamic segments** (such as product IDs or categories) are handled when they are not included in the list returned by `generateStaticParams`. This gives you fine-grained control over whether to statically render these pages at runtime or return a **404 error** if the dynamic segment does not match any of the pre-rendered routes.
+
+---
+
+### **How `dynamicParams` Works**
+
+1. **Default Behavior**: By default, `dynamicParams` is set to **`true`**. This means Next.js will **statically render** pages at runtime for any dynamic segments not included in the `generateStaticParams` function.
+
+   * For example, if you have pre-rendered product detail pages for products with IDs `1`, `2`, and `3`, and someone visits `/products/4`, Next.js will still serve the page, but it will generate the HTML at runtime. This is beneficial when you want to allow for dynamic content but still get the benefits of static rendering for your most popular pages.
+
+2. **Rendering at Runtime**: If someone accesses a product page with an ID that’s not listed in the `generateStaticParams` (e.g., `/products/4`), Next.js will generate the corresponding HTML at runtime and store it for future requests. The build folder will reflect this by adding a new file like `4.html` for that product.
+
+3. **Changing the Behavior**: You can control this behavior by setting `dynamicParams` to **`false`**. When set to `false`, Next.js will return a **404 error** for any dynamic segments that aren't included in the `generateStaticParams` list.
+
+   * For example, if you set `dynamicParams: false`, and someone tries to visit `/products/4`, they will get a 404 error instead of seeing the page generated on demand.
+
+---
+
+### **Example Handling Dynamic Product Pages**
+
+Let’s see this in action using the product pages example.
+
+1. **With `dynamicParams` set to `true` (default)**:
+
+   * You’ve pre-rendered product pages for IDs `1`, `2`, and `3` using `generateStaticParams`.
+   * When you visit `/products/4`, Next.js will generate the HTML at runtime for that page and serve it to the user.
+   * If you inspect the build folder, you will see the HTML files for `1.html`, `2.html`, and `3.html`, and `4.html` will be generated when visited.
+
+2. **With `dynamicParams` set to `false`**:
+
+   * You’ve pre-rendered product pages for IDs `1`, `2`, and `3` using `generateStaticParams`.
+   * If someone tries to visit `/products/4`, Next.js will return a **404 error** since `4` was not included in the pre-rendered list.
+
+---
+
+### **When to Use `dynamicParams true` vs `false`**
+
+* **Use `dynamicParams: true`** when:
+
+  * You have a larger number of dynamic pages, such as an **e-commerce website**, where you want to pre-render popular product pages for better performance but still allow access to less common ones. These will be rendered on demand.
+  * You don't want to restrict access to dynamic content even if it hasn't been pre-rendered.
+
+* **Use `dynamicParams: false`** when:
+
+  * You have a **fixed set of pages**, such as a **blog** or a specific catalog, where you want to pre-render every page at build time. This will ensure that any dynamic route that’s not included in `generateStaticParams` results in a clean **404 error** instead of waiting for the page to be generated.
 
 ---
