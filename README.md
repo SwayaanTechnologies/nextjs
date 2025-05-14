@@ -46,6 +46,7 @@
 * [**Redirects in Route Handlers**](#redirects-in-route-handlers)
 * [**Caching in Route Handlers**](#caching-in-route-handlers)
 * [**Middleware**](#middleware)
+* [**Rendering**](#rendering)
 
 ## **Introduction**
 
@@ -4700,5 +4701,25 @@ And test the routes like `/profile` or `/hello`. You can:
 * Check redirection or rewrites in the **browser address bar**
 * View **cookies in Application tab**
 * Inspect **custom headers in Network tab**
+
+---
+
+## **Rendering**
+
+After exploring the ins and outs of Next.js routing in the previous section, we are now ready to tackle something equally important: **Rendering**.
+
+Rendering might sound complex, but it is actually pretty straightforward. At its core, rendering is the process of transforming the component code you write into user interfaces that users can see and interact with.
+
+---
+
+### **The Challenge of Rendering**
+
+While rendering itself is simple, building a performant application requires understanding **when** and **where** this transformation should happen. You may have come across terms like:
+
+* **CSR** (Client-Side Rendering)
+* **SSR** (Server-Side Rendering)
+* **SSG** (Static Site Generation)
+
+These terms can often be confusing at first, but they each refer to different rendering strategies that you can choose based on your application's needs.
 
 ---
