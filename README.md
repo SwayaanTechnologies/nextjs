@@ -76,6 +76,7 @@
 * [**Forms with Server Actions**](#forms-with-server-actions)
 * [**`useFormStatus` Hook**](#useformstatus-hook)
 * [**`useActionState` Hook**](#useactionstate-hook)
+* [**Separating Server Actions**](#separating-server-actions)
 
 ## **Introduction**
 
@@ -7895,5 +7896,113 @@ We’ve now run into a **limitation**:
 This leads to the following error:
 
 > Cannot use `use server` in a component marked with `'use client'`.
+
+---
+
+## **Separating Server Actions**
+
+When using `useActionState` in a **client component**, defining a server action **inline** won’t work—Next.js will throw an error. But don’t worry—we’ll fix this with a clean solution: **separating the server action into its own file**.
+
+This lets us:
+
+* Keep **server logic** modular and reusable
+* Maintain **type safety**
+* Fully leverage **client hooks** like `useActionState` and `useFormStatus`
+
+---
+
+### **Create the `actions` Folder**
+
+In your `src` directory:
+
+```
+src/
+├─ actions/
+│  └─ products.ts
+```
+
+---
+
+### **Move and Refactor Your Server Action**
+
+In `src/actions/products.ts`:
+
+```ts
+'use server';
+
+import { redirect } from 'next/navigation';
+import { addProduct } from '@/lib/prisma';
+
+export type Errors = {
+  title?: string;
+  price?: string;
+  description?: string;
+};
+
+export type FormState = {
+  errors: Errors;
+};
+
+export async function createProduct(prevState: FormState, formData: FormData): Promise<FormState> {
+  const errors: Errors = {};
+
+  const title = formData.get('title') as string;
+  const price = formData.get('price') as string;
+  const description = formData.get('description') as string;
+
+  if (!title) errors.title = 'Title is required';
+  if (!price) errors.price = 'Price is required';
+  if (!description) errors.description = 'Description is required';
+
+  if (Object.keys(errors).length > 0) {
+    return { errors };
+  }
+
+  await addProduct({ title, price: parseFloat(price), description });
+  redirect('/products-db');
+}
+```
+
+**Key Notes:**
+
+* The `use server` directive at the **top of the file** applies to all exports.
+* `prevState` is the **first parameter** of a server action used with `useActionState`.
+* We now export `createProduct`, `FormState`, and `Errors`.
+
+---
+
+### **Update the Page File**
+
+In `products-db/create/page.tsx`:
+
+1. Remove `addProduct` and `redirect` imports.
+2. Import from your new actions file:
+
+```ts
+import { createProduct, FormState } from '@/actions/products';
+```
+
+3. Continue using `useActionState`:
+
+```tsx
+const [state, formAction, ePending] = useActionState(createProduct, {
+  errors: {},
+});
+```
+
+---
+
+### **Test the Form**
+
+* Navigate to `/products-db/create`
+* Click **Submit** with empty fields → You should see:
+
+  ```
+  Title is required
+  Price is required
+  Description is required
+  ```
+
+* Fill in all fields and submit → Product is added and redirected to `/products-db`
 
 ---
