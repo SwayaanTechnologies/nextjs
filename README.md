@@ -58,6 +58,7 @@
 * [**`generateStaticParams`**](#generatestaticparams)
 * [**`dynamicParams`**](#dynamicparams)
 * [**Streaming**](#streaming)
+* [**Server and Client Composition Patterns**](#server-and-client-composition-patterns)
 
 ## **Introduction**
 
@@ -5681,5 +5682,69 @@ Let's walk through an example. We’ll create a page that renders a product and 
 * **Faster Initial Load**: The page feels faster because users can see parts of the content immediately, without waiting for everything to load.
 * **Better UX for Slow Data Fetches**: If parts of your page depend on slow data fetches (e.g., from an external API), you can improve the page's responsiveness by streaming data instead of blocking the entire page.
 * **Built-in Support in Next.js**: Streaming is integrated with the **App Router**, which makes it easy to implement and doesn't require complex setup.
+
+---
+
+## **Server and Client Composition Patterns**
+
+* [**Foundation RSC and the Dual Component Model**](#foundation-rsc-and-the-dual-component-model)
+* [**Server Components**](#server-components-1)
+* [**Client Components**](#client-components)
+* [**Composition Patterns Mixing Server and Client Components**](#composition-patterns-mixing-server-and-client-components)
+* [**Best Practices for Server and Client Composition**](#best-practices-for-server-and-client-composition)
+
+---
+
+### **Foundation RSC and the Dual Component Model**
+
+In Next.js, **React Server Components (RSC)** allow you to compose your UI by deciding whether a component should be rendered on the server or the client. This dual component model is a key part of Next.js' performance and flexibility. By leveraging server and client components effectively, you can optimize your application for both performance and interactivity.
+
+---
+
+### **Server Components**
+
+**Server components** are the preferred choice for tasks that can be done on the server side, such as:
+
+* **Fetching Data**: Server components can directly fetch data without involving client-side JavaScript, improving performance by avoiding unnecessary API calls on the client.
+* **Accessing Server-Side Resources**: Server components can access server-side resources, like databases, without exposing sensitive information to the client.
+* **Handling Large Dependencies**: Large packages or libraries that don’t need to be run on the client can be imported and run server-side, reducing the JavaScript bundle size sent to users.
+* **Security**: Sensitive data can be securely handled server-side in server components, ensuring that it is not exposed to the client.
+
+Server components are ideal for improving performance because they minimize the JavaScript load on the client side and leverage server-side rendering for tasks that don’t require interactivity.
+
+---
+
+### **Client Components**
+
+**Client components** are used when you need to add interactivity or perform tasks that rely on the browser's environment. These components are executed on the client-side and are useful for:
+
+* **Interactivity**: Handling event listeners, managing UI updates based on user actions (e.g., clicks, form submissions), and updating the DOM in response to changes.
+* **State Management**: Client components are responsible for managing local state using React’s `useState`, `useReducer`, or other state management hooks.
+* **Lifecycle Effects**: Managing lifecycle events like `useEffect` for side-effects or `useLayoutEffect` for DOM updates specific to the client environment.
+* **Browser-Specific APIs**: Interacting with browser APIs like `localStorage`, `sessionStorage`, or manipulating the DOM directly.
+* **React Class Components**: Although function components are more commonly used, React class components can still be used on the client-side if needed.
+
+---
+
+### **Composition Patterns Mixing Server and Client Components**
+
+One of the powerful aspects of Next.js is how it enables mixing server and client components together in a seamless way. Here are a few strategies to compose server and client components effectively:
+
+1. **Server-Side for Heavy Lifting**: Use server components to handle heavy tasks such as data fetching, processing, and preparing the UI. This will offload work from the client and ensure only the necessary components are hydrated on the client.
+
+2. **Client-Side for Interactivity**: Any part of your app that requires user interaction, real-time updates, or relies on the browser’s environment should be handled by client components. This keeps the client-side responsive and user-friendly.
+
+3. **Lazy Load Client Components**: To further optimize performance, you can **lazy load** client components using React’s `Suspense` or dynamic imports in Next.js, ensuring that the browser only loads client components when they are needed.
+
+4. **Hybrid Approach**: A common pattern is to have the initial render handled by a server component, and then progressively enhance or hydrate specific parts of the UI with client components as needed.
+
+---
+
+### **Best Practices for Server and Client Composition**
+
+1. **Minimize Client-Side JavaScript**: Use server components for anything that doesn’t need interactivity. This reduces the overall size of JavaScript that needs to be sent to the client.
+2. **Only Hydrate What’s Necessary**: Client components should only handle what’s necessary for interactivity. Don’t hydrate the entire page if only a small section requires client-side functionality.
+3. **Use Suspense for Client Components**: To improve the loading experience, you can use React’s `Suspense` to wrap client components and display a fallback while they are loading.
+4. **Optimize Data Fetching**: Keep data-fetching logic in server components to avoid sending unnecessary API requests from the client.
 
 ---
