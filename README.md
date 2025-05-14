@@ -91,6 +91,7 @@
 * [**Reading Session and User Data**](#reading-session-and-user-data)
 * [**Role-Based Access Control**](#role-based-access-control)
 * [**Customizing Clerk Components**](#customizing-clerk-components)
+* [**Deploying Next.js Apps**](#deploying-next.js-apps)
 
 ## **Introduction**
 
@@ -9693,5 +9694,80 @@ NEXT_PUBLIC_CLERK_SIGNIN_FORCE_REDIRECT_URL=/dashboard
 ```
 
 This will always redirect users to `/onboarding` after sign-up and `/dashboard` after sign-in, regardless of where they came from.
+
+---
+
+## **Deploying Next.js Apps**
+
+To bring your application to life and make it accessible online, let’s deploy your Next.js 15 + Clerk-auth-enabled app using **Vercel**, the platform created by the Next.js team for seamless deployments.
+
+* [**Step 1 Push Code to GitHub**](#step-1-push-code-to-github)
+* [**Step 2 Log In to Vercel**](#step-2-log-in-to-vercel)
+* [**Step 3 Configure Project**](#step-3-configure-project)
+* [**Step 4 Deploy**](#step-4-deploy)
+
+---
+
+### **Step 1 Push Code to GitHub**
+
+Make sure your full application code is pushed to a **GitHub repository**. This should include your latest changes from the Clerk authentication demo.
+
+Example repo structure:
+
+```
+nextjs-15-tutorials/
+│
+├── authentication-demo/
+│   ├── app/
+│   ├── components/
+│   ├── env.local
+│   └── ...
+└── README.md
+```
+
+---
+
+### **Step 2 Log In to Vercel**
+
+1. Go to [https://vercel.com](https://vercel.com).
+2. Sign up or log in using your **GitHub** account.
+3. Once logged in, click **"Add New Project"**.
+4. If prompted, install the **Vercel for GitHub integration**.
+5. Select your GitHub repository that contains the Next.js project.
+
+---
+
+### **Step 3 Configure Project**
+
+1. Choose your **framework preset**: Select **Next.js**.
+
+2. Set the **project directory**: If your project is in a subfolder (e.g., `authentication-demo`), click **Edit** and set it as the root.
+
+3. Add your environment variables:
+
+   * Expand the **Environment Variables** section.
+   * Copy all key-value pairs from your local `.env.local` file and paste them into the Vercel UI.
+
+   Example:
+
+   ```
+   NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY=...
+   CLERK_SECRET_KEY=...
+   NEXT_PUBLIC_CLERK_SIGNIN_URL=/signin
+   NEXT_PUBLIC_CLERK_SIGNUP_URL=/signup
+   ```
+
+---
+
+### **Step 4 Deploy**
+
+Click **Deploy** and wait while Vercel builds and deploys your app.
+
+After deployment:
+
+* You’ll get a unique `.vercel.app` URL.
+* Visit the link and test your authentication flow.
+
+> Use your test Clerk account credentials to verify sign-in/sign-up works.
 
 ---
