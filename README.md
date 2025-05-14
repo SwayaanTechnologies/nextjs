@@ -5,7 +5,7 @@
 * [**Introduction**](#introduction)
 * [**Getting Started: Hello World Application**](#getting-started-hello-world-application)
 * [**Project Structure**](#project-structure)
-* [**React Server Components**](#react-server-components)
+* [**Before We Start**](#before-we-start)
 * [**Routing**](#routing)
 * [**Nested Routes**](#nested-routes)
 * [**Dynamic Routes**](#dynamic-routes)
@@ -50,6 +50,7 @@
 * [**Client-side Rendering**](#client-side-rendering)
 * [**Server-side Rendering**](#server-side-rendering)
 * [**Suspense SSR**](#suspense-ssr)
+* [**React Server Components**](#react-server-components)
 
 ## **Introduction**
 
@@ -378,7 +379,7 @@ This is how the base UI is constructed and served at `http://localhost:3000`.
 
 ---
 
-## **React Server Components**
+## **Before We Start**
 
 Before diving into routing in Next.js, it's important to understand a core concept introduced in modern React and adopted by Next.js: **React Server Components (RSC)**.
 
@@ -4888,5 +4889,58 @@ Despite these improvements, there are still a few challenges to consider:
 3. **Client-Side Workload**: While servers handle the heavy lifting, client devices still bear the bulk of the JavaScript work, which can slow down performance, especially on less powerful devices. **Should we offload more work to the server?**
 
 These challenges point to the need for smarter ways to build fast applications, going beyond traditional rendering approaches. We will explore solutions to these issues in the next section.
+
+---
+
+## **React Server Components**
+
+We’ve evolved from **Client-Side Rendering (CSR)** to **Server-Side Rendering (SSR)**, and then to **Suspense for SSR**. While each step brought improvements, they also introduced new challenges, such as large bundle sizes, unnecessary hydration, and heavy client-side processing. To tackle these challenges, React introduced **React Server Components (RSC)**, a new architecture designed to optimize efficiency, load times, and interactivity.
+
+React Server Components (RSC) represent a **dual component model** that distinguishes between **client components** and **server components**. This distinction is based on the **execution environment** and the specific systems each component interacts with.
+
+---
+
+### **Client Components**
+
+Client components are the familiar React components that we've been using in previous rendering techniques. They are typically rendered on the client side but can also be rendered to HTML once on the server for an initial fast page load.
+
+**Client components**:
+
+* Operate on the client and can access **browser-exclusive APIs** like **geolocation**, **local storage**, and manage **state** and **event listeners**.
+* They can be rendered server-side for optimization, but they still function mainly on the client side.
+* These components handle interactive parts like click events and form inputs, just as we've done traditionally.
+
+---
+
+### **Server Components**
+
+Server components represent a new type of React component that **runs exclusively on the server**. The key difference is that the **code for server components never leaves the server**, meaning they are never downloaded to the client.
+
+**Benefits of Server Components**:
+
+1. **Smaller Bundle Sizes**: Since server components don’t require JavaScript to be sent to the client, the client downloads much less code. This is ideal for users on slower connections or with less powerful devices, leading to **faster load times** and **better performance**.
+
+2. **Direct Access to Server Resources**: Server components can directly interact with databases, file systems, and other server-side resources, making data fetching more efficient.
+
+3. **Improved Security**: Since server components never leave the server, sensitive data like API keys and tokens stay secure and don't get exposed to the client.
+
+4. **Smarter Data Fetching**: Server components handle data fetching on the server, which reduces the time and number of requests needed to retrieve data from the client. This improves performance and decreases load times.
+
+5. **Caching**: The server can cache the rendered content, reducing the need to re-render and refetch data for every user. This leads to **better performance** and **lower server costs**.
+
+6. **Faster Initial Page Load**: By generating HTML on the server, users see content **immediately** without waiting for JavaScript to download and execute. This results in **better first contentful paint (FCP)**.
+
+7. **Improved SEO**: Search engine bots can easily read the server-rendered HTML, making it more likely for pages to be indexed and improving your **SEO**.
+
+8. **Streaming**: Server components can split the rendering process into chunks, which stream to the client as they become ready. This means users can start seeing content faster instead of waiting for the entire page to render on the server.
+
+---
+
+### **How It Works The Dual Component Model**
+
+* **Server Components**: Handle **data fetching** and **static rendering** on the server. They never get sent to the client, leading to reduced bundle sizes and improved load times.
+* **Client Components**: Manage **interactivity** on the client-side (e.g., click events, typing). They handle dynamic UI elements and interactivity but can get an **initial render** from the server for faster page loads.
+
+This architecture provides the best of both worlds by combining the efficiency of server-side rendering with the interactivity of client-side rendering, all while minimizing the drawbacks of each approach.
 
 ---
