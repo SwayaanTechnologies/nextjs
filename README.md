@@ -78,6 +78,7 @@
 * [**`useActionState` Hook**](#useactionstate-hook)
 * [**Separating Server Actions**](#separating-server-actions)
 * [**`useFormStatus` vs `useActionState`**](#useformstatus-vs-useactionstate)
+* [**Update Server Action**](#update-server-action)
 
 ## **Introduction**
 
@@ -8083,5 +8084,118 @@ const [state, formAction, isPending] = useActionState(createProduct, {
 | Complex form state management with validation       |  `useActionState`  |
 
 > Tip: You can **combine both** in some scenarios for even more control!
+
+---
+
+## **Update Server Action**
+
+In this section, we’ll implement the functionality to **edit an existing product** using Server Actions. Along the way, we'll handle route parameters, async data fetching, and how to pass **additional arguments** (like an ID) to server actions using JavaScript's `.bind()` method.
+
+* [**Step 1 Create the Edit Route**](#step-1-create-the-edit-route)
+* [**Step 2 Fetch Product by ID**](#step-2-fetch-product-by-id)
+* [**Step 3 Split into Client & Server Components**](#step-3-split-into-client--server-components)
+* [**Step 4 Create the Edit Server Action**](#step-4-create-the-edit-server-action)
+
+---
+
+### **Step 1 Create the Edit Route**
+
+Create a new dynamic route under `/app/products-db/[id]/page.tsx`:
+
+```bash
+app/
+└── products-db/
+    └── [id]/
+        └── page.tsx
+```
+
+* Copy code from the `create` page (`products-db/create/page.tsx`)
+* Paste it into the new `[id]/page.tsx` file
+* Rename the component to `EditProductPage`
+
+---
+
+### **Step 2 Fetch Product by ID**
+
+In `[id]/page.tsx`, extract the route parameter:
+
+```tsx
+export default async function EditProductPage({ params }: { params: { id: string } }) {
+  const id = parseInt(params.id);
+  const product = await getProduct(id);
+
+  if (!product) notFound(); // Handle missing products gracefully
+
+  return <EditProductForm product={product} />;
+}
+```
+
+> We removed `use client` and all React hooks to allow for async/await in the component.
+
+---
+
+### **Step 3 Split into Client & Server Components**
+
+Create a new client component:
+
+```bash
+app/products-db/[id]/product-edit-form.tsx
+```
+
+Move your form logic into this new file and **add** the `use client` directive at the top.
+
+```tsx
+'use client';
+
+import { useActionState } from 'react';
+import { editProduct } from '@/actions/products';
+import type { Product } from '@/products-db/page';
+
+export default function EditProductForm({ product }: { product: Product }) {
+  const editProductWithId = editProduct.bind(null, product.id);
+  const [formState, formAction, isPending] = useActionState(editProductWithId, initialState);
+
+  return (
+    <form action={formAction}>
+      <input defaultValue={product.title} name="title" />
+      <input defaultValue={product.price} name="price" />
+      <textarea defaultValue={product.description ?? ''} name="description" />
+      <button disabled={isPending}>Update</button>
+    </form>
+  );
+}
+```
+
+---
+
+### **Step 4 Create the Edit Server Action**
+
+In `src/actions/products.ts`, duplicate `createProduct` and rename to `editProduct`. Update it to accept an `id` argument and call your Prisma update logic:
+
+```ts
+'use server';
+
+export async function editProduct(
+  id: number,
+  prevState: FormState,
+  formData: FormData
+): Promise<FormState> {
+  const title = formData.get('title')?.toString() || '';
+  const price = parseFloat(formData.get('price')?.toString() || '');
+  const description = formData.get('description')?.toString() || '';
+
+  const errors: Record<string, string> = {};
+  if (!title) errors.title = 'Title is required';
+  if (!price || isNaN(price)) errors.price = 'Price must be a number';
+  if (!description) errors.description = 'Description is required';
+
+  if (Object.keys(errors).length > 0) return { errors };
+
+  await updateProduct(id, title, price, description); // Call your Prisma update logic
+  redirect('/products-db');
+}
+```
+
+> Note: The first argument (`id`) is bound using `.bind()` and is not part of the form data.
 
 ---
