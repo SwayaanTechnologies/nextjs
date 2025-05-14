@@ -43,6 +43,7 @@
 * [**Handling URL Query Parameters**](#handling-url-query-parameters)
 * [**Headers in Route Handlers**](#headers-in-route-handlers)
 * [**Cookies in Route Handlers**](#cookies-in-route-handlers)
+* [**Redirects in Route Handlers**](#redirects-in-route-handlers)
 
 ## **Introduction**
 
@@ -4376,5 +4377,79 @@ export async function GET() {
 1. **Send a request** to `/api/your-endpoint`
 2. **Check cookies tab** in the response (Thunder Client or browser DevTools)
 3. **See values like `theme=dark` or `resultsPerPage=20`**
+
+---
+
+## **Redirects in Route Handlers**
+
+Redirects are useful when deprecating old endpoints or reorganizing your API. They allow you to **guide clients from outdated routes to updated ones** without breaking existing functionality.
+
+* [**Example Use Case**](#example-use-case)
+* [**Implementing a Redirect**](#implementing-a-redirect)
+* [**Why 307**](#why-307)
+* [**When to Use Redirects**](#when-to-use-redirects)
+* [**Test It in Browser**](#test-it-in-browser)
+
+---
+
+### **Example Use Case**
+
+Let’s say you have two API versions:
+
+* `/api/v1/users`: Basic user info (e.g. `id`, `email`, `fullName`)
+* `/api/v2/users`: Enhanced data (e.g. structured names, preferences, profile)
+
+You want to **redirect all requests** from **`/api/v1/users` → `/api/v2/users`**
+
+---
+
+### **Implementing a Redirect**
+
+```ts
+// File: app/api/v1/users/route.ts
+
+import { redirect } from "next/navigation";
+
+export async function GET() {
+  // Redirect to the updated V2 endpoint
+  redirect("/api/v2/users");
+}
+```
+
+* When a user hits `/api/v1/users`, they’ll receive a **307 Temporary Redirect** to `/api/v2/users`.
+
+---
+
+### **Why 307**
+
+Next.js uses a **307 redirect** by default via the `redirect()` utility. This ensures that:
+
+* The **original request method** (e.g. GET, POST) is preserved.
+* It’s understood that this is a **temporary redirect**, not permanent (`301`).
+
+---
+
+### **When to Use Redirects**
+
+| Use Case       | Description                                      |
+| -------------- | ------------------------------------------------ |
+| API versioning | Route old clients to the latest API              |
+| Cleanup        | Decommission legacy routes safely                |
+| UX             | Redirect users post-login, form submission, etc. |
+
+---
+
+**Things to Consider**
+
+* Redirects should **not break functionality** — ensure the new route supports all old behavior.
+* If the new route is a permanent change, consider a **301 redirect** (though `redirect()` in Next.js always uses 307).
+
+---
+
+### **Test It in Browser**
+
+1. Hit `/api/v1/users` in your browser or Thunder Client
+2. You should be automatically redirected to `/api/v2/users`
+3. Response will come from the new endpoint
 
 ---
