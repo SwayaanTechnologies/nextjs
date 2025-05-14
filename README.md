@@ -45,6 +45,7 @@
 * [**Cookies in Route Handlers**](#cookies-in-route-handlers)
 * [**Redirects in Route Handlers**](#redirects-in-route-handlers)
 * [**Caching in Route Handlers**](#caching-in-route-handlers)
+* [**Middleware**](#middleware)
 
 ## **Introduction**
 
@@ -4558,5 +4559,146 @@ Caching is **only supported** for `GET` handlers and **only if:**
 * Your handler is **static/deterministic**
 
 If you use `POST`, `PUT`, `DELETE`, or access dynamic request data — caching is disabled.
+
+---
+
+## **Middleware**
+
+**Middleware** in Next.js allows you to **intercept and control** incoming requests **before they reach the route handler or page**. This is powerful for:
+
+* Authentication and authorization
+* URL rewrites and redirects
+* Cookie and header manipulation
+* Localization and personalization
+
+---
+
+### **Creating Middleware**
+
+Create a `middleware.ts` file in the root of your project (at the same level as `app/`):
+
+```bash
+project-root/
+├── app/
+├── public/
+├── middleware.ts
+```
+
+---
+
+### **Basic Redirect Using Matcher**
+
+**Redirect `/profile` to `/`** (the homepage):
+
+```ts
+// middleware.ts
+
+import { NextRequest, NextResponse } from "next/server";
+
+export function middleware(request: NextRequest) {
+  return NextResponse.redirect(new URL("/", request.url));
+}
+
+export const config = {
+  matcher: "/profile", // Only apply middleware to this route
+};
+```
+
+* On visiting `/profile`, the browser will redirect to `/`.
+
+---
+
+### **Conditional Logic Without Matcher**
+
+You can also apply logic programmatically instead of using `matcher`:
+
+```ts
+// middleware.ts
+
+import { NextRequest, NextResponse } from "next/server";
+
+export function middleware(request: NextRequest) {
+  const pathname = request.nextUrl.pathname;
+
+  if (pathname === "/profile") {
+    return NextResponse.redirect(new URL("/hello", request.url));
+  }
+
+  return NextResponse.next(); // Proceed as normal for other routes
+}
+```
+
+* Navigating to `/profile` will **redirect to `/hello`**.
+* This approach gives you **more flexibility**.
+
+---
+
+### **URL Rewrites**
+
+Instead of changing the visible URL, you can **serve different content** while **keeping the original URL**.
+
+```ts
+if (request.nextUrl.pathname === "/profile") {
+  return NextResponse.rewrite(new URL("/hello", request.url));
+}
+```
+
+* You see `/hello` content at `/profile`, **without the URL changing**.
+* Useful for **legacy URLs or SEO optimizations**.
+
+---
+
+### **Handling Cookies in Middleware**
+
+You can set or read cookies easily:
+
+```ts
+export function middleware(request: NextRequest) {
+  const response = NextResponse.next();
+
+  const theme = request.cookies.get("theme");
+
+  if (!theme) {
+    response.cookies.set("theme", "dark");
+  }
+
+  return response;
+}
+```
+
+* If the `theme` cookie doesn’t exist, it will be set to `"dark"`.
+* Cookies can persist across requests and personalize user experiences.
+
+---
+
+### **Adding Custom Headers**
+
+```ts
+export function middleware(request: NextRequest) {
+  const response = NextResponse.next();
+
+  response.headers.set("x-custom-header", "custom-value");
+
+  return response;
+}
+```
+
+* View it under **Network → Response Headers** in browser DevTools.
+
+---
+
+### **Testing Middleware**
+
+Run your dev server:
+
+```bash
+npm run dev
+```
+
+And test the routes like `/profile` or `/hello`. You can:
+
+* Check redirection or rewrites in the **browser address bar**
+* View **cookies in Application tab**
+* Inspect **custom headers in Network tab**
 
 ---
