@@ -47,6 +47,7 @@
 * [**Caching in Route Handlers**](#caching-in-route-handlers)
 * [**Middleware**](#middleware)
 * [**Rendering**](#rendering)
+* [**Client-side Rendering**](#client-side-rendering)
 
 ## **Introduction**
 
@@ -4721,5 +4722,57 @@ While rendering itself is simple, building a performant application requires und
 * **SSG** (Static Site Generation)
 
 These terms can often be confusing at first, but they each refer to different rendering strategies that you can choose based on your application's needs.
+
+---
+
+## **Client-side Rendering**
+
+To fully understand how rendering works in Next.js, it's important to first see how React's rendering strategies have evolved over the past decade.
+
+React initially rose to popularity through its use in **Single Page Applications (SPAs)**. In this model, when a client visits the site, the server sends back a single HTML file. This HTML file is typically minimal—usually just a `<div>` element and a reference to a JavaScript file.
+
+For example, using tools like **Create React App**, you would receive an HTML file with:
+
+* An empty `<div>` tag as the root
+* A reference to `bundle.js`, which contains:
+
+  * The React library
+  * Your application’s logic
+  * Everything required to render your app
+
+Once the browser downloads the JavaScript file, it begins generating the UI directly in the browser—injecting HTML into the DOM under that root div. Only at this point does the user interface become visible.
+
+---
+
+### **Verifying CSR Behavior**
+
+You can confirm this behavior using browser tools:
+
+* In the **DOM inspector**, you will see the rendered elements like `<header>`, `<h1>`, and `<p>`.
+* But if you **view the page source**, you'll only see the initial, barebones HTML from the server.
+
+This process of transforming React components into UI within the browser is known as **Client-side Rendering (CSR)**.
+
+---
+
+### **Advantages and Limitations of CSR**
+
+While CSR was revolutionary for building interactive SPAs, it has notable limitations:
+
+**SEO Challenges**
+
+Search engines primarily index HTML content. But with CSR, the server delivers mostly an empty HTML shell. If meaningful content is rendered via JavaScript, search engines might miss it—especially if the content loads slowly due to API calls or nested components.
+
+**Performance and User Experience**
+
+With CSR, the browser must:
+
+* Fetch all JavaScript
+* Execute the application logic
+* Fetch data
+* Render the UI
+* Attach interactivity
+
+This workload can lead to blank screens or loading spinners during page load. As the JavaScript bundle grows with new features, so does the load time—especially noticeable for users on slow connections.
 
 ---
