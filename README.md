@@ -60,6 +60,7 @@
 * [**Streaming**](#streaming)
 * [**Server and Client Composition Patterns**](#server-and-client-composition-patterns)
 * [**Server-only Code**](#server-only-code)
+* [**Working with Third-Party Packages**](#working-with-third-party-packages)
 
 ## **Introduction**
 
@@ -5862,5 +5863,128 @@ This is exactly what we want — to **prevent accidental inclusion of server-sid
 * Reduces bundle size by eliminating server code from client bundles
 * Catches import mistakes early, during build time
 * Enforces clean architectural boundaries between server and client
+
+---
+
+## **Working with Third-Party Packages**
+
+As the React ecosystem transitions to the **React Server Components (RSC)** model, not all third-party packages have caught up. Some still rely entirely on client-side features but don't yet include the `use client` directive in their code. This can cause issues when used in **server components**.
+
+**The Problem**
+
+Many NPM packages:
+
+* Assume execution in the browser.
+* Use browser-specific features like `window`, `document`, or lifecycle hooks (`useEffect`, etc.).
+* Do **not** include the `use client` directive, making them incompatible with server components by default.
+
+Using such packages directly in a server component can lead to **runtime errors** or **unexpected behavior**.
+
+---
+
+### **The Solution Encapsulate Third-Party Packages in Your Own Client Components**
+
+Instead of importing a third-party component directly in a server component, you can:
+
+1. Create a **wrapper component** that includes the `use client` directive.
+2. Use this wrapper within your server component.
+
+---
+
+### **Real Example Using `react-slick` Carousel**
+
+Let’s walk through using [`react-slick`](https://www.npmjs.com/package/react-slick), a popular image carousel, in a Next.js App Router project.
+
+---
+
+### **Step-by-Step Setup Working with Third-Party Packages**
+
+* [**Install Dependencies**](#install-dependencies)
+* [**Create a Client Component Wrapper**](#create-a-client-component-wrapper)
+* [**Use It Inside a Server Component**](#use-it-inside-a-server-component)
+
+#### **Install Dependencies**
+
+```bash
+npm install react-slick slick-carousel @types/react-slick --force
+```
+
+> The `--force` flag is used to bypass peer dependency warnings if you're using React 19 or a newer version.
+
+---
+
+#### **Create a Client Component Wrapper**
+
+Create `src/components/ImageSlider.tsx`:
+
+```tsx
+'use client';
+
+import Slider from 'react-slick';
+import 'slick-carousel/slick/slick.css';
+import 'slick-carousel/slick/slick-theme.css';
+
+export function ImageSlider() {
+  const settings = {
+    dots: true,
+    infinite: true,
+    speed: 500,
+    slidesToShow: 1,
+    slidesToScroll: 1,
+  };
+
+  return (
+    <Slider {...settings}>
+      <div><img src="https://picsum.photos/800/400?random=1" alt="Slide 1" /></div>
+      <div><img src="https://picsum.photos/800/400?random=2" alt="Slide 2" /></div>
+      <div><img src="https://picsum.photos/800/400?random=3" alt="Slide 3" /></div>
+    </Slider>
+  );
+}
+```
+
+---
+
+#### **Use It Inside a Server Component**
+
+Edit `app/server-route/page.tsx`:
+
+```tsx
+// app/server-route/page.tsx
+import { ImageSlider } from '@/components/ImageSlider';
+import { serverSideFunction } from '@/utils/server-utils';
+
+export default function ServerRoutePage() {
+  const result = serverSideFunction();
+
+  return (
+    <>
+      <h1>Server Route</h1>
+      <p>Server Result: {result}</p>
+      <ImageSlider />
+    </>
+  );
+}
+```
+
+This pattern allows you to keep the **server component benefits** like secure logic and data fetching, while still **embedding client-only UI elements**.
+
+---
+
+### **What *Not* to Do**
+
+**Don't** import third-party client-side packages directly into server components:
+
+```tsx
+// This will cause errors or unexpected behavior
+import Slider from 'react-slick'; 
+```
+
+**Don't** make your entire route file a client component just to accommodate one client-side element:
+
+```tsx
+// Avoid this — it forces the whole component to the client
+'use client';
+```
 
 ---
