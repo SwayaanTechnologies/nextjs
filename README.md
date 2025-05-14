@@ -72,6 +72,7 @@
 * [**Sequential Data Fetching**](#sequential-data-fetching)
 * [**Parallel Data Fetching**](#parallel-data-fetching)
 * [**Fetching from a Database**](#fetching-from-a-database)
+* [**Data Mutations**](#data-mutations)
 
 ## **Introduction**
 
@@ -7413,5 +7414,147 @@ http://localhost:3000/products-db
 ```
 
 You should see 3 products loaded directly from your **SQLite** database!
+
+---
+
+## **Data Mutations**
+
+Now that we've mastered **reading** data, it's time to explore the rest of the CRUD operations: **Create**, **Update**, and **Delete** — starting with **Create**.
+
+In this section, we'll walk through traditional client-side mutation using **React** and **API Routes**. Then in the next section, we'll see how the **App Router** simplifies this with **Server Actions**.
+
+* [**Traditional Data Mutation**](#traditional-data-mutation)
+* [**Folder Structure for Data Mutations**](#folder-structure-for-data-mutations)
+* [**How Traditional Form Handling Works**](#how-traditional-form-handling-works)
+* [**`page.tsx` Frontend Code**](#page.tsx-frontend-code)
+* [**`pages/api/products.ts` Backend API Route**](#pages/api/products.ts-backend-api-route)
+
+---
+
+### **Traditional Data Mutation**
+
+To follow along, ensure you've completed the previous section on setting up Prisma and a SQLite database with a `Product` model.
+
+---
+
+### **Folder Structure for Data Mutations**
+
+We'll add a new route:
+
+```
+/app/react-form/page.tsx
+```
+
+This page includes a product creation form.
+
+---
+
+### **How Traditional Form Handling Works**
+
+1. **Create a form UI in React** using `useState` to manage form fields.
+2. **Add an `onSubmit` handler** to capture form data and send it to an API route.
+3. **Create a Next.js API route** that receives the form data and writes to the database using Prisma.
+4. **Handle loading state and redirect** the user after a successful submission.
+
+---
+
+### `page.tsx` Frontend Code
+
+```tsx
+'use client';
+
+import { useState } from 'react';
+import { useRouter } from 'next/navigation';
+
+export default function CreateProductForm() {
+  const [title, setTitle] = useState('');
+  const [price, setPrice] = useState('');
+  const [description, setDescription] = useState('');
+  const [isSubmitting, setIsSubmitting] = useState(false);
+  const router = useRouter();
+
+  async function handleSubmit(e: React.FormEvent) {
+    e.preventDefault();
+    setIsSubmitting(true);
+
+    await fetch('/api/products', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ title, price: parseFloat(price), description }),
+    });
+
+    setIsSubmitting(false);
+    router.push('/products-db');
+  }
+
+  return (
+    <form onSubmit={handleSubmit} className="max-w-md mx-auto p-6 border rounded">
+      <h2 className="text-lg font-semibold mb-4">Create Product</h2>
+      <input
+        type="text"
+        placeholder="Title"
+        value={title}
+        onChange={(e) => setTitle(e.target.value)}
+        required
+        className="input mb-2 w-full"
+      />
+      <input
+        type="number"
+        placeholder="Price"
+        value={price}
+        onChange={(e) => setPrice(e.target.value)}
+        required
+        className="input mb-2 w-full"
+      />
+      <textarea
+        placeholder="Description (optional)"
+        value={description}
+        onChange={(e) => setDescription(e.target.value)}
+        className="input mb-4 w-full"
+      />
+      <button
+        type="submit"
+        disabled={isSubmitting}
+        className="btn btn-primary w-full"
+      >
+        {isSubmitting ? 'Creating...' : 'Create Product'}
+      </button>
+    </form>
+  );
+}
+```
+
+> Navigate to `/react-form` to see the form in action.
+
+---
+
+### **`pages/api/products.ts` Backend API Route**
+
+Create this file at:
+
+```
+/pages/api/products.ts
+```
+
+```ts
+import type { NextApiRequest, NextApiResponse } from 'next';
+import { addProduct } from '@/src/prisma/db';
+
+export default async function handler(req: NextApiRequest, res: NextApiResponse) {
+  if (req.method !== 'POST') {
+    return res.status(405).end('Method Not Allowed');
+  }
+
+  const { title, price, description } = req.body;
+
+  const product = await addProduct({
+    title,
+    price: parseFloat(price),
+    description,
+  });
+
+  res.status(201).json(product);
+}
+```
 
 ---
