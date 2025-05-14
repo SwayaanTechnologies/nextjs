@@ -52,6 +52,7 @@
 * [**Suspense SSR**](#suspense-ssr)
 * [**React Server Components**](#react-server-components)
 * [**Server and Client Components**](#server-and-client-components)
+* [**Rendering Lifecycle in React Server Components**](#rendering-lifecycle-in-react-server-components)
 
 ## **Introduction**
 
@@ -4954,6 +4955,8 @@ In the React Server Components (RSC) architecture, we learned about the distinct
 * [**Understanding the Default Server Component**](#understanding-the-default-server-component)
 * [**Creating a Client Component**](#creating-a-client-component)
 
+---
+
 ### **Setting Up the Project**
 
 To begin, we create a new Next.js project using the following command:
@@ -4964,12 +4967,16 @@ npx create-next-app@latest rendering-demo
 
 Once the command is run, you will have a basic Next.js project structure.
 
+---
+
 ### **Understanding the Default Server Component**
 
 In Next.js, every component defaults to being a **server component**. This includes the built-in root layout and root page that come with every new Next.js project.
 
 * [**Creating a Server Component**](#creating-a-server-component)
 * [**Server Component Limitations**](#server-component-limitations)
+
+---
 
 #### **Creating a Server Component**
 
@@ -4994,6 +5001,8 @@ console.log("About Server Component");
 
 Now, when you navigate to the `about` page in the browser, you will see the console log message labeled with a **server tag** in both the browser and the terminal. This confirms the component is running as a server component.
 
+---
+
 #### **Server Component Limitations**
 
 Server components have several advantages such as **zero bundle size**, **direct access to server resources**, **improved security**, and **better SEO**. However, they have some **limitations**:
@@ -5010,6 +5019,8 @@ const [name, setName] = useState('');
 ```
 
 We will get an error because `useState` requires a **client-side environment**.
+
+---
 
 ### **Creating a Client Component**
 
@@ -5039,6 +5050,8 @@ export default function DashboardPage() {
 }
 ```
 
+---
+
 #### **Using the `use client` Directive**
 
 To make this a **client component**, we need to add the following directive at the top of the file:
@@ -5048,6 +5061,8 @@ To make this a **client component**, we need to add the following directive at t
 ```
 
 This tells **Next.js** that this component, along with any imported components, should be executed on the client side. As a result, this component can handle **state** and **interactivity** using browser APIs.
+
+---
 
 #### **Navigating to the Client Component**
 
@@ -5068,6 +5083,8 @@ export default function HomePage() {
 
 Now, when you visit the homepage and click on the **Dashboard** link, the **Dashboard page** will appear, and the state will function as expected, displaying "Hello" followed by the name entered.
 
+---
+
 #### **Observing the Client Component's Rendering Behavior**
 
 To see the **client component’s rendering behavior**, add a console log to the **Dashboard page**:
@@ -5080,3 +5097,80 @@ console.log("Dashboard Client Component");
 2. When you **reload the page**, the **Dashboard page** is rendered **on the server** initially to provide an immediate HTML response, and then again on the **client** during hydration.
 
 The term **client component** can be confusing, but this behavior is part of the RSC architecture. In development mode, the log appears twice due to **Strict Mode**. This doesn’t happen in production.
+
+---
+
+## **Rendering Lifecycle in React Server Components**
+
+Now that we've covered **Server** and **Client Components** in **Next.js**, let’s dive deeper into the **rendering lifecycle** of these components. Understanding this process isn’t mandatory for building Next.js apps, but it provides valuable insights into how the framework works under the hood, much like knowing the kitchen process before your food arrives at the table.
+
+* [**Key Players in the Rendering Lifecycle**](#key-players-in-the-rendering-lifecycle)
+* [**Initial Loading Sequence**](#initial-loading-sequence)
+* [**Update Sequence-Refreshing UI**](#update-sequence-refreshing-ui)
+* [**Rendering in Next.js Static, Dynamic, and Streaming**](#rendering-in-next.js-static,-dynamic,-and-streaming)
+
+---
+
+### **Key Players in the Rendering Lifecycle**
+
+There are three main components involved in the RSC rendering lifecycle:
+
+1. **Your Browser** (the client)
+2. **Next.js** (the framework)
+3. **React** (the library)
+
+Let’s break down the **initial loading** and **update sequences** step by step.
+
+---
+
+### **Initial Loading Sequence**
+
+1. **Browser Requests a Page**: When your browser makes a request for a page, **Next.js** matches the requested URL to the appropriate **server component**.
+
+2. **React Renders Server Components**: **Next.js** tells **React** to render the corresponding **server component** and its child components (which are also server components). These components are rendered into a special JSON format known as the **RSC Payload**.
+
+    * You can inspect this payload in the **Network Tab** of your browser's Developer Tools when navigating to a route.
+
+3. **Suspense Handling**: If any **server component** is wrapped in **Suspense** (to handle asynchronous rendering), **React** will pause rendering that specific part of the tree and send a **placeholder value** instead.
+
+4. **Preparing Client Components**: While the server components are being rendered, **React** also prepares instructions for **client components** that will be needed later in the process.
+
+5. **Next.js Generates HTML**: **Next.js** takes the **RSC Payload** and the **client component instructions**, and then generates **HTML** on the server. This HTML is streamed to the browser right away, providing a quick, non-interactive preview of the route.
+
+6. **Streaming the RSC Payload**: As **React** renders each UI element, **Next.js** streams the **RSC Payload** to the browser in chunks. This allows the content to be progressively loaded.
+
+7. **Final Rendering**: Once the browser receives the HTML and the **RSC Payload**, **Next.js** processes everything. **React** uses this information to progressively render the UI.
+
+8. **Hydration**: After the UI has been rendered, the **client components** undergo **hydration**, transforming the application from a static display into an interactive experience.
+
+---
+
+### **Update Sequence-Refreshing UI**
+
+When the user refreshes or triggers a UI update:
+
+1. **Browser Requests UI Update**: The browser requests a refetch of a specific UI, such as a full route or a part of the page.
+
+2. **Next.js Matches Request to Server Component**: **Next.js** processes the request and matches it to the corresponding **server component**.
+
+3. **React Renders the Updated Component Tree**: **React** re-renders the component tree just like it did during the initial loading, but **no new HTML** is generated during this update phase.
+
+4. **Progressive Streaming**: Instead of generating new HTML, **Next.js** streams the response data directly to the client. This response contains only the updated content, making the update process more efficient.
+
+5. **React Reconciliation**: Once the updated content is received, **React** reconciles the new output with the existing UI. This means that **React** merges the updated component tree with the existing one, ensuring that important UI states (like user input or clicks) remain intact.
+
+    * This is possible because **React** uses a special **JSON format** instead of raw HTML, allowing it to intelligently update only the parts of the UI that have changed, while preserving the state.
+
+---
+
+### **Rendering in Next.js Static, Dynamic, and Streaming**
+
+In **Next.js**, there are three different types of rendering strategies that can be applied to server components:
+
+1. **Static Rendering** – The content is pre-rendered at build time.
+2. **Dynamic Rendering** – The content is rendered on each request.
+3. **Streaming Rendering** – The content is progressively streamed to the client.
+
+Each rendering strategy has its use cases and trade-offs, and understanding how they fit into your app can help you make the best performance optimizations.
+
+---
