@@ -66,6 +66,7 @@
 * [**Client Component Placement**](#client-component-placement)
 * [**Interleaving Server and Client Components**](#interleaving-server-and-client-components)
 * [**Data Fetching**](#data-fetching)
+* [**Fetching Data in Client Components**](#fetching-data-in-client-components)
 
 ## **Introduction**
 
@@ -6552,5 +6553,121 @@ npx create-next-app@latest data-fetching-demo
 ```
 
 This sets up a new Next.js App Router project ready for hands-on data fetching examples.
+
+---
+
+## **Fetching Data in Client Components**
+
+While the Next.js App Router encourages data fetching in server components for performance and security, there are still valid scenarios where client-side fetching is necessary — such as when the data depends on user interactions or needs real-time updates.
+
+* [**Data Source JSONPlaceholder**](#data-source-jsonplaceholder)
+* [**Setting Up the Route**](#setting-up-the-route)
+* [**Define the User Type**](#define-the-user-type)
+* [**Implement the Client Component**](#implement-the-client-component)
+* [**When to Use Client-side Fetching**](#when-to-use-client-side-fetching)
+
+---
+
+### **Data Source JSONPlaceholder**
+
+We'll use [JSONPlaceholder](https://jsonplaceholder.typicode.com/users), a free fake API that provides mock data. Specifically, we’ll be working with the `/users` endpoint, which returns an array of 10 user objects.
+
+---
+
+### **Setting Up the Route**
+
+Create a new route in your `app` directory:
+
+```bash
+/app/users-client/page.tsx
+```
+
+We’re calling this route `users-client` to reflect that the data is being fetched on the **client side**.
+
+---
+
+### **Define the User Type**
+
+Inside `page.tsx`, define a TypeScript type to represent the user:
+
+```ts
+type User = {
+  id: number;
+  name: string;
+  username: string;
+  email: string;
+  phone: string;
+};
+```
+
+---
+
+### **Implement the Client Component**
+
+Now let’s create the client component that fetches and renders the users:
+
+```tsx
+'use client';
+
+import { useEffect, useState } from 'react';
+
+type User = {
+  id: number;
+  name: string;
+  username: string;
+  email: string;
+  phone: string;
+};
+
+export default function UsersClient() {
+  const [users, setUsers] = useState<User[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
+
+  useEffect(() => {
+    const fetchUsers = async () => {
+      try {
+        const res = await fetch('https://jsonplaceholder.typicode.com/users');
+        if (!res.ok) throw new Error('Failed to fetch users');
+        const data: User[] = await res.json();
+        setUsers(data);
+      } catch (err: any) {
+        setError(err.message || 'An unknown error occurred');
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    fetchUsers();
+  }, []);
+
+  if (loading) return <p className="text-blue-600">Loading...</p>;
+  if (error) return <p className="text-red-500">{error}</p>;
+
+  return (
+    <div className="space-y-4 p-4">
+      <h1 className="text-xl font-bold">Client-side Users</h1>
+      {users.map((user) => (
+        <div key={user.id} className="border p-3 rounded shadow-sm">
+          <p><strong>Name:</strong> {user.name}</p>
+          <p><strong>Username:</strong> {user.username}</p>
+          <p><strong>Email:</strong> {user.email}</p>
+          <p><strong>Phone:</strong> {user.phone}</p>
+        </div>
+      ))}
+    </div>
+  );
+}
+```
+
+---
+
+### **When to Use Client-side Fetching**
+
+Use **client-side fetching only when necessary**, such as:
+
+* Fetching data based on client-side interactions
+* Handling real-time data updates
+* Working with authenticated sessions in the browser
 
 ---
