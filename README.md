@@ -79,6 +79,7 @@
 * [**Separating Server Actions**](#separating-server-actions)
 * [**`useFormStatus` vs `useActionState`**](#useformstatus-vs-useactionstate)
 * [**Update Server Action**](#update-server-action)
+* [**Delete Server Action**](#delete-server-action)
 
 ## **Introduction**
 
@@ -8197,5 +8198,82 @@ export async function editProduct(
 ```
 
 > Note: The first argument (`id`) is bound using `.bind()` and is not part of the form data.
+
+---
+
+## **Delete Server Action**
+
+We’ll now implement a **delete** feature using **Next.js Server Actions**, keeping the component entirely on the **server side**.
+
+* [**Add Delete Button in the Product List UI**](#add-delete-button-in-the-product-list-ui)
+* [**Define the `removeProduct` Server Action**](#define-the-removeproduct-server-action)
+* [**Make Sure the Delete Button Calls the Server Action**](#make-sure-the-delete-button-calls-the-server-action)
+* [**Ensure the Product List Refreshes Automatically**](#ensure-the-product-list-refreshes-automatically)
+* [**Test the Deletion**](#test-the-deletion)
+
+---
+
+### **Add Delete Button in the Product List UI**
+
+Inside `app/products-db/page.tsx`, add a **Delete** button after each product’s price:
+
+```tsx
+<form action={removeProduct.bind(null, product.id)}>
+  <button
+    type="submit"
+    className="bg-red-500 hover:bg-red-600 text-white px-4 py-1 rounded"
+  >
+    Delete
+  </button>
+</form>
+```
+
+> Wrapping the button in a `<form>` allows calling a server action without converting the component to a Client Component.
+
+---
+
+### **Define the `removeProduct` Server Action**
+
+Inside `app/actions/products.ts` (or `lib/actions/products.ts`):
+
+```ts
+"use server";
+
+import { deleteProduct } from "@/lib/db"; // This should delete a product by ID
+import { revalidatePath } from "next/cache";
+
+export async function removeProduct(id: number) {
+  await deleteProduct(id);
+  await revalidatePath("/products-db"); // Refresh data after deletion
+}
+```
+
+---
+
+### **Make Sure the Delete Button Calls the Server Action**
+
+Back in your `page.tsx`, import the action at the top:
+
+```ts
+import { removeProduct } from "@/app/actions/products";
+```
+
+And as shown in Step 1, use `form action={removeProduct.bind(null, product.id)}` to bind the ID to the action.
+
+---
+
+### **Ensure the Product List Refreshes Automatically**
+
+The call to `revalidatePath("/products-db")` ensures the UI reflects changes **immediately** after deletion — no manual refresh needed.
+
+---
+
+### **Test the Deletion**
+
+1. Navigate to `/products-db`.
+2. Click the **Delete** button next to a product.
+3. It should be removed from the list immediately after the request completes.
+
+> You may still see a 1.5-second delay due to artificial latency for demonstration purposes.
 
 ---
