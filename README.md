@@ -70,6 +70,7 @@
 * [**Fetching Data in Server Components**](#fetching-data-in-server-components)
 * [**Loading and Error States**](#loading-and-error-states)
 * [**Sequential Data Fetching**](#sequential-data-fetching)
+* [**Parallel Data Fetching**](#parallel-data-fetching)
 
 ## **Introduction**
 
@@ -7035,5 +7036,188 @@ await new Promise(resolve => setTimeout(resolve, 1000));  // 1 second delay
 ```
 
 Now, when you reload the page, the post content will show first, and after a short delay, the author name will appear.
+
+---
+
+## **Parallel Data Fetching**
+
+Parallel data fetching is the process of initiating multiple requests simultaneously, reducing the total loading time when the requests don’t depend on each other. This pattern is useful when you need to fetch independent pieces of data and display them together.
+
+* [**Example User Profile Page with Posts and Albums**](#example-user-profile-page-with-posts-and-albums)
+* [**Setup Folder for Parallel Data Fetching**](#setup-folder-for-parallel-data-fetching)
+* [**Typescript Types for Posts and Albums**](#typescript-types-for-posts-and-albums)
+* [**Fetching Posts and Albums**](#fetching-posts-and-albums)
+* [**Component for User Profile**](#component-for-user-profile)
+* [**Adding a Loading State**](#adding-a-loading-state)
+* [**Creating a Loading Spinner**](#creating-a-loading-spinner)
+* [**Wrapping with Suspense**](#wrapping-with-suspense)
+
+---
+
+### **Example User Profile Page with Posts and Albums**
+
+In this example, we'll create a **user profile page** by fetching both the user's posts and albums concurrently using **Json Placeholder API**.
+
+---
+
+### **Setup Folder for Parallel Data Fetching**
+
+1. Inside your **`app`** folder, create a new folder:
+
+   ```
+   /app/user-parallel
+   ```
+
+2. Inside **`user-parallel`**, create a dynamic route folder:
+
+   ```
+   /app/user-parallel/[id]
+   ```
+
+3. Inside this folder, add a `page.tsx` file.
+
+---
+
+### **Typescript Types for Posts and Albums**
+
+We’ll define the types for the posts and albums. The `userId` is common across both types:
+
+```ts
+type Post = {
+  userId: number;
+  id: number;
+  title: string;
+  body: string;
+};
+
+type Album = {
+  userId: number;
+  id: number;
+  title: string;
+};
+```
+
+---
+
+### **Fetching Posts and Albums**
+
+We will create two functions to fetch the user's posts and albums. These functions will be defined outside the component to keep things clean.
+
+1. **Fetching Posts**:
+
+```ts
+async function getUserPosts(userId: number) {
+  const res = await fetch(`https://jsonplaceholder.typicode.com/posts?userId=${userId}`);
+  return res.json();
+}
+```
+
+2. **Fetching Albums**:
+
+```ts
+async function getUserAlbums(userId: number) {
+  const res = await fetch(`https://jsonplaceholder.typicode.com/albums?userId=${userId}`);
+  return res.json();
+}
+```
+
+---
+
+### **Component for User Profile**
+
+Now, let’s create the component that will fetch both posts and albums in parallel using `Promise.all`:
+
+```tsx
+// app/user-parallel/[id]/page.tsx
+import { Suspense } from 'react';
+
+export default async function UserProfile({ params }: { params: { id: string } }) {
+  const userId = parseInt(params.id, 10); // Get user ID from route params
+
+  // Fetch both posts and albums in parallel
+  const [posts, albums] = await Promise.all([
+    getUserPosts(userId),
+    getUserAlbums(userId)
+  ]);
+
+  return (
+    <div className="flex">
+      <div className="w-1/2 p-4">
+        <h2 className="font-semibold">Posts</h2>
+        {posts.map((post: Post) => (
+          <div key={post.id} className="mb-4">
+            <h3>{post.title}</h3>
+            <p>{post.body}</p>
+          </div>
+        ))}
+      </div>
+      <div className="w-1/2 p-4">
+        <h2 className="font-semibold">Albums</h2>
+        {albums.map((album: Album) => (
+          <div key={album.id} className="mb-4">
+            <h3>{album.title}</h3>
+          </div>
+        ))}
+      </div>
+    </div>
+  );
+}
+```
+
+---
+
+### **Adding a Loading State**
+
+To simulate a loading state and show how both posts and albums are fetched simultaneously, let’s add a delay to the fetching functions:
+
+```ts
+async function getUserPosts(userId: number) {
+  await new Promise(resolve => setTimeout(resolve, 1000)); // 1-second delay
+  const res = await fetch(`https://jsonplaceholder.typicode.com/posts?userId=${userId}`);
+  return res.json();
+}
+
+async function getUserAlbums(userId: number) {
+  await new Promise(resolve => setTimeout(resolve, 1000)); // 1-second delay
+  const res = await fetch(`https://jsonplaceholder.typicode.com/albums?userId=${userId}`);
+  return res.json();
+}
+```
+
+---
+
+### **Creating a Loading Spinner**
+
+Create a new `loading.tsx` file in the same folder to show a loading spinner. This will be used while the data is being fetched:
+
+```tsx
+// app/user-parallel/[id]/loading.tsx
+export default function Loading() {
+  return (
+    <div className="flex justify-center items-center p-10">
+      <div className="spinner-border animate-spin border-4 border-t-4 border-gray-600 rounded-full w-12 h-12"></div>
+    </div>
+  );
+}
+```
+
+---
+
+### **Wrapping with Suspense**
+
+Wrap the `UserProfile` component with a `Suspense` boundary to show the loading spinner during data fetching:
+
+```tsx
+import { Suspense } from 'react';
+import Loading from './loading';
+
+export default function UserProfilePage({ params }: { params: { id: string } }) {
+  return (
+    <Suspense fallback={<Loading />}>
+      <UserProfile params={params} />
+    </Suspense>
+  );
+}
+```
 
 ---
