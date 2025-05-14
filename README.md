@@ -42,6 +42,7 @@
 * [**DELETE Request**](#delete-request)
 * [**Handling URL Query Parameters**](#handling-url-query-parameters)
 * [**Headers in Route Handlers**](#headers-in-route-handlers)
+* [**Cookies in Route Handlers**](#cookies-in-route-handlers)
 
 ## **Introduction**
 
@@ -4274,5 +4275,106 @@ export async function GET() {
 
 * Request: `http://localhost:3000/api/profile`
 * Check: **Network Tab → Headers** - Look for `Content-Type: text/html`.
+
+---
+
+## **Cookies in Route Handlers**
+
+Cookies are small pieces of data stored in the browser that are sent with every HTTP request to the same origin. In **Next.js route handlers**, cookies help manage sessions, personalize user experience, and perform tracking.
+
+* [**Common Use Cases for Cookies**](#common-use-cases-for-cookies)
+* [**Setting & Reading Cookies in Route Handlers**](#setting-&-reading-cookies-in-route-handlers)
+* [**Cookie API Methods**](#cookie-api-methods)
+* [**Testing with Thunder Client or Browser**](#testing-with-thunder-client-or-browser)
+
+---
+
+### **Common Use Cases for Cookies**
+
+* **Session Management**: Logins, shopping carts
+* **Personalization**: Themes, preferences
+* **Analytics**: Tracking user behavior
+
+---
+
+### **Setting & Reading Cookies in Route Handlers**
+
+There are two main approaches
+
+* [**Option 1 Using `set-cookie` header**](#option-1-using-set-cookie-header)
+* [**Option 2 Using `cookies` helper**](#option-2-using-cookies-helper)
+---
+
+#### **Option 1 Using `set-cookie` header**
+
+**Set a Cookie**
+
+```ts
+export async function GET() {
+  return new Response("<h1>Cookie Set</h1>", {
+    headers: {
+      "Content-Type": "text/html",
+      "Set-Cookie": "theme=dark",
+    },
+  });
+}
+```
+
+* Response will now include a `Set-Cookie` header: `theme=dark`.
+
+**Read a Cookie from Request**
+
+```ts
+import { NextRequest } from "next/server";
+
+export async function GET(request: NextRequest) {
+  const theme = request.cookies.get("theme");
+  console.log("Theme:", theme); // Logs: { name: 'theme', value: 'dark' }
+
+  return new Response("Theme Cookie Read");
+}
+```
+
+> Test in Thunder Client → **Cookies tab** → See `theme=dark` returned.
+
+---
+
+#### **Option 2 Using `cookies` helper**
+
+```ts
+import { cookies } from "next/headers";
+
+export async function GET() {
+  const cookieStore = cookies();
+
+  // Set cookie
+  cookieStore.set("resultsPerPage", "20");
+
+  // Read cookie
+  const cookie = cookieStore.get("resultsPerPage");
+  console.log(cookie); // Logs: { name: 'resultsPerPage', value: '20' }
+
+  return new Response("Cookie set using cookies()");
+}
+```
+
+---
+
+### **Cookie API Methods**
+
+| Method                         | Purpose                  |
+| ------------------------------ | ------------------------ |
+| `cookieStore.get(name)`        | Retrieve a cookie        |
+| `cookieStore.set(name, value)` | Set a cookie             |
+| `cookieStore.has(name)`        | Check if a cookie exists |
+| `cookieStore.delete(name)`     | Remove a cookie          |
+
+---
+
+### **Testing with Thunder Client or Browser**
+
+1. **Send a request** to `/api/your-endpoint`
+2. **Check cookies tab** in the response (Thunder Client or browser DevTools)
+3. **See values like `theme=dark` or `resultsPerPage=20`**
 
 ---
