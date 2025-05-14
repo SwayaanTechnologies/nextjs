@@ -73,6 +73,7 @@
 * [**Parallel Data Fetching**](#parallel-data-fetching)
 * [**Fetching from a Database**](#fetching-from-a-database)
 * [**Data Mutations**](#data-mutations)
+* [**Forms with Server Actions**](#forms-with-server-actions)
 
 ## **Introduction**
 
@@ -7556,5 +7557,107 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
   res.status(201).json(product);
 }
 ```
+
+---
+
+## **Forms with Server Actions**
+
+We’ve seen how data mutations are traditionally handled in React using API routes and client-side logic. Now let’s look at a powerful feature introduced in the **App Router**: **Server Actions**.
+
+* [**What Are Server Actions**](#what-are-server-actions)
+* [**Creating a Form Using Server Actions**](#creating-a-form-using-server-actions)
+* [**File `/app/products-db/create/page.tsx`**](#file-/app/products-db/create/page.tsx)
+* [**Progressive Enhancement**](#progressive-enhancement)
+
+---
+
+### **What Are Server Actions**
+
+**Server Actions** are asynchronous functions that run on the server. They simplify secure data mutations and eliminate the need for separate API routes or client-side form state.
+
+**Use Server Actions when:**
+
+* You want to securely access the database directly from a server component
+* You want to reduce API route boilerplate
+* You need **Progressive Enhancement** (form works even if JS is disabled)
+* You want better **performance and code simplicity**
+
+---
+
+### **Creating a Form Using Server Actions**
+
+Let’s walk through creating a product form using a **Server Component** and a **Server Action**.
+
+---
+
+### **File `/app/products-db/create/page.tsx`**
+
+```tsx
+import { addProduct } from '@/src/prisma/db';
+import { redirect } from 'next/navigation';
+
+// Server Action
+export async function createProduct(formData: FormData) {
+  'use server';
+
+  const title = formData.get('title') as string;
+  const price = parseFloat(formData.get('price') as string);
+  const description = formData.get('description') as string;
+
+  await addProduct({ title, price, description });
+
+  redirect('/products-db');
+}
+
+// Server Component
+export default function AddProductPage() {
+  return (
+    <form action={createProduct} className="max-w-md mx-auto p-6 border rounded">
+      <h2 className="text-lg font-semibold mb-4">Add New Product</h2>
+      <input
+        type="text"
+        name="title"
+        placeholder="Title"
+        required
+        className="input mb-2 w-full"
+      />
+      <input
+        type="number"
+        name="price"
+        placeholder="Price"
+        required
+        className="input mb-2 w-full"
+      />
+      <textarea
+        name="description"
+        placeholder="Description (optional)"
+        className="input mb-4 w-full"
+      />
+      <button type="submit" className="btn btn-primary w-full">
+        Add Product
+      </button>
+    </form>
+  );
+}
+```
+
+---
+
+**How It Works**
+
+* The form’s `action` attribute is assigned to `createProduct`, a **Server Action**.
+* When submitted, the form sends a **POST** request to the server.
+* The server function receives the `FormData`, extracts values, and calls `addProduct` (from Prisma).
+* After inserting the data, it redirects the user to `/products-db`.
+
+---
+
+### **Progressive Enhancement**
+
+- Try disabling JavaScript in your browser DevTools:
+
+- **Cmd + Shift + P → "Disable JavaScript" → Submit the Form**
+
+> The form still works! That’s Progressive Enhancement — server actions degrade gracefully when JavaScript is off.
 
 ---
