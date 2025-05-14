@@ -39,6 +39,7 @@
 * [**POST Requests**](#post-requests)
 * [**Dynamic Route Handlers**](#dynamic-route-handlers)
 * [**PATCH Request**](#patch-request)
+* [**DELETE Request**](#delete-request)
 
 ## **Introduction**
 
@@ -4013,5 +4014,83 @@ export async function PATCH(
 * Switch to your `GET /comments` tab and hit **Send**:
 
   * You’ll see the updated text reflected for comment ID `3`.
+
+---
+
+## **DELETE Request**
+
+A `DELETE` request allows us to **remove a resource**, in this case, a comment by its ID. Let’s walk through the setup and test it using Thunder Client.
+
+* [**Step 1 Test a DELETE Request in Thunder Client**](#step-1-test-a-delete-request-in-thunder-client)
+* [**Step 2 Add DELETE Handler**](#step-2-add-delete-handler)
+* [**Step 3 Re-Test the Request**](#step-3-re-test-the-request)
+
+---
+
+### **Step 1 Test a DELETE Request in Thunder Client**
+
+1. Open the Thunder Client tab where you're testing the dynamic comment route.
+2. Change the HTTP method to `DELETE`.
+3. Use this URL:
+
+   ```
+   http://localhost:3000/comments/3
+   ```
+
+4. No need to add anything in the body.
+5. Click **Send**. You’ll see a `405 Method Not Allowed` error — let’s fix that.
+
+---
+
+### **Step 2 Add DELETE Handler**
+
+In the same file: `app/comments/[id]/route.ts`, add the following function:
+
+```ts
+import { comments } from "../data";
+
+export async function DELETE(
+  request: Request,
+  context: { params: { id: string } }
+) {
+  const { id } = context.params;
+
+  const index = comments.findIndex(c => c.id === parseInt(id));
+
+  if (index === -1) {
+    return new Response("Comment not found", { status: 404 });
+  }
+
+  const deletedComment = comments[index];
+  comments.splice(index, 1);
+
+  return Response.json(deletedComment);
+}
+```
+
+---
+
+**What’s Happening Here**
+
+* We extract the comment `id` from the URL.
+* Use `findIndex()` to locate the comment’s position.
+* If it exists, we store it in a variable, remove it from the array using `splice()`, and return it.
+* If it’s not found, we respond with a `404 Not Found`.
+
+---
+
+### **Step 3 Re-Test the Request**
+
+* Click **Send** on the `DELETE` request again.
+* You’ll receive a `200 OK` response with the deleted comment:
+
+```json
+{
+  "id": 3,
+  "text": "Updated comment"
+}
+```
+
+* Now switch to the `GET /comments` request and send it — you should now see only two comments left.
 
 ---
