@@ -44,6 +44,7 @@
 * [**Headers in Route Handlers**](#headers-in-route-handlers)
 * [**Cookies in Route Handlers**](#cookies-in-route-handlers)
 * [**Redirects in Route Handlers**](#redirects-in-route-handlers)
+* [**Caching in Route Handlers**](#caching-in-route-handlers)
 
 ## **Introduction**
 
@@ -4451,5 +4452,111 @@ Next.js uses a **307 redirect** by default via the `redirect()` utility. This en
 1. Hit `/api/v1/users` in your browser or Thunder Client
 2. You should be automatically redirected to `/api/v2/users`
 3. Response will come from the new endpoint
+
+---
+
+## **Caching in Route Handlers**
+
+By default, **route handlers in Next.js are not cached**. However, you can **opt into caching behavior** to improve performance, especially for data that doesn't change often.
+
+---
+
+### **Example No Caching**
+
+```ts
+// File: app/time/route.ts
+
+export async function GET() {
+  const currentTime = new Date().toLocaleTimeString();
+  return Response.json({ time: currentTime });
+}
+```
+
+Visiting `http://localhost:3000/time` shows a new time with every reload because there is **no caching**.
+
+---
+
+### **Caching with `force-static`**
+
+If your data is static or rarely changes (like categories from a DB), caching makes sense.
+
+```ts
+// File: app/categories/route.ts
+
+export const dynamic = "force-static";
+
+export async function GET() {
+  const categories = [
+    { id: 1, name: "Electronics" },
+    { id: 2, name: "Books" },
+    { id: 3, name: "Clothing" },
+    { id: 4, name: "Home" },
+  ];
+
+  return Response.json(categories);
+}
+```
+
+* This endpoint will now be **statically generated and cached**.
+* All users will receive the same fast response, **no re-fetching** from a database.
+
+---
+
+### **Lets Test Caching in Practice**
+
+Apply the same caching config to the time endpoint:
+
+```ts
+// File: app/time/route.ts
+
+export const dynamic = "force-static";
+
+export async function GET() {
+  const currentTime = new Date().toLocaleTimeString();
+  return Response.json({ time: currentTime });
+}
+```
+
+#### **Steps**
+
+1. Run the app in production mode:
+
+   ```bash
+   npm run build && npm start
+   ```
+
+2. Visit `/time` — note the time (e.g., `11:49:58 AM`)
+3. Refresh the page — the time stays the same
+
+- The value is **cached at build time** and won’t change unless you rebuild the app.
+
+---
+
+### **Revalidating Cached Data**
+
+To refresh cached data **without rebuilding** the whole app, use **Incremental Static Regeneration (ISR)**:
+
+```ts
+export const revalidate = 10;
+```
+
+* This tells Next.js to **revalidate** the data **every 10 seconds**.
+* During the first request after 10s, stale data is served, and fresh data is rebuilt **in the background**.
+* On the **next reload**, you’ll see updated content.
+
+---
+
+### **When Caching Doesnot Apply**
+
+Caching is **only supported** for `GET` handlers and **only if:**
+
+* You're **not** using:
+
+  * `request` object
+  * `headers()`
+  * `cookies()`
+* Your handler is **static/deterministic**
+
+If you use `POST`, `PUT`, `DELETE`, or access dynamic request data — caching is disabled.
 
 ---
