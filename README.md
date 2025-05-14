@@ -68,6 +68,7 @@
 * [**Data Fetching**](#data-fetching)
 * [**Fetching Data in Client Components**](#fetching-data-in-client-components)
 * [**Fetching Data in Server Components**](#fetching-data-in-server-components)
+* [**Loading and Error States**](#loading-and-error-states)
 
 ## **Introduction**
 
@@ -6755,5 +6756,107 @@ export default async function UsersServer() {
 ```
 
 > No `useState`, no `useEffect`, no hydration required — just clean, direct fetching logic.
+
+---
+
+## **Loading and Error States**
+
+While client components require you to manually manage loading and error states via `useState` and conditional rendering, **server components** in Next.js simplify this using **convention-based files**:
+
+* `loading.tsx` for loading state
+* `error.tsx` for error state
+
+Let’s see how to implement both.
+
+* [**Setup Folder**](#setup-folder)
+* [**`loading.tsx` Loading State**](#loading.tsx-loading-state)
+* [**`error.tsx` Error State**](#error.tsx-error-state)
+* [**Testing the Error UI**](#testing-the-error-ui)
+
+---
+
+### **Setup Folder**
+
+This assumes you’ve already created:
+
+```
+/app/users-server/page.tsx
+```
+
+---
+
+### **`loading.tsx` Loading State**
+
+Create a file:
+
+```
+/app/users-server/loading.tsx
+```
+
+Then add a simple loading UI:
+
+```tsx
+// app/users-server/loading.tsx
+export default function LoadingPage() {
+  return (
+    <div className="flex justify-center items-center h-40">
+      <div className="animate-spin rounded-full h-10 w-10 border-t-4 border-blue-500"></div>
+      <span className="ml-4 text-gray-700 font-medium">Loading users...</span>
+    </div>
+  );
+}
+```
+
+> To simulate a loading delay, add this inside `page.tsx` (just before the fetch call):
+
+```ts
+await new Promise((resolve) => setTimeout(resolve, 2000));
+```
+
+This artificial delay gives the loading spinner time to appear.
+
+---
+
+### **`error.tsx` Error State**
+
+Create a file:
+
+```
+/app/users-server/error.tsx
+```
+
+Add the following code:
+
+```tsx
+'use client';
+
+import { useEffect } from 'react';
+
+export default function ErrorPage({ error }: { error: Error }) {
+  useEffect(() => {
+    console.error('Error fetching users:', error);
+  }, [error]);
+
+  return (
+    <div className="text-red-600 font-semibold p-4 border border-red-400 rounded bg-red-50">
+      Error fetching users data.
+    </div>
+  );
+}
+```
+
+> This file **must be a client component**, which is why we use the `'use client'` directive.
+
+---
+
+### **Testing the Error UI**
+
+To simulate an error, change the fetch URL in `page.tsx` to something invalid:
+
+```ts
+await fetch('https://jsonplaceholder.typicode.com/users123');
+```
+
+Reload the page in the browser, and you should see the red error message.
 
 ---
