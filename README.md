@@ -87,6 +87,7 @@
 * [**Sign In and Sign Out with Clerk**](#sign-in-and-sign-out-with-clerk)
 * [**Profile Settings with Clerk**](#profile-settings-with-clerk)
 * [**Conditional UI Rendering**](#conditional-ui-rendering)
+* [**Protecting Routes**](#protecting-routes)
 
 ## **Introduction**
 
@@ -9026,5 +9027,119 @@ export const Navigation = () => {
 * When signed **out**, only the Sign In button is shown
 * When signed **in**, the Profile link and Sign Out menu appear
 * Clerk automatically manages auth state updates — no manual state management needed!
+
+---
+
+## **Protecting Routes**
+
+Now that we can conditionally render UI elements based on authentication status, let’s **protect entire pages** from unauthenticated users.
+
+* [**Problem**](#problem)
+* [**Solution Protect Routes Using Clerk Middleware**](#solution-protect-routes-using-clerk-middleware)
+* [**Step-by-Step Setup for Protecting Routes**](#step-by-step-setup-for-protecting-routes)
+* [**Alternative Protect All Routes By Default**](#alternative-protect-all-routes-by-default)
+* [**Why Use Middleware?**](#why-use-middleware)
+
+---
+
+### **Problem**
+
+If you're signed out and try to visit a protected route like:
+
+```
+http://localhost:3000/user-profile
+```
+
+You'll encounter a Clerk runtime error:
+
+> "UserProfile cannot render unless a user is signed in."
+
+---
+
+### **Solution Protect Routes Using Clerk Middleware**
+
+Clerk allows you to protect pages using a middleware function that runs **before a route loads**. Let’s configure it step by step.
+
+---
+
+### **Step-by-Step Setup for Protecting Routes**
+
+* [**Update `middleware.ts` in the `src/` folder**](#update-middleware.ts-in-the-src/-folder)
+* [**Test the Protection**](#test-the-protection)
+
+#### **Update `middleware.ts` in the `src/` folder**
+
+> This file was already created during Clerk setup.
+
+```ts
+// src/middleware.ts
+import { authMiddleware, redirectToSignIn } from "@clerk/nextjs";
+import { createRouteMatcher } from "@clerk/nextjs/server";
+
+// Define protected routes
+const isProtectedRoute = createRouteMatcher([
+  "/user-profile(.*)", // Regex for route + subpages
+]);
+
+export default authMiddleware({
+  async beforeAuth(auth, req) {
+    if (isProtectedRoute(req)) {
+      await auth().protect(); // Automatically redirects to sign-in if unauthenticated
+    }
+  },
+});
+```
+
+* This protects `/user-profile` and any subpages.
+* Unauthenticated users are redirected to Clerk’s hosted sign-in page.
+
+---
+
+#### **Test the Protection**
+
+1. Sign out of your app.
+2. Navigate to `/user-profile`.
+3. You’ll be redirected to the sign-in page.
+4. Sign in, and you’ll be redirected back to the profile page.
+
+> Route protection is working!
+
+---
+
+### **Alternative Protect All Routes By Default**
+
+You can flip the logic and **make all routes protected by default**, only allowing selected public routes:
+
+```ts
+// src/middleware.ts
+const isPublicRoute = createRouteMatcher([
+  "/",              // Home page
+  "/sign-in(.*)",   // Clerk-hosted sign-in
+  "/sign-up(.*)",   // Clerk-hosted sign-up
+]);
+
+export default authMiddleware({
+  async beforeAuth(auth, req) {
+    const { userId } = await auth();
+
+    if (!userId && !isPublicRoute(req)) {
+      return redirectToSignIn(); // Manually redirect with full control
+    }
+  },
+});
+```
+
+---
+
+### **Why Use Middleware?**
+
+Middleware gives you flexibility to:
+
+* Customize redirection logic
+* Add region-specific behavior
+* Log unauthorized attempts
+* Handle route-specific maintenance
+
+Clerk’s middleware ensures your application is **secure, dynamic, and personalized**.
 
 ---
