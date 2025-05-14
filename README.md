@@ -62,6 +62,7 @@
 * [**Server-only Code**](#server-only-code)
 * [**Working with Third-Party Packages**](#working-with-third-party-packages)
 * [**Working with Context Providers**](#working-with-context-providers)
+* [**Client-only Code**](#client-only-code)
 
 ## **Introduction**
 
@@ -6115,5 +6116,119 @@ export default function ClientRoutePage() {
 ```
 
 In the browser, you'll see the heading styled with the primary theme color. Change it to `theme.colors.secondary`, and the color updates as expected.
+
+---
+
+## **Client-only Code**
+
+Just like we need to isolate server-side logic (e.g., database access, secrets) to server components, it's **equally important** to isolate client-side functionality to **client components**.
+
+* [**What is Client-only Code**](#what-is-client-only-code)
+* [**How to Enforce Client-only Code Separation**](#how-to-enforce-client-only-code-separation)
+* [**Example Client-only Utility**](#example-client-only-utility)
+
+---
+
+### **What is Client-only Code**
+
+Client-only code is code that:
+
+* Interacts with the **DOM**
+* Uses the **`window` object**
+* Accesses **`localStorage`**, **`sessionStorage`**, or **browser APIs**
+
+Such code **cannot run on the server**, and must be executed only on the browser/client.
+
+---
+
+### **How to Enforce Client-only Code Separation**
+
+To help ensure client-only code stays client-side, we can use the [**`client-only`**](https://www.npmjs.com/package/client-only) package. It creates a **build-time safety net**, preventing accidental server-side usage of client-side code.
+
+---
+
+### **Example Client-only Utility**
+
+* [**Create a Client-side Function**](#create-a-client-side-function)
+* [**Use in a Client Component**](#use-in-a-client-component)
+* [**Misuse in a Server Component Instant Feedback**](#misuse-in-a-server-component-instant-feedback)
+
+---
+
+#### **Create a Client-side Function**
+
+Create a file `src/utils/client.ts`:
+
+```ts
+import clientOnly from 'client-only';
+
+export const clientSideFunction = clientOnly(() => {
+  console.log('use window object');
+  console.log('use local storage');
+  return 'client result';
+});
+```
+
+> `clientOnly()` ensures this function can **only be used in client components**.
+
+---
+
+#### **Use in a Client Component**
+
+Update `app/client-route/page.tsx`:
+
+```tsx
+'use client';
+
+import { clientSideFunction } from '@/utils/client';
+
+export default function ClientRoutePage() {
+  const result = clientSideFunction();
+
+  return (
+    <p>{result}</p>
+  );
+}
+```
+
+When visiting `/client-route` in the browser, you’ll see:
+
+* Logs in the developer console
+* The result `"client result"` rendered
+
+Everything runs **perfectly on the client**, as intended.
+
+---
+
+#### **Misuse in a Server Component Instant Feedback**
+
+If you accidentally use this function in a **server component**, like `app/server-route/page.tsx`:
+
+```tsx
+import { clientSideFunction } from '@/utils/client';
+
+export default function ServerRoutePage() {
+  const result = clientSideFunction(); // Error
+
+  return <h1>{result}</h1>;
+}
+```
+
+You’ll see this **build-time error**:
+
+```
+You're importing a component that imports client-only.
+It only works in a client component, but none of its parents are marked with "use client".
+```
+
+> This safeguards you from runtime errors by **failing early** during development.
+
+**Why This Matters**
+
+By using the `client-only` package:
+
+* You **catch client/server boundary issues early**.
+* You **enforce best practices** for architecture.
+* You **prevent runtime crashes** caused by client code running on the server.
 
 ---
