@@ -67,6 +67,7 @@
 * [**Interleaving Server and Client Components**](#interleaving-server-and-client-components)
 * [**Data Fetching**](#data-fetching)
 * [**Fetching Data in Client Components**](#fetching-data-in-client-components)
+* [**Fetching Data in Server Components**](#fetching-data-in-server-components)
 
 ## **Introduction**
 
@@ -6669,5 +6670,90 @@ Use **client-side fetching only when necessary**, such as:
 * Fetching data based on client-side interactions
 * Handling real-time data updates
 * Working with authenticated sessions in the browser
+
+---
+
+## **Fetching Data in Server Components**
+
+The **React Server Components (RSC)** architecture in Next.js makes server-side data fetching incredibly simple. With built-in support for `async`/`await`, you can fetch data like regular JavaScript — no need for `useEffect`, `useState`, or prop drilling.
+
+* [**Data Source JSONPlaceholder Fetching Data in Server Components**](#data-source-jsonplaceholder-fetching-data-in-server-components)
+* [**Creating the Server Route**](#creating-the-server-route)
+* [**Define the User Type for Server Component**](#define-the-user-type-for-server-component)
+* [**Create the Async Server Component**](#create-the-async-server-component)
+
+---
+
+### **Data Source JSONPlaceholder Fetching Data in Server Components**
+
+We’ll continue using the `/users` endpoint from [JSONPlaceholder](https://jsonplaceholder.typicode.com/users), which provides an array of mock user data.
+
+---
+
+### **Creating the Server Route**
+
+In your `app` directory, create a new route:
+
+```bash
+/app/users-server/page.tsx
+```
+
+We name it `users-server` to indicate that the data fetching occurs in a **server component**.
+
+---
+
+### **Define the User Type for Server Component**
+
+Start by defining the same `User` type:
+
+```ts
+type User = {
+  id: number;
+  name: string;
+  username: string;
+  email: string;
+  phone: string;
+};
+```
+
+---
+
+### **Create the Async Server Component**
+
+Now create a server component that fetches and displays users:
+
+```tsx
+// app/users-server/page.tsx
+import React from 'react';
+
+type User = {
+  id: number;
+  name: string;
+  username: string;
+  email: string;
+  phone: string;
+};
+
+export default async function UsersServer() {
+  const response = await fetch('https://jsonplaceholder.typicode.com/users');
+  const users: User[] = await response.json();
+
+  return (
+    <div className="space-y-4 p-4">
+      <h1 className="text-xl font-bold">Server-side Users</h1>
+      {users.map((user) => (
+        <div key={user.id} className="border p-3 rounded shadow-sm">
+          <p><strong>Name:</strong> {user.name}</p>
+          <p><strong>Username:</strong> {user.username}</p>
+          <p><strong>Email:</strong> {user.email}</p>
+          <p><strong>Phone:</strong> {user.phone}</p>
+        </div>
+      ))}
+    </div>
+  );
+}
+```
+
+> No `useState`, no `useEffect`, no hydration required — just clean, direct fetching logic.
 
 ---
