@@ -88,6 +88,7 @@
 * [**Profile Settings with Clerk**](#profile-settings-with-clerk)
 * [**Conditional UI Rendering**](#conditional-ui-rendering)
 * [**Protecting Routes**](#protecting-routes)
+* [**Reading Session and User Data**](#reading-session-and-user-data)
 
 ## **Introduction**
 
@@ -9141,5 +9142,122 @@ Middleware gives you flexibility to:
 * Handle route-specific maintenance
 
 Clerk’s middleware ensures your application is **secure, dynamic, and personalized**.
+
+---
+
+## **Reading Session and User Data**
+
+To personalize user experiences or track actions, we often need access to user and session data. Clerk provides helpers to do this both in **server** and **client** components.
+
+* [**Server `auth` and `currentUser`**](#server-auth-and-currentuser)
+* [**Client `useAuth` and `useUser`**](#client-useauth-and-useuser)
+
+---
+
+### **Server `auth` and `currentUser`**
+
+In **Server Components** and **Route Handlers**, use:
+
+* `auth()` → Returns session-level info like user ID and session ID.
+* `currentUser()` → Returns detailed user info like email, name, image, etc.
+
+#### **Example**
+
+1. Create a `dashboard` route:
+
+```bash
+mkdir app/dashboard
+touch app/dashboard/page.tsx
+```
+
+2. Inside `page.tsx`:
+
+```tsx
+// app/dashboard/page.tsx
+import { auth, currentUser } from "@clerk/nextjs/server";
+
+export default async function DashboardPage() {
+  const authObject = await auth();
+  const userObject = await currentUser();
+
+  console.log("authObject:", authObject);      // userId, sessionId, etc.
+  console.log("userObject:", userObject);      // email, name, imageUrl, etc.
+
+  return <h1>Welcome to your Dashboard</h1>;
+}
+```
+
+* Visit `/dashboard` in the browser (while signed in) and check the logs.
+* You’ll see the session and user details printed to the terminal/server logs.
+
+> Use `auth()` if you just need user/session ID. Use `currentUser()` if you need user profile data.
+
+---
+
+### **Client `useAuth` and `useUser`**
+
+In **Client Components**, use:
+
+* `useAuth()` → Lightweight access to `userId`, `sessionId`, and `getToken()`.
+* `useUser()` → Access to full user profile like `firstName`, `email`, `imageUrl`.
+
+---
+
+#### **Example A Client-side Counter Component**
+
+1. Create `components/Counter.tsx`:
+
+```tsx
+// components/Counter.tsx
+"use client";
+
+import { useState } from "react";
+import { useAuth, useUser } from "@clerk/nextjs";
+
+export const Counter = () => {
+  const [count, setCount] = useState(0);
+
+  const { isLoaded: authLoaded, userId } = useAuth();
+  const { isLoaded: userLoaded, isSignedIn, user } = useUser();
+
+  // Option 1: Use useAuth
+  if (!authLoaded || !userId) return null;
+
+  // Option 2: Use useUser
+  // if (!userLoaded || !isSignedIn) return null;
+
+  return (
+    <div>
+      <p>Count: {count}</p>
+      <button onClick={() => setCount(count + 1)}>+1</button>
+    </div>
+  );
+};
+```
+
+2. Use this component in the home page:
+
+```tsx
+// app/page.tsx
+import Image from "next/image";
+import { Counter } from "@/components/Counter";
+
+export default function HomePage() {
+  return (
+    <main>
+      <Image src="/logo.png" alt="Logo" width={100} height={100} />
+      <Counter />
+    </main>
+  );
+}
+```
+
+---
+
+**Behavior**
+
+* While **signed in**, the counter displays.
+* If the user **signs out**, the component disappears safely.
+* The component won't flash or crash because we check `isLoaded` and `userId`.
 
 ---
