@@ -51,6 +51,7 @@
 * [**Server-side Rendering**](#server-side-rendering)
 * [**Suspense SSR**](#suspense-ssr)
 * [**React Server Components**](#react-server-components)
+* [**Server and Client Components**](#server-and-client-components)
 
 ## **Introduction**
 
@@ -4944,3 +4945,138 @@ Server components represent a new type of React component that **runs exclusivel
 This architecture provides the best of both worlds by combining the efficiency of server-side rendering with the interactivity of client-side rendering, all while minimizing the drawbacks of each approach.
 
 ---
+
+## **Server and Client Components**
+
+In the React Server Components (RSC) architecture, we learned about the distinction between **server components** and **client components**. In this section, we’ll put that knowledge into practice by creating both types of components in a **Next.js** application.
+
+* [**Setting Up the Project**](#setting-up-the-project)
+* [**Understanding the Default Server Component**](#understanding-the-default-server-component)
+* [**Creating a Client Component**](#creating-a-client-component)
+
+### **Setting Up the Project**
+
+To begin, we create a new Next.js project using the following command:
+
+```bash
+npx create-next-app@latest rendering-demo
+```
+
+Once the command is run, you will have a basic Next.js project structure.
+
+### **Understanding the Default Server Component**
+
+In Next.js, every component defaults to being a **server component**. This includes the built-in root layout and root page that come with every new Next.js project.
+
+* [**Creating a Server Component**](#creating-a-server-component)
+* [**Server Component Limitations**](#server-component-limitations)
+
+#### **Creating a Server Component**
+
+Let’s create a simple **server component** by adding an **About page** to the app:
+
+1. Inside the `app` folder, create a new folder called **about**.
+2. In the **about** folder, create a file called `page.tsx`.
+
+Add the following code:
+
+```tsx
+export default function AboutPage() {
+    return <h1>About Page</h1>;
+}
+```
+
+To verify this is a **server component**, add the following:
+
+```tsx
+console.log("About Server Component");
+```
+
+Now, when you navigate to the `about` page in the browser, you will see the console log message labeled with a **server tag** in both the browser and the terminal. This confirms the component is running as a server component.
+
+#### **Server Component Limitations**
+
+Server components have several advantages such as **zero bundle size**, **direct access to server resources**, **improved security**, and **better SEO**. However, they have some **limitations**:
+
+* They cannot interact with **browser APIs** like `localStorage` or `geolocation`.
+* They cannot maintain **state** using React hooks like `useState`.
+
+For example, if we try to use `useState` in the **About page**:
+
+```tsx
+import { useState } from 'react';
+
+const [name, setName] = useState('');
+```
+
+We will get an error because `useState` requires a **client-side environment**.
+
+### **Creating a Client Component**
+
+Next, let’s create a **client component**. We'll create a **Dashboard page** in the `app` folder that uses **state** to manage user input:
+
+1. Inside the `app` folder, create a new file called `dashboard.tsx`.
+
+Add the following code:
+
+```tsx
+import { useState } from 'react';
+
+export default function DashboardPage() {
+    const [name, setName] = useState('');
+
+    return (
+        <div>
+            <h1>Dashboard</h1>
+            <input 
+                type="text" 
+                value={name} 
+                onChange={(e) => setName(e.target.value)} 
+            />
+            <p>Hello, {name}</p>
+        </div>
+    );
+}
+```
+
+#### **Using the `use client` Directive**
+
+To make this a **client component**, we need to add the following directive at the top of the file:
+
+```tsx
+'use client';
+```
+
+This tells **Next.js** that this component, along with any imported components, should be executed on the client side. As a result, this component can handle **state** and **interactivity** using browser APIs.
+
+#### **Navigating to the Client Component**
+
+In the **Root Page**, add a link to the **Dashboard** page:
+
+```tsx
+import Link from 'next/link';
+
+export default function HomePage() {
+    return (
+        <div>
+            <h1>Home Page</h1>
+            <Link href="/dashboard">Go to Dashboard</Link>
+        </div>
+    );
+}
+```
+
+Now, when you visit the homepage and click on the **Dashboard** link, the **Dashboard page** will appear, and the state will function as expected, displaying "Hello" followed by the name entered.
+
+#### **Observing the Client Component's Rendering Behavior**
+
+To see the **client component’s rendering behavior**, add a console log to the **Dashboard page**:
+
+```tsx
+console.log("Dashboard Client Component");
+```
+
+1. When you click the **Dashboard** link, the log appears in the browser console, but without the **server tag**.
+2. When you **reload the page**, the **Dashboard page** is rendered **on the server** initially to provide an immediate HTML response, and then again on the **client** during hydration.
+
+The term **client component** can be confusing, but this behavior is part of the RSC architecture. In development mode, the log appears twice due to **Strict Mode**. This doesn’t happen in production.
