@@ -74,6 +74,7 @@
 * [**Fetching from a Database**](#fetching-from-a-database)
 * [**Data Mutations**](#data-mutations)
 * [**Forms with Server Actions**](#forms-with-server-actions)
+* [**`useFormStatus`**](#useformstatus)
 
 ## **Introduction**
 
@@ -7659,5 +7660,89 @@ export default function AddProductPage() {
 - **Cmd + Shift + P → "Disable JavaScript" → Submit the Form**
 
 > The form still works! That’s Progressive Enhancement — server actions degrade gracefully when JavaScript is off.
+
+---
+
+## **`useFormStatus`**
+
+We’ve already implemented **Server Actions** for secure form submission. Now let’s enhance the **user experience** by showing real-time feedback — specifically, **disabling the submit button** during submission to prevent double-clicks and accidental submissions.
+
+* [**What is `useFormStatus`**](#what-is-useformstatus)
+* [**File `/src/components/submit.tsx`**](#file-/src/components/submit.tsx)
+* [**Update Your Form to Use It**](#update-your-form-to-use-it)
+* [**Result useFormStatus**](#result-useformstatus)
+
+---
+
+### **What is `useFormStatus`**
+
+`useFormStatus` is a special **React hook** provided by `react-dom` that allows us to monitor the status of the current form submission.
+
+It returns an object with:
+
+* `pending` → `boolean` – Is the form currently submitting?
+* `data` → `FormData` – The submitted data.
+* `method` → `"GET"` or `"POST"` – HTTP method.
+* `action` → Function reference – The form’s action handler.
+
+For now, we’ll focus only on `pending`.
+
+---
+
+### **File `/src/components/submit.tsx`**
+
+```tsx
+'use client';
+
+import { useFormStatus } from 'react-dom';
+
+export const Submit = () => {
+  const { pending } = useFormStatus();
+
+  return (
+    <button
+      type="submit"
+      disabled={pending}
+      className="btn btn-primary w-full disabled:opacity-50 disabled:cursor-not-allowed"
+    >
+      {pending ? 'Submitting...' : 'Submit'}
+    </button>
+  );
+};
+```
+
+> When `pending` is `true`, the button is disabled and its label changes to `"Submitting..."`.
+
+---
+
+### **Update Your Form to Use It**
+
+**File: `/app/products-db/create/page.tsx`**
+
+Replace the original `<button>` element with the imported `Submit` component:
+
+```tsx
+import { Submit } from '@/src/components/submit';
+
+...
+
+<form action={createProduct} className="...">
+  ...
+  {/* Replace this */}
+  {/* <button type="submit">Add Product</button> */}
+
+  {/* With this */}
+  <Submit />
+</form>
+```
+
+---
+
+### **Result useFormStatus**
+
+* The **submit button disables** itself during submission.
+* When complete, it re-enables.
+* No more accidental double submissions.
+* Fully preserves **server component performance** and **progressive enhancement**.
 
 ---
