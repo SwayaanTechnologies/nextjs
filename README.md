@@ -40,6 +40,7 @@
 * [**Dynamic Route Handlers**](#dynamic-route-handlers)
 * [**PATCH Request**](#patch-request)
 * [**DELETE Request**](#delete-request)
+* [**Handling URL Query Parameters**](#handling-url-query-parameters)
 
 ## **Introduction**
 
@@ -4092,5 +4093,76 @@ export async function DELETE(
 ```
 
 * Now switch to the `GET /comments` request and send it — you should now see only two comments left.
+
+---
+
+## **Handling URL Query Parameters**
+
+Query parameters allow you to pass optional key-value pairs in the URL, typically used for filtering, searching, sorting, and pagination.
+
+In this example, we’ll learn how to filter the list of comments based on a search term passed as a query parameter.
+
+* [**Sample URLs**](#sample-urls)
+* [**Step 1 Import the NextRequest Type**](#step-1-import-the-nextrequest-type)
+* [**Step 2 Modify the `GET` Handler**](#step-2-modify-the-get-handler)
+* [**Step 3 Test in Browser**](#step-3-test-in-browser)
+
+---
+
+### **Sample URLs**
+
+* All comments: `http://localhost:3000/comments`
+
+* Filtered comments (e.g. only comments containing `"first"`): `http://localhost:3000/comments?query=first`
+
+---
+
+### **Step 1 Import the NextRequest Type**
+
+Update your `app/comments/route.ts` file to import `NextRequest` from `next/server`:
+
+```ts
+import { NextRequest } from 'next/server';
+```
+
+---
+
+### **Step 2 Modify the `GET` Handler**
+
+Update the `get` function to handle filtering based on a `query` parameter:
+
+```ts
+import { comments } from "./data";
+import { NextRequest } from "next/server";
+
+export async function GET(request: NextRequest) {
+  const searchParams = request.nextUrl.searchParams;
+  const query = searchParams.get("query");
+
+  const filteredComments = query
+    ? comments.filter(comment =>
+        comment.text.toLowerCase().includes(query.toLowerCase())
+      )
+    : comments;
+
+  return Response.json(filteredComments);
+}
+```
+
+---
+
+### **Step 3 Test in Browser**
+
+Try these URLs in your browser:
+
+* Show all comments:
+  `http://localhost:3000/comments`
+
+* Show filtered comments:
+
+  * `http://localhost:3000/comments?query=first`
+  * `http://localhost:3000/comments?query=ir`
+
+You’ll see the results filtered based on whether the `text` field includes the provided search term.
 
 ---
