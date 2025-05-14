@@ -55,6 +55,7 @@
 * [**Rendering Lifecycle in React Server Components**](#rendering-lifecycle-in-react-server-components)
 * [**Static Rendering**](#static-rendering)
 * [**Dynamic Rendering**](#dynamic-rendering)
+* [**`generateStaticParams`**](#generatestaticparams)
 
 ## **Introduction**
 
@@ -5413,5 +5414,117 @@ export const dynamic = 'force-dynamic';
 ```
 
 This will ensure that Next.js renders the page dynamically, even if no dynamic functions are detected.
+
+---
+
+## **`generateStaticParams`**
+
+* [**What is `generateStaticParams`**](#what-is-generatestaticparams)
+* [**Practical Example Product Listing and Details Page**](#practical-example-product-listing-and-details-page)
+* [**Inspecting the Build Output**](#inspecting-the-build-output)
+* [**Pre-rendering Product Details Pages with `generateStaticParams`**](#pre-rendering-product-details-pages-with-generatestaticparams)
+* [**Handling Multiple Dynamic Segments**](#handling-multiple-dynamic-segments)
+
+### **What is `generateStaticParams`**
+
+`generateStaticParams` is a powerful function in **Next.js** that works alongside **dynamic route segments** to generate **static routes** at **build time** instead of generating them on demand at **request time**. This feature significantly boosts the performance of the application by pre-rendering frequently accessed pages, making them available instantly when requested.
+
+### **Practical Example Product Listing and Details Page**
+
+To understand how `generateStaticParams` works, let's walk through a practical example by building a **product listing** and **product details page**.
+
+1. First, create a new `products` folder in the `app` directory. Inside, create a `page.tsx` file for displaying the featured products:
+
+   ```tsx
+   // app/products/page.tsx
+   export default function ProductsPage() {
+     return (
+       <div>
+         <h1>Featured Products</h1>
+         <ul>
+           <li><a href="/products/1">Product 1</a></li>
+           <li><a href="/products/2">Product 2</a></li>
+           <li><a href="/products/3">Product 3</a></li>
+         </ul>
+       </div>
+     );
+   }
+   ```
+
+2. Next, create a **dynamic route** for individual product details by creating a folder `products/[id]` and adding a `page.tsx` file:
+
+   ```tsx
+   // app/products/[id]/page.tsx
+   export default async function ProductPage({ params }) {
+     const { id } = params;
+     return <h1>Product {id} Details</h1>;
+   }
+   ```
+
+3. Now, if you build the app using `npm run build`, you’ll notice that **Next.js** handles the **Products List** page as **static rendering**, while the **Product Details** page is **dynamic**. This makes sense since Next.js cannot pre-render the product details page until it knows the specific product ID requested.
+
+   * **Static Rendering**: The `ProductsPage` will be pre-rendered.
+   * **Dynamic Rendering**: The individual product pages will be rendered on demand when a specific product ID is requested.
+
+### **Inspecting the Build Output**
+
+If you check the build folder (`next/server/app`), you will find the **static HTML file** for `products.html`, but no HTML files for the individual product details pages (like `product-1.html`, etc.).
+
+When you start the app with `npm run start` and visit `/products/1`, you will notice that the page is rendered **on demand** each time you refresh, as indicated by a **changing timestamp**.
+
+### **Pre-rendering Product Details Pages with `generateStaticParams`**
+
+Now, let’s improve this by pre-rendering the individual product details pages (`product-1`, `product-2`, `product-3`) using `generateStaticParams`.
+
+1. Modify the product details page (`app/products/[id]/page.tsx`) to include the `generateStaticParams` function:
+
+   ```tsx
+   // app/products/[id]/page.tsx
+   export async function generateStaticParams() {
+     return [
+       { id: '1' },
+       { id: '2' },
+       { id: '3' },
+     ];
+   }
+
+   export default async function ProductPage({ params }) {
+     const { id } = params;
+     return <h1>Product {id} Details</h1>;
+   }
+   ```
+
+2. Now, when you rebuild the app with `npm run build`, Next.js will pre-render the product details pages for **product 1**, **product 2**, and **product 3** during build time. The output will indicate that these pages have been pre-rendered as **Static Site Generation (SSG)**.
+
+   You’ll see the following in the terminal:
+
+   * **Pre-rendered Routes**: Product details pages (`/products/1`, `/products/2`, `/products/3`) are generated as static HTML.
+   * **New Build Output**: The build folder (`next/server/app/products/[id]`) will contain `1.html`, `2.html`, and `3.html`.
+
+3. Start the application with `npm run start` and visit `/products/1`. Notice how the **timestamp stays the same** upon refreshing because the page is now served as a **pre-rendered static page**.
+
+### **Handling Multiple Dynamic Segments**
+
+What if we have a **route with multiple dynamic segments**? For instance, a product catalog where each product belongs to a category (e.g., `/products/[category]/[product]`).
+
+In this case, you can use `generateStaticParams` to pre-render routes for both dynamic segments. For example:
+
+```tsx
+// app/products/[category]/[product]/page.tsx
+export async function generateStaticParams() {
+  return [
+    { category: 'electronics', product: 'smartphone' },
+    { category: 'electronics', product: 'laptop' },
+    { category: 'books', product: 'fiction' },
+  ];
+}
+
+export default async function ProductPage({ params }) {
+  const { category, product } = params;
+  return <h1>{category} - {product}</h1>;
+}
+```
+
+In this case, `generateStaticParams` will pre-render routes for each **category-product** combination.
 
 ---
