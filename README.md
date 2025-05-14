@@ -82,6 +82,7 @@
 * [**Delete Server Action**](#delete-server-action)
 * [**Optimistic Updates with `useOptimistic` Hook**](#optimistic-updates-with-useoptimistic-hook)
 * [**Form Component**](#form-component)
+* [**Authentication**](#authentication)
 
 ## **Introduction**
 
@@ -8567,5 +8568,97 @@ export default async function ProductsPage({ searchParams }: { searchParams: { q
 3. **Navigates** client-side with smooth transitions.
 4. **Displays** loading UI (`loading.tsx`) while new data is fetched.
 5. **Supports** server actions and works even with JavaScript disabled.
+
+---
+
+## **Authentication**
+
+Authentication is a **core building block** of nearly every modern web application. In this section, we’ll explore how to implement user authentication in a Next.js project using a third-party solution — **Clerk** — for simplicity and scalability.
+
+* [**What is Authentication**](#what-is-authentication)
+* [**Challenges with Next.js App Router**](#challenges-with-next.js-app-router)
+* [**What You Need in an Auth System**](#what-you-need-in-an-auth-system)
+* [**Recommended Approach Use an Auth Library**](#recommended-approach-use-an-auth-library)
+* [**Why Clerk**](#why-clerk)
+* [**Getting Started**](#getting-started)
+
+---
+
+### **What is Authentication**
+
+Authentication involves three foundational concepts:
+
+| Concept      | Description                                                              |
+| ------------ | ------------------------------------------------------------------------ |
+| **Identity** | Verifying **who** someone is (login/signup)                              |
+| **Session**  | Keeping track of a user's **logged-in state** across pages and requests  |
+| **Access**   | Controlling **what** users can see or do based on their identity (roles) |
+
+In dev terms:
+
+- Authentication → Who are you?
+- Session Management → Are you still you?
+- Authorization → What are you allowed to do?
+
+---
+
+### **Challenges with Next.js App Router**
+
+Unlike traditional React SPAs, Next.js requires handling authentication across:
+
+* **Client-side components**
+* **Server-side components**
+* **API routes**
+
+This multi-surface architecture means authentication can get **complicated** fast — especially if you try to build it from scratch.
+
+---
+
+### **What You Need in an Auth System**
+
+A typical auth flow includes:
+
+* Sign up & Sign in
+* Account management (profile, settings, etc.)
+* Protecting routes and components
+* Accessing session/user data server-side and client-side
+* Role-based access control (RBAC)
+* Sign out functionality
+
+Manually implementing this is **time-consuming and error-prone**.
+
+---
+
+### **Recommended Approach Use an Auth Library**
+
+- “While you can implement a custom solution, we recommend using an authentication library.”
+- Next.js Documentation
+
+And that’s where **Clerk** comes in.
+
+---
+
+### **Why Clerk**
+
+Clerk is a **fully managed authentication and user management solution** built specifically with frameworks like **Next.js** in mind.
+
+* Super simple to integrate
+* Built-in support for App Router, Middleware, API routes, etc.
+* Robust features like MFA, RBAC, social logins, etc.
+* **Free** for up to **10,000 monthly active users**
+
+> We've personally used Clerk in several side projects and found it to be the **easiest and cleanest auth solution** for Next.js apps.
+
+---
+
+### **Getting Started**
+
+We’ll be using a new Next.js 14+ project for this section. If you want to follow along:
+
+```bash
+npx create-next-app@latest authentication-demo
+```
+
+Once your project is scaffolded, open it in **VS Code** or your favorite editor.
 
 ---
