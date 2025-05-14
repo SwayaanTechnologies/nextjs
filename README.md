@@ -84,6 +84,7 @@
 * [**Form Component**](#form-component)
 * [**Authentication**](#authentication)
 * [**Clerk Authentication Setup**](#clerk-authentication-setup)
+* [**Sign In and Sign Out with Clerk**](#sign-in-and-sign-out-with-clerk)
 
 ## **Introduction**
 
@@ -8762,5 +8763,100 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
 ```
 
 This makes Clerk context and hooks available throughout your app.
+
+---
+
+## **Sign In and Sign Out with Clerk**
+
+Now that Clerk is fully set up, we’ll implement **sign-in and sign-out functionality** using Clerk’s **pre-built components**, which provide a smooth and secure user experience with minimal effort.
+
+
+---
+
+### **Step 1 Create Navigation Component**
+
+1. In the `src/components/` folder, create a new file:
+
+```
+navigation.tsx
+```
+
+2. Paste the following component code:
+
+```tsx
+'use client';
+
+import { SignInButton, SignOutButton } from '@clerk/nextjs';
+import Link from 'next/link';
+
+export const Navigation = () => {
+  return (
+    <nav className="flex items-center justify-between p-4 bg-gray-100 shadow">
+      <h1 className="text-xl font-bold">
+        <Link href="/">Next.js App</Link>
+      </h1>
+      <div className="flex gap-4">
+        <SignInButton mode="modal" />
+        <SignOutButton />
+      </div>
+    </nav>
+  );
+};
+```
+
+* `SignInButton` with `mode="modal"` displays a polished modal dialog
+* `SignOutButton` handles sign-out and session cleanup automatically
+
+---
+
+### **Step 2 Add Navigation to Layout**
+
+In `src/app/layout.tsx`, import and render the `Navigation` component above the page content:
+
+```tsx
+import { ClerkProvider } from '@clerk/nextjs';
+import { Navigation } from '@/components/navigation';
+
+export default function RootLayout({ children }: { children: React.ReactNode }) {
+  return (
+    <ClerkProvider>
+      <html lang="en">
+        <body>
+          <Navigation />
+          {children}
+        </body>
+      </html>
+    </ClerkProvider>
+  );
+}
+```
+
+---
+
+### **Step 3 Verify Functionality in the Browser**
+
+1. Start your dev server:
+
+   ```bash
+   npm run dev
+   ```
+
+2. Open your app in the browser:
+
+   * You should see a **navigation bar** with:
+
+     * **Sign In** button
+     * **Sign Out** button
+
+3. Click **Sign In**:
+
+   * Modal appears with sign-in options you configured in Clerk
+   * Choose **Sign Up** if you don’t have an account yet
+   * After signing in, Clerk redirects you back to your app
+
+4. Click **Sign Out**:
+
+   * You’ll be signed out
+   * Clerk clears the session and updates client/server state automatically
 
 ---
