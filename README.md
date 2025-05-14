@@ -54,6 +54,7 @@
 * [**Server and Client Components**](#server-and-client-components)
 * [**Rendering Lifecycle in React Server Components**](#rendering-lifecycle-in-react-server-components)
 * [**Static Rendering**](#static-rendering)
+* [**Dynamic Rendering**](#dynamic-rendering)
 
 ## **Introduction**
 
@@ -5293,5 +5294,124 @@ This starts the production server. Open your browser to **localhost:3000**, and 
 * **Pre-rendering at build time**: HTML pages, RSC payloads, and JavaScript chunks are created ahead of time.
 * **Instant Navigation**: Client-side navigation between statically generated pages doesn’t require a round trip to the server, as everything needed is already in the browser.
 * **Optimized Performance**: Static rendering is perfect for performance, especially for content that doesn’t change frequently, such as blogs, marketing pages, and documentation.
+
+---
+
+## **Dynamic Rendering**
+
+* [**What is Dynamic Rendering**](#what-is-dynamic-rendering)
+* [**How Does Dynamic Rendering Work**](#how-does-dynamic-rendering-work)
+* [**Implementing Dynamic Rendering**](#implementing-dynamic-rendering)
+* [**Dynamic Rendering Building and Inspecting the Output**](#dynamic-rendering-building-and-inspecting-the-output)
+* [**Testing Dynamic Rendering**](#testing-dynamic-rendering)
+* [**Key Points About Dynamic Rendering**](#key-points-about-dynamic-rendering)
+* [**Forcing Dynamic Rendering**](#forcing-dynamic-rendering)
+
+---
+
+### **What is Dynamic Rendering**
+
+Dynamic rendering is a server-side rendering strategy where **routes are rendered uniquely for each user** when they make a request. This is particularly useful for showing **personalized data** or information that is only available at request time, such as cookies or URL search parameters.
+
+Some examples where dynamic rendering is beneficial include:
+
+* Personalized shopping pages
+* News websites
+* Social media feeds
+
+---
+
+### **How Does Dynamic Rendering Work**
+
+In Next.js, **dynamic rendering is enabled automatically** when the framework detects certain dynamic functions or APIs being used. These include:
+
+* **Cookies**
+* **Headers**
+* **Connection drafts**
+* **Search parameters**
+* **Props**
+
+When Next.js encounters any of these dynamic functions, it automatically switches to **dynamic rendering**, which means the route will be **server-rendered on demand** for each request.
+
+---
+
+### **Implementing Dynamic Rendering**
+
+Let's modify the **about component** to demonstrate dynamic rendering by utilizing the **cookies API**.
+
+1. First, **import the cookies function** at the top of your component:
+
+   ```js
+   import { cookies } from 'next/headers';
+   ```
+
+2. Convert the component to an **async function**:
+
+   ```js
+   export default async function AboutPage() {
+     const cookieStore = await cookies();
+     const theme = cookieStore.get('theme');
+     console.log(theme); // Log the theme to verify the cookie's value
+   }
+   ```
+
+   In this code, we use the `cookies` function to retrieve a cookie (in this case, the "theme" cookie), which triggers dynamic rendering for this route. We will log the cookie value to the console to confirm it's working.
+
+---
+
+### **Dynamic Rendering Building and Inspecting the Output**
+
+1. **Clear the `next` folder** (if previously generated).
+2. Run the build command:
+
+   ```bash
+   npm run build
+   ```
+
+   After the build process is complete, check the terminal output for the routes generated. You’ll notice the **about route** has an **F** symbol next to it. This **F** stands for **Dynamic rendering** (server-rendered on demand).
+
+**Build Output**
+
+In the build process, **dynamic rendering** differs from static rendering in that there will be **no HTML file** generated for dynamically rendered pages. For example, after building the app, you will find HTML files for routes like `index.html`, `dashboard.html`, and `notfound.html`, but **no HTML file** for `about.html`.
+
+---
+
+### **Testing Dynamic Rendering**
+
+To see dynamic rendering in action:
+
+1. Run the production server:
+
+   ```bash
+   npm run start
+   ```
+
+2. Open the browser and visit **/about**. Perform a **hard reload** (Ctrl + Shift + R).
+
+   * On each refresh, you’ll notice the **HTML is generated on demand**, and the logged **cookie value** will appear (e.g., `theme: light`).
+   * In the network tab of the browser's DevTools, you’ll see the **response** containing the HTML each time you refresh.
+
+Since we’re generating the page dynamically for each request, **no HTML file** is stored in the server output folder (`next/server/app/`).
+
+---
+
+### **Key Points About Dynamic Rendering**
+
+* **On-demand HTML generation**: HTML is generated dynamically when a request is made.
+* **No HTML files stored**: Since the page is rendered on each request, there's no need to store pre-generated HTML files.
+* **Automatic switching**: Next.js automatically enables dynamic rendering when it detects dynamic functions (like cookies or headers).
+* **Personalized Content**: This rendering strategy is ideal for personalized content like user feeds, news sites, and shopping carts.
+
+---
+
+### **Forcing Dynamic Rendering**
+
+If you want to **force dynamic rendering** on a route, you can explicitly set the following at the top of the page:
+
+```js
+export const dynamic = 'force-dynamic';
+```
+
+This will ensure that Next.js renders the page dynamically, even if no dynamic functions are detected.
 
 ---
