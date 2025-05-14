@@ -86,6 +86,7 @@
 * [**Clerk Authentication Setup**](#clerk-authentication-setup)
 * [**Sign In and Sign Out with Clerk**](#sign-in-and-sign-out-with-clerk)
 * [**Profile Settings with Clerk**](#profile-settings-with-clerk)
+* [**Conditional UI Rendering**](#conditional-ui-rendering)
 
 ## **Introduction**
 
@@ -8962,5 +8963,68 @@ Update your `navigation.tsx` file to add a "Profile" link:
 ```
 
 You can remove or comment out `UserButton` if you prefer to only use the full profile page.
+
+---
+
+## **Conditional UI Rendering**
+
+Previously, we added sign-in, sign-out, and profile management functionality to our Next.js app using Clerk. However, our navigation bar still showed:
+
+* The **Sign In** button even when already signed in
+* The **Profile** link and **Sign Out** button even when signed out
+
+Let’s fix this by **conditionally rendering UI elements** based on the user's authentication state.
+
+---
+
+### **Clerk’s `<SignedIn>` and `<SignedOut>` Components**
+
+Clerk provides two built-in components:
+
+* `<SignedIn>` – renders children **only when the user is signed in**
+* `<SignedOut>` – renders children **only when the user is signed out**
+
+These make conditional rendering super simple.
+
+---
+
+### **Update `navigation.tsx`**
+
+```tsx
+'use client';
+
+import { SignedIn, SignedOut, SignInButton, UserButton } from '@clerk/nextjs';
+import Link from 'next/link';
+
+export const Navigation = () => {
+  return (
+    <nav className="flex items-center justify-between p-4 bg-gray-100 shadow">
+      <h1 className="text-xl font-bold">
+        <Link href="/">Next.js App</Link>
+      </h1>
+      <div className="flex gap-4 items-center">
+        <SignedOut>
+          <SignInButton mode="modal" />
+        </SignedOut>
+        <SignedIn>
+          <Link href="/user-profile" className="text-sm underline">
+            Profile
+          </Link>
+          <UserButton afterSignOutUrl="/" />
+        </SignedIn>
+      </div>
+    </nav>
+  );
+};
+```
+
+* The **Sign In** button is now wrapped in `<SignedOut>`
+* The **Profile** link and **UserButton** (which includes Sign Out) are wrapped in `<SignedIn>`
+
+**Result**
+
+* When signed **out**, only the Sign In button is shown
+* When signed **in**, the Profile link and Sign Out menu appear
+* Clerk automatically manages auth state updates — no manual state management needed!
 
 ---
