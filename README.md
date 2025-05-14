@@ -65,6 +65,7 @@
 * [**Client-only Code**](#client-only-code)
 * [**Client Component Placement**](#client-component-placement)
 * [**Interleaving Server and Client Components**](#interleaving-server-and-client-components)
+* [**Data Fetching**](#data-fetching)
 
 ## **Introduction**
 
@@ -6515,5 +6516,41 @@ export default function ClientComponentOne({ children }: { children?: React.Reac
 ```
 
 - This keeps server and client responsibilities clearly separated.
+
+---
+
+## **Data Fetching**
+
+Now that we've explored routing and rendering, it's time to dive into **data fetching** — one of the most essential aspects of real-world applications.
+
+So far, we've worked with **hardcoded content**, but in production-grade apps, data is typically fetched from **external sources** such as APIs, databases, or file systems.
+
+* [**Why Fetch Data in Server Components**](#why-fetch-data-in-server-components)
+* [**Project Setup**](#project-setup)
+
+---
+
+### **Why Fetch Data in Server Components**
+
+Next.js App Router is built on **React Server Components (RSC)**, which opens up multiple data fetching strategies. While you *can* fetch data on the client, **server components are the recommended place** for most data operations.
+
+**Benefits of Using Server Components for Data Fetching**
+
+* **Direct access** to file systems and databases
+* **Better performance**: fetches happen closer to the data source
+* **Smaller client bundles**: client components don't carry the data logic
+* **Increased security**: API keys and sensitive logic stay on the server
+
+---
+
+### **Project Setup**
+
+To follow along with the examples in this section, start a new project using the following command:
+
+```bash
+npx create-next-app@latest data-fetching-demo
+```
+
+This sets up a new Next.js App Router project ready for hands-on data fetching examples.
 
 ---
