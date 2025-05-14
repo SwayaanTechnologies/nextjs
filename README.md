@@ -85,6 +85,7 @@
 * [**Authentication**](#authentication)
 * [**Clerk Authentication Setup**](#clerk-authentication-setup)
 * [**Sign In and Sign Out with Clerk**](#sign-in-and-sign-out-with-clerk)
+* [**Profile Settings with Clerk**](#profile-settings-with-clerk)
 
 ## **Introduction**
 
@@ -8858,5 +8859,108 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
 
    * You’ll be signed out
    * Clerk clears the session and updates client/server state automatically
+
+---
+
+## **Profile Settings with Clerk**
+
+Now that we’ve got sign-in and sign-out working, let’s enhance our app with **profile management**. Clerk makes it easy to:
+
+* Use a **dropdown menu** with sign-out and account settings
+* Provide a **dedicated profile page** for managing user details
+
+* [**Option 1 Use `UserButton`**](#option-1-use-userbutton)
+* [**Option 2 Create a Full Profile Settings Page**](#option-2-create-a-full-profile-settings-page)
+
+---
+
+### **Option 1 Use `UserButton`**
+
+Clerk provides a prebuilt `UserButton` component that replaces the standalone sign-out button and adds access to a profile management modal.
+
+1. **Update `navigation.tsx`:**
+
+```tsx
+'use client';
+
+import { SignInButton, UserButton } from '@clerk/nextjs';
+import Link from 'next/link';
+import { SignedIn, SignedOut } from '@clerk/nextjs';
+
+export const Navigation = () => {
+  return (
+    <nav className="flex items-center justify-between p-4 bg-gray-100 shadow">
+      <h1 className="text-xl font-bold">
+        <Link href="/">Next.js App</Link>
+      </h1>
+      <div className="flex gap-4 items-center">
+        <SignedOut>
+          <SignInButton mode="modal" />
+        </SignedOut>
+        <SignedIn>
+          <UserButton afterSignOutUrl="/" />
+        </SignedIn>
+      </div>
+    </nav>
+  );
+};
+```
+
+* `UserButton` displays a dropdown menu with:
+
+  * Sign out
+  * “Manage account” modal (update email, password, picture, delete account, etc.)
+* `SignedIn` and `SignedOut` components ensure buttons only render when appropriate.
+
+---
+
+### **Option 2 Create a Full Profile Settings Page**
+
+Prefer a separate page instead of a modal? You can use the `UserProfile` component for a **custom route-based profile page**.
+
+* [**Step 1 Create a Catch-All Route for Profile**](#step-1-create-a-catch-all-route-for-profile)
+* [**Step 2 Add Link to Profile Page**](#step-2-add-link-to-profile-page)
+
+#### **Step 1 Create a Catch-All Route for Profile**
+
+1. In the `app/` folder, create:
+
+```
+app/user-profile/[[...user-profile]]/page.tsx
+```
+
+2. Paste this code:
+
+```tsx
+import { UserProfile } from '@clerk/nextjs';
+
+export default function UserProfilePage() {
+  return (
+    <div className="p-8">
+      <UserProfile path="/user-profile" routing="path" />
+    </div>
+  );
+}
+```
+
+* The `path` must match the base route `/user-profile`
+* The `routing="path"` prop tells Clerk to handle subpaths like `/security`
+
+---
+
+#### **Step 2 Add Link to Profile Page**
+
+Update your `navigation.tsx` file to add a "Profile" link:
+
+```tsx
+<SignedIn>
+  <Link href="/user-profile" className="text-sm underline">
+    Profile
+  </Link>
+  {/* Optionally use UserButton or just a link */}
+</SignedIn>
+```
+
+You can remove or comment out `UserButton` if you prefer to only use the full profile page.
 
 ---
