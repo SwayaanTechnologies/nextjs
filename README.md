@@ -61,6 +61,7 @@
 * [**Server and Client Composition Patterns**](#server-and-client-composition-patterns)
 * [**Server-only Code**](#server-only-code)
 * [**Working with Third-Party Packages**](#working-with-third-party-packages)
+* [**Working with Context Providers**](#working-with-context-providers)
 
 ## **Introduction**
 
@@ -5986,5 +5987,133 @@ import Slider from 'react-slick';
 // Avoid this — it forces the whole component to the client
 'use client';
 ```
+
+---
+
+## **Working with Context Providers**
+
+In traditional React apps, **Context Providers** are used near the root of the component tree to manage and share global state like themes, authentication, or user settings. However, when working with the **React Server Components (RSC)** architecture in Next.js, there's an important caveat:
+
+> **React context is not supported in server components.**
+
+---
+
+**The Problem**
+
+If you attempt to create and use a context provider (via `createContext`) directly in a server component (like `app/layout.tsx`), you’ll encounter the following error:
+
+```
+Error: You're importing a component that needs createContext. This React hook only works in a client component.
+```
+
+Turning your entire layout into a client component is **not ideal**, because that forces the entire subtree to be client-side, losing all server component benefits like performance and security.
+
+---
+
+### **The Solution Use a Client Component as the Provider**
+
+To resolve this, you must:
+
+* Create the context and its provider in a **dedicated client component**.
+* Wrap your application tree with this client component at the appropriate level (like `layout.tsx`).
+
+---
+
+### **Example Theme Context Provider**
+
+* [**Create the Client Theme Provider**](#create-the-client-theme-provider)
+* [**Wrap the App in `app/layout.tsx`**](#wrap-the-app-in-app/layout.tsx)
+* [**Use the Theme in a Client Component**](#use-the-theme-in-a-client-component)
+
+#### **Create the Client Theme Provider**
+
+Create a file at `src/components/ThemeProvider.tsx`:
+
+```tsx
+'use client';
+
+import { createContext, useContext, ReactNode } from 'react';
+
+type Theme = {
+  colors: {
+    primary: string;
+    secondary: string;
+  };
+};
+
+const defaultTheme: Theme = {
+  colors: {
+    primary: '#0070f3',
+    secondary: '#666666',
+  },
+};
+
+const ThemeContext = createContext<Theme>(defaultTheme);
+
+export function ThemeProvider({ children }: { children: ReactNode }) {
+  return (
+    <ThemeContext.Provider value={defaultTheme}>
+      {children}
+    </ThemeContext.Provider>
+  );
+}
+
+export function useTheme() {
+  return useContext(ThemeContext);
+}
+```
+
+---
+
+#### **Wrap the App in `app/layout.tsx`**
+
+```tsx
+// app/layout.tsx
+import './globals.css';
+import { ThemeProvider } from '@/components/ThemeProvider';
+
+export const metadata = {
+  title: 'My App',
+  description: 'Using RSC with Context',
+};
+
+export default function RootLayout({ children }: { children: React.ReactNode }) {
+  return (
+    <html lang="en">
+      <body>
+        <ThemeProvider>
+          {children}
+        </ThemeProvider>
+      </body>
+    </html>
+  );
+}
+```
+
+> `ThemeProvider` is a client component, but the rest of the app can remain server components.
+
+---
+
+#### **Use the Theme in a Client Component**
+
+Update `app/client-route/page.tsx`:
+
+```tsx
+'use client';
+
+import { useTheme } from '@/components/ThemeProvider';
+
+export default function ClientRoutePage() {
+  const theme = useTheme();
+
+  return (
+    <h1 style={{ color: theme.colors.primary }}>
+      Client Route Page
+    </h1>
+  );
+}
+```
+
+In the browser, you'll see the heading styled with the primary theme color. Change it to `theme.colors.secondary`, and the color updates as expected.
 
 ---
