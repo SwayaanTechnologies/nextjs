@@ -41,6 +41,7 @@
 * [**PATCH Request**](#patch-request)
 * [**DELETE Request**](#delete-request)
 * [**Handling URL Query Parameters**](#handling-url-query-parameters)
+* [**Headers in Route Handlers**](#headers-in-route-handlers)
 
 ## **Introduction**
 
@@ -4164,5 +4165,114 @@ Try these URLs in your browser:
   * `http://localhost:3000/comments?query=ir`
 
 You’ll see the results filtered based on whether the `text` field includes the provided search term.
+
+---
+
+## **Headers in Route Handlers**
+
+HTTP headers carry metadata in API communication. In **Next.js route handlers**, headers can be **read from requests** and **set on responses**, enabling custom behavior like authentication and proper content rendering.
+
+* [**Types of Headers**](#types-of-headers)
+* [**Common Headers**](#common-headers)
+* [**Reading Request Headers**](#reading-request-headers)
+* [**Setting Response Headers**](#setting-response-headers)
+* [**Test in Browser/Thunder Client**](#test-in-browser/thunder-client)
+
+---
+
+### **Types of Headers**
+
+| Header Type          | Description                                                                                         |
+| -------------------- | --------------------------------------------------------------------------------------------------- |
+| **Request Headers**  | Sent **from the client** to the server. Include info like user-agent, accept type, and auth tokens. |
+| **Response Headers** | Sent **from the server** to the client. Describe the response format, content type, and more.       |
+
+---
+
+### **Common Headers**
+
+| Header          | Direction | Purpose                                                           |
+| --------------- | --------- | ----------------------------------------------------------------- |
+| `User-Agent`    | Request   | Identifies browser or device                                      |
+| `Accept`        | Request   | Lists content types the client can handle                         |
+| `Authorization` | Request   | Sends credentials like Bearer tokens                              |
+| `Content-Type`  | Response  | Tells the client the media type of the response (e.g. JSON, HTML) |
+
+---
+
+### **Reading Request Headers**
+
+There are **two ways** to read headers in Next.js route handlers.
+
+* [**Option 1 Using the `request.headers` object**](#option-1-using-the-request.headers-object)
+* [**Option 2 Using the `headers` function**](#option-2-using-the-headers-function)
+
+#### **Option 1 Using the `request.headers` object**
+
+```ts
+import { NextRequest } from "next/server";
+
+export async function GET(request: NextRequest) {
+  const requestHeaders = new Headers(request.headers);
+  const authToken = requestHeaders.get("authorization");
+
+  console.log("Auth Token:", authToken); // Logs "Bearer 12345"
+  
+  return new Response("Profile API data");
+}
+```
+
+> Send a request with headers (e.g., in Thunder Client):
+>
+> ```
+> Authorization: Bearer 12345
+> ```
+
+---
+
+#### **Option 2 Using the `headers` function**
+
+```ts
+import { headers } from "next/headers";
+
+export async function GET() {
+  const headerList = headers();
+  const authToken = headerList.get("authorization");
+
+  console.log("Auth Token:", authToken); // Logs "Bearer 1234567"
+
+  return new Response("Profile API data");
+}
+```
+
+> `headers()` is a helper provided by Next.js for easier access.
+
+---
+
+### **Setting Response Headers**
+
+To **set response headers**, pass them in the second argument of the `Response` constructor:
+
+```ts
+export async function GET() {
+  return new Response("<h1>Profile API data</h1>", {
+    headers: {
+      "Content-Type": "text/html",
+    },
+  });
+}
+```
+
+**Why it matters**
+
+* Without `Content-Type: text/html`, the browser will render raw HTML as plain text.
+* Setting the header makes the browser parse and render the HTML properly.
+
+---
+
+### **Test in Browser/Thunder Client**
+
+* Request: `http://localhost:3000/api/profile`
+* Check: **Network Tab → Headers** - Look for `Content-Type: text/html`.
 
 ---
