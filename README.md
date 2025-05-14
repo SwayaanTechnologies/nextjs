@@ -48,6 +48,7 @@
 * [**Middleware**](#middleware)
 * [**Rendering**](#rendering)
 * [**Client-side Rendering**](#client-side-rendering)
+* [**Server-side Rendering**](#server-side-rendering)
 
 ## **Introduction**
 
@@ -4774,5 +4775,62 @@ With CSR, the browser must:
 * Attach interactivity
 
 This workload can lead to blank screens or loading spinners during page load. As the JavaScript bundle grows with new features, so does the load time—especially noticeable for users on slow connections.
+
+---
+
+## **Server-side Rendering**
+
+Having just covered **Client-side Rendering (CSR)** and its drawbacks, such as SEO and user experience issues, we now turn our attention to **Server-side Rendering (SSR)** as a solution to these problems.
+
+---
+
+### **How SSR Improves Content Delivery**
+
+In traditional CSR, the server delivers a minimal HTML file that requires JavaScript to render the content on the client-side. In contrast, SSR involves the server rendering the full HTML content before sending it to the browser. This fully-formed HTML document allows the browser to quickly parse and display the content, improving initial page load times.
+
+SSR tackles both the SEO and user experience issues:
+
+* **SEO Improvement**: Since the content is already rendered on the server, search engines can easily index the content, solving the SEO issue.
+* **User Experience**: Users see meaningful HTML content right away, rather than staring at a blank screen or loading spinner.
+
+However, there are some complexities introduced by SSR, especially when it comes to interactivity.
+
+---
+
+### **Hydration Making Pages Interactive**
+
+The initial page served by the server is static HTML. For the page to become fully interactive, the browser needs to download and execute the JavaScript bundle, which includes both React and your application's code. This phase is called **hydration**. During hydration, React takes over the static HTML and turns it into a fully interactive page.
+
+Hydration involves:
+
+* **Mapping out interactive elements**: React reconstructs the component tree in memory, using the server-rendered HTML as a blueprint.
+* **Initializing interactivity**: React sets up application state, event handlers, and dynamic features needed for a complete user experience.
+
+Understanding hydration is key to understanding how SSR operates in real-world applications.
+
+---
+
+### **Static Site Generation (SSG) vs. SSR**
+
+There are two main server-side strategies in rendering:
+
+1. **Static Site Generation (SSG)**: This happens at build time, meaning the pages are pre-rendered and ready to serve when deployed. SSG works best for content that remains relatively stable, such as blog posts.
+2. **Server-side Rendering (SSR)**: With SSR, the page is rendered on-demand, based on the specific request. SSR is ideal for dynamic content that changes frequently, like social media feeds or personalized data.
+
+Although SSG and SSR are both categorized as server-side solutions, they differ in when and how the content is generated.
+
+---
+
+### **Challenges with SSR**
+
+While SSR improves SEO and performance over CSR, it introduces several challenges:
+
+1. **Data Fetching**: If a component requires data from an API or database, this data must be fetched before the server can render the page. This could delay the server's response time since all necessary data must be collected before any HTML is sent to the client.
+
+2. **Hydration Matching**: For successful hydration, the component tree in the browser must exactly match the server-rendered HTML. This means that the entire JavaScript bundle for the page must be loaded on the client before hydration can begin.
+
+3. **Waterfall Problem**: React hydrates the component tree in a single pass, meaning it must complete the entire hydration process before any part of the page becomes interactive. This leads to an all-or-nothing process where the entire page has to load, and the JavaScript must be executed, before any interaction can happen.
+
+These challenges can lead to inefficient performance, especially when parts of the app are slower than others, which is common in real-world applications. This led the React team to develop an improved SSR architecture, which we will explore next.
 
 ---
