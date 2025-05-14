@@ -83,6 +83,7 @@
 * [**Optimistic Updates with `useOptimistic` Hook**](#optimistic-updates-with-useoptimistic-hook)
 * [**Form Component**](#form-component)
 * [**Authentication**](#authentication)
+* [**Clerk Authentication Setup**](#clerk-authentication-setup)
 
 ## **Introduction**
 
@@ -8660,5 +8661,106 @@ npx create-next-app@latest authentication-demo
 ```
 
 Once your project is scaffolded, open it in **VS Code** or your favorite editor.
+
+---
+
+## **Clerk Authentication Setup**
+
+In this section, we’ll integrate **Clerk** into our Next.js application to handle authentication — including sign-up, sign-in, session management, and protected routes.
+
+* [**Step 1 Create a Clerk Account**](#step-1-create-a-clerk-account)
+* [**Step 2 Install Clerk SDK**](#step-2-install-clerk-sdk)
+* [**Step 3 Configure Environment Variables**](#step-3-configure-environment-variables)
+* [**Step 4 Add Middleware for Auth**](#step-4-add-middleware-for-auth)
+* [**Step 5 Wrap Your App with `<ClerkProvider/>`**](#step-5-wrap-your-app-with-<clerkprovider/>)
+
+---
+
+### **Step 1 Create a Clerk Account**
+
+1. Visit [Clerk.dev](https://clerk.dev) and click **Get Started**.
+2. Sign up using your **email/password** or a social login.
+3. Once logged in, click **Create Application**.
+4. Set your app name to something like `nextjs-auth-app`.
+5. Select sign-in methods:
+
+    * Email + Password
+    * Google
+    * GitHub
+
+6. Click **Create Application** to proceed.
+
+You’ll now land on the **Setup Instructions** page.
+
+---
+
+### **Step 2 Install Clerk SDK**
+
+In your terminal, navigate to your Next.js project folder and run:
+
+```bash
+npm install @clerk/nextjs
+```
+
+---
+
+### **Step 3 Configure Environment Variables**
+
+1. Create a `.env.local` file in the **root** of your project.
+2. Copy the **Publishable Key** and **Secret Key** from the Clerk dashboard.
+3. Add them as follows:
+
+```env
+CLERK_PUBLISHABLE_KEY=your_publishable_key_here
+CLERK_SECRET_KEY=your_secret_key_here
+```
+
+> Never share your secret key publicly!
+
+---
+
+### **Step 4 Add Middleware for Auth**
+
+1. Inside the `src/` folder (not `app/`), create a new file named:
+
+```
+src/middleware.ts
+```
+
+2. Paste the code provided by Clerk in the setup instructions. It should look something like:
+
+```ts
+import { authMiddleware } from "@clerk/nextjs";
+
+export default authMiddleware();
+
+export const config = {
+  matcher: ["/((?!_next/image|_next/static|favicon.ico).*)"],
+};
+```
+
+This middleware enables Clerk to manage route protection and user sessions.
+
+---
+
+### **Step 5 Wrap Your App with `<ClerkProvider/>`**
+
+In `src/app/layout.tsx`, update your root layout like this:
+
+```tsx
+import { ClerkProvider } from '@clerk/nextjs';
+
+export default function RootLayout({ children }: { children: React.ReactNode }) {
+  return (
+    <ClerkProvider>
+      <html lang="en">
+        <body>{children}</body>
+      </html>
+    </ClerkProvider>
+  );
+}
+```
+
+This makes Clerk context and hooks available throughout your app.
 
 ---
