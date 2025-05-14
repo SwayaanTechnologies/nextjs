@@ -81,6 +81,7 @@
 * [**Update Server Action**](#update-server-action)
 * [**Delete Server Action**](#delete-server-action)
 * [**Optimistic Updates with `useOptimistic` Hook**](#optimistic-updates-with-useoptimistic-hook)
+* [**Form Component**](#form-component)
 
 ## **Introduction**
 
@@ -8417,5 +8418,154 @@ app/
 │   ├── page.tsx           → Server Component (fetches data)
 │   ├── product-detail.tsx → Client Component (handles mutation/UI)
 ```
+
+---
+
+## **Form Component**
+
+The `Form` component is a **new enhancement** in Next.js App Router that builds on the native HTML `<form>` tag — with **zero boilerplate** and **powerful features out-of-the-box**.
+
+* [**Features of the Form Component**](#features-of-the-form-component)
+* [**Example Implementing a Search Form**](#example-implementing-a-search-form)
+
+---
+
+### **Features of the Form Component**
+
+* **Automatic client-side navigation**
+* **Built-in loading UI support**
+* **URL query string encoding**
+* **Prefetching of route-level loading UI**
+* **Progressive enhancement**
+* **Seamless server actions support**
+
+---
+
+### **Example Implementing a Search Form**
+
+Let’s add a product search feature to our homepage, which redirects users to `/products-db` with filtered results.
+
+* [**Loading State Setup**](#loading-state-setup)
+* [**Search Component**](#search-component)
+* [**Use Search on Home Page**](#use-search-on-home-page)
+* [**Update `getProducts` for Search Filtering**](#update-getproducts-for-search-filtering)
+* [**Handle Search Params in Products Page**](#handle-search-params-in-products-page)
+* [**How the Form Component Works Behind the Scenes**](#how-the-form-component-works-behind-the-scenes)
+
+---
+
+#### **Loading State Setup**
+
+Create a `loading.tsx` file inside the `products-db/` folder:
+
+```tsx
+export default function Loading() {
+  return <div>Loading products...</div>;
+}
+```
+
+---
+
+#### **Search Component**
+
+Create a new `search.tsx` inside `components/`:
+
+```tsx
+'use client';
+
+import { Form } from 'next/navigation';
+
+export const Search = () => {
+  return (
+    <Form action="/products-db" className="flex gap-2 mb-4">
+      <input
+        type="text"
+        name="query"
+        placeholder="Search products..."
+        className="border px-4 py-2 rounded w-full"
+      />
+      <button type="submit" className="bg-blue-600 text-white px-4 py-2 rounded">
+        Submit
+      </button>
+    </Form>
+  );
+};
+```
+
+---
+
+#### **Use Search on Home Page**
+
+Update `app/page.tsx`:
+
+```tsx
+import { Search } from '@/components/search';
+
+export default function Home() {
+  return (
+    <main className="p-4">
+      <h1 className="text-2xl mb-4">Welcome</h1>
+      <Search />
+      {/* Add other content below */}
+    </main>
+  );
+}
+```
+
+---
+
+#### **Update `getProducts` for Search Filtering**
+
+In your `db.ts` (or similar):
+
+```ts
+export async function getProducts(query?: string) {
+  if (query) {
+    return prisma.product.findMany({
+      where: {
+        OR: [
+          { title: { contains: query, mode: 'insensitive' } },
+          { description: { contains: query, mode: 'insensitive' } },
+        ],
+      },
+    });
+  }
+
+  return prisma.product.findMany();
+}
+```
+
+---
+
+#### **Handle Search Params in Products Page**
+
+Update `products-db/page.tsx`:
+
+```tsx
+import { getProducts } from '@/lib/db';
+
+export default async function ProductsPage({ searchParams }: { searchParams: { query?: string } }) {
+  const products = await getProducts(searchParams.query);
+
+  return (
+    <div className="p-4">
+      <h1 className="text-xl mb-4">Products</h1>
+      {products.map((product) => (
+        <div key={product.id} className="mb-2">{product.title}</div>
+      ))}
+    </div>
+  );
+}
+```
+
+---
+
+#### **How the Form Component Works Behind the Scenes**
+
+1. **Prefetches** loading UI when visible in the viewport.
+2. **Converts** form data to URL query strings (`?query=abc`) on submit.
+3. **Navigates** client-side with smooth transitions.
+4. **Displays** loading UI (`loading.tsx`) while new data is fetched.
+5. **Supports** server actions and works even with JavaScript disabled.
 
 ---
