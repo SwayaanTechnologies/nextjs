@@ -74,7 +74,8 @@
 * [**Fetching from a Database**](#fetching-from-a-database)
 * [**Data Mutations**](#data-mutations)
 * [**Forms with Server Actions**](#forms-with-server-actions)
-* [**`useFormStatus`**](#useformstatus)
+* [**`useFormStatus` Hook**](#useformstatus-hook)
+* [**`useActionState` Hook**](#useactionstate-hook)
 
 ## **Introduction**
 
@@ -7663,7 +7664,7 @@ export default function AddProductPage() {
 
 ---
 
-## **`useFormStatus`**
+## **`useFormStatus` Hook**
 
 We’ve already implemented **Server Actions** for secure form submission. Now let’s enhance the **user experience** by showing real-time feedback — specifically, **disabling the submit button** during submission to prevent double-clicks and accidental submissions.
 
@@ -7744,5 +7745,155 @@ import { Submit } from '@/src/components/submit';
 * When complete, it re-enables.
 * No more accidental double submissions.
 * Fully preserves **server component performance** and **progressive enhancement**.
+
+---
+
+## **`useActionState` Hook**
+
+Previously, we used `useFormStatus` to handle **loading states**. Now, let’s learn how to **handle validation errors and form state** using the React `useActionState` hook.
+
+* [**What is `useActionState`**](#what-is-useactionstate)
+* [**Define Error & Form State Types**](#define-error-&-form-state-types)
+* [**Use the `useActionState` Hook**](#use-the-useactionstate-hook)
+* [**Update the Server Action**](#update-the-server-action)
+* [**Show Error Messages in the Form**](#show-error-messages-in-the-form)
+* [**Update Form `action` to Use `formAction`**](#update-form-action-to-use-formaction)
+* [**What *Not* To Do**](#what-not-to-do-1)
+
+---
+
+### **What is `useActionState`**
+
+`useActionState` is a React hook that:
+
+* Manages **state transitions** based on form submissions.
+* Allows **error handling** and **form-level validation feedback**.
+* Can show user-friendly messages without setting up external state.
+
+It’s perfect for situations where you need to return structured feedback **from a server action to the client UI**.
+
+---
+
+### **Define Error & Form State Types**
+
+In your `products-db/create/page.tsx`:
+
+```ts
+type Errors = {
+  title?: string;
+  price?: string;
+  description?: string;
+};
+
+type FormState = {
+  errors: Errors;
+};
+
+const initialState: FormState = {
+  errors: {},
+};
+```
+
+---
+
+### **Use the `useActionState` Hook**
+
+In your component:
+
+```tsx
+import { useActionState } from 'react';
+
+// Later in your component:
+const [state, formAction, ePending] = useActionState(createProduct, initialState);
+```
+
+* `state` – contains the current form state, especially `errors`.
+* `formAction` – replaces your original server action in the form.
+* `ePending` – is a boolean that tells if the form is submitting.
+
+---
+
+### **Update the Server Action**
+
+Make sure your server action **validates input** and returns a state:
+
+```ts
+'use server';
+
+export async function createProduct(prevState: FormState, formData: FormData): Promise<FormState> {
+  const errors: Errors = {};
+
+  const title = formData.get('title') as string;
+  const price = formData.get('price') as string;
+  const description = formData.get('description') as string;
+
+  if (!title) errors.title = 'Title is required';
+  if (!price) errors.price = 'Price is required';
+  if (!description) errors.description = 'Description is required';
+
+  if (Object.keys(errors).length > 0) {
+    return { errors };
+  }
+
+  await addProduct({ title, price: parseFloat(price), description });
+
+  redirect('/products-db');
+}
+```
+
+> **Note:** The server action now returns an updated `FormState` if there are validation errors.
+
+---
+
+### **Show Error Messages in the Form**
+
+Right below each field in your JSX, show the error:
+
+```tsx
+<div className="mb-4">
+  <label>Title</label>
+  <input name="title" className="input" />
+  {state.errors.title && <p className="text-red-500 text-sm">{state.errors.title}</p>}
+</div>
+
+<div className="mb-4">
+  <label>Price</label>
+  <input name="price" className="input" />
+  {state.errors.price && <p className="text-red-500 text-sm">{state.errors.price}</p>}
+</div>
+
+<div className="mb-4">
+  <label>Description</label>
+  <input name="description" className="input" />
+  {state.errors.description && <p className="text-red-500 text-sm">{state.errors.description}</p>}
+</div>
+```
+
+---
+
+### **Update Form `action` to Use `formAction`**
+
+```tsx
+<form action={formAction}>
+  {/* inputs and error messages here */}
+</form>
+```
+
+---
+
+### **What *Not* To Do**
+
+You **cannot** use `useActionState` in a **server component**, so don’t mark your page with `'use client'` — that would break the `use server` directive in your action.
+
+**Whats the Problem**
+
+We’ve now run into a **limitation**:
+
+* `useActionState` requires a **client component**.
+* But `createProduct` is marked with `'use server'` and **cannot be defined inline** inside a client component.
+
+This leads to the following error:
+
+> Cannot use `use server` in a component marked with `'use client'`.
 
 ---
