@@ -89,6 +89,7 @@
 * [**Conditional UI Rendering**](#conditional-ui-rendering)
 * [**Protecting Routes**](#protecting-routes)
 * [**Reading Session and User Data**](#reading-session-and-user-data)
+* [**Role-Based Access Control**](#role-based-access-control)
 
 ## **Introduction**
 
@@ -9259,5 +9260,231 @@ export default function HomePage() {
 * While **signed in**, the counter displays.
 * If the user **signs out**, the component disappears safely.
 * The component won't flash or crash because we check `isLoaded` and `userId`.
+
+---
+
+## **Role-Based Access Control**
+
+Authentication is only the first step—real-world apps often require **authorization**, where different users have different **roles** and **permissions**. Clerk makes it easy to implement a custom RBAC system.
+
+* [**Step 1 Configure Clerk Session Tokens**](#step-1-configure-clerk-session-tokens)
+* [**Step 2 Define Role Types in TypeScript**](#step-2-define-role-types-in-typescript)
+* [**Step 3 Add Your Role via Dashboard**](#step-3-add-your-role-via-dashboard)
+* [**Step 4 Protect Routes via Middleware**](#step-4-protect-routes-via-middleware)
+* [**Step 5 Create Server Actions to Manage Roles**](#step-5-create-server-actions-to-manage-roles)
+* [**Step 6 Admin Page UI to Manage Roles**](#step-6-admin-page-ui-to-manage-roles)
+
+---
+
+### **Step 1 Configure Clerk Session Tokens**
+
+First, include **public metadata** in session tokens to store user roles securely.
+
+1. Go to the [Clerk Dashboard](https://dashboard.clerk.dev/).
+2. Navigate to **Configure > Sessions**.
+3. Click **Edit** on “Customize Session Token”.
+4. Add the following JSON:
+
+```json
+{
+  "user": {
+    "public_metadata": {}
+  }
+}
+```
+
+5. Click **Save**.
+
+---
+
+### **Step 2 Define Role Types in TypeScript**
+
+Create a global type definition for roles.
+
+```bash
+mkdir types
+touch types/global.d.ts
+```
+
+```ts
+// types/global.d.ts
+export {};
+
+export type Role = 'admin' | 'moderator';
+
+declare global {
+  namespace Clerk {
+    interface Session {
+      publicMetadata: {
+        role?: Role;
+      };
+    }
+  }
+}
+```
+
+This gives TypeScript auto-completion and validation for role-based checks.
+
+---
+
+### **Step 3 Add Your Role via Dashboard**
+
+1. Go to **Users** in the Clerk Dashboard.
+2. Select your user.
+3. Under **Public Metadata**, click **Edit** and add:
+
+```json
+{
+  "role": "admin"
+}
+```
+
+4. Save the metadata.
+
+---
+
+### **Step 4 Protect Routes via Middleware**
+
+Use Clerk’s middleware to restrict access.
+
+1. Create or update `middleware.ts` in the root:
+
+```ts
+// middleware.ts
+import { auth } from "@clerk/nextjs/server";
+import { NextResponse } from "next/server";
+import { createRouteMatcher } from "next-clerk";
+
+const isAdminRoute = createRouteMatcher(['/admin']);
+
+export default auth((auth, req) => {
+  if (isAdminRoute(req)) {
+    if (auth.sessionClaims?.publicMetadata?.role !== 'admin') {
+      const url = new URL('/', req.url);
+      return NextResponse.redirect(url);
+    }
+  }
+
+  return NextResponse.next();
+});
+```
+
+> Now, only users with the `"admin"` role can access `/admin`.
+
+---
+
+### **Step 5 Create Server Actions to Manage Roles**
+
+Create `app/admin/actions.ts`:
+
+```ts
+// app/admin/actions.ts
+'use server';
+
+import { auth, clerkClient } from '@clerk/nextjs/server';
+import { revalidatePath } from 'next/cache';
+import type { Role } from '@/types/global';
+
+export async function setRole(formData: FormData) {
+  const { sessionClaims } = await auth();
+  if (sessionClaims?.publicMetadata?.role !== 'admin') {
+    throw new Error('Not authorized');
+  }
+
+  const userId = formData.get('id') as string;
+  const role = formData.get('role') as Role;
+
+  try {
+    await clerkClient.users.updateUser(userId, {
+      publicMetadata: { role }
+    });
+    revalidatePath('/admin');
+  } catch {
+    throw new Error('Failed to set role');
+  }
+}
+
+export async function removeRole(formData: FormData) {
+  const { sessionClaims } = await auth();
+  if (sessionClaims?.publicMetadata?.role !== 'admin') {
+    throw new Error('Not authorized');
+  }
+
+  const userId = formData.get('id') as string;
+
+  try {
+    await clerkClient.users.updateUser(userId, {
+      publicMetadata: { role: null }
+    });
+    revalidatePath('/admin');
+  } catch {
+    throw new Error('Failed to remove role');
+  }
+}
+```
+
+---
+
+### **Step 6 Admin Page UI to Manage Roles**
+
+Create `app/admin/page.tsx`:
+
+```tsx
+// app/admin/page.tsx
+import { clerkClient } from "@clerk/nextjs/server";
+import { setRole, removeRole } from "./actions";
+
+export default async function AdminPage() {
+  const users = await clerkClient.users.getUserList();
+
+  return (
+    <div className="p-8">
+      <h1 className="text-2xl mb-4">Admin Dashboard</h1>
+      <table className="w-full table-auto border">
+        <thead>
+          <tr className="bg-gray-100">
+            <th>Name</th>
+            <th>Email</th>
+            <th>Role</th>
+            <th>Actions</th>
+          </tr>
+        </thead>
+        <tbody>
+          {users.map(user => (
+            <tr key={user.id} className="text-center border-t">
+              <td>{user.firstName} {user.lastName}</td>
+              <td>{user.emailAddresses[0]?.emailAddress}</td>
+              <td>{user.publicMetadata.role ?? 'None'}</td>
+              <td className="space-x-2">
+                <form action={setRole}>
+                  <input type="hidden" name="id" value={user.id} />
+                  <input type="hidden" name="role" value="admin" />
+                  <button className="text-blue-600">Make Admin</button>
+                </form>
+                <form action={setRole}>
+                  <input type="hidden" name="id" value={user.id} />
+                  <input type="hidden" name="role" value="moderator" />
+                  <button className="text-green-600">Make Moderator</button>
+                </form>
+                <form action={removeRole}>
+                  <input type="hidden" name="id" value={user.id} />
+                  <button className="text-red-600">Remove Role</button>
+                </form>
+              </td>
+            </tr>
+          ))}
+        </tbody>
+      </table>
+    </div>
+  );
+}
+```
+
+**Test the RBAC Flow**:
+
+* Use a browser to register a new user (this user will have no role).
+* Try visiting `/admin` → will redirect to `/`.
+* From your admin account, assign them the `admin` role.
+* Retry `/admin` with the new account → access granted!
 
 ---
