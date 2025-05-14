@@ -64,6 +64,7 @@
 * [**Working with Context Providers**](#working-with-context-providers)
 * [**Client-only Code**](#client-only-code)
 * [**Client Component Placement**](#client-component-placement)
+* [**Interleaving Server and Client Components**](#interleaving-server-and-client-components)
 
 ## **Introduction**
 
@@ -6351,5 +6352,168 @@ console.log('Navbar rendered');
 
 * In dev tools, you'll see **\[server]** or **\[client]** tags in logs
 * This helps confirm where the component is running
+
+---
+
+## **Interleaving Server and Client Components**
+
+Understanding how **Server Components** and **Client Components** interact in a Next.js App Router project is critical. Let’s look at **which combinations are allowed** and **which are not** — along with the **workaround** for unsupported patterns.
+
+* [**Setup Demo Components**](#setup-demo-components)
+* [**Page Setup**](#page-setup)
+* [**Valid Patterns**](#valid-patterns)
+* [**Why Client ➝ Server Fails**](#why-client-➝-server-fails)
+* [**Workaround Pass Server Component as a Prop**](#workaround-pass-server-component-as-a-prop)
+
+---
+
+### **Setup Demo Components**
+
+We define four components to explore interleaving:
+
+* [**Server Components**](#server-components-3)
+* [**Client Components**](#client-components-3)
+
+#### **Server Components**
+
+```tsx
+// components/ServerComponentOne.tsx
+import fs from 'fs';
+
+export const ServerComponentOne = () => {
+  fs.readFileSync('README.md', 'utf8');
+  return (
+    <div>
+      <h1>Server Component One</h1>
+      <ServerComponentTwo />
+    </div>
+  );
+};
+
+// components/ServerComponentTwo.tsx
+import fs from 'fs';
+
+export const ServerComponentTwo = () => {
+  fs.readFileSync('README.md', 'utf8');
+  return <h1>Server Component Two</h1>;
+};
+```
+
+#### **Client Components**
+
+```tsx
+// components/ClientComponentOne.tsx
+'use client';
+
+import { useState } from 'react';
+import ClientComponentTwo from './ClientComponentTwo';
+
+export default function ClientComponentOne({ children }: { children?: React.ReactNode }) {
+  const [name] = useState('Batman');
+  return (
+    <>
+      <h1>Client Component One</h1>
+      <ClientComponentTwo />
+      {children}
+    </>
+  );
+}
+
+// components/ClientComponentTwo.tsx
+'use client';
+
+export default function ClientComponentTwo() {
+  return <h1>Client Component Two</h1>;
+}
+```
+
+---
+
+### **Page Setup**
+
+```tsx
+// app/interleaving/page.tsx
+import ServerComponentOne from '@/components/ServerComponentOne';
+import ClientComponentOne from '@/components/ClientComponentOne';
+
+export default function InterleavingPage() {
+  return (
+    <>
+      <h1>Interleaving Page</h1>
+
+      {/* Valid: Server inside Server */}
+      <ServerComponentOne />
+
+      {/* Valid: Client inside Client */}
+      <ClientComponentOne />
+
+      {/* Valid: Client inside Server */}
+      <ServerComponentOne>
+        <ClientComponentOne />
+      </ServerComponentOne>
+
+      {/* Invalid: Server inside Client (will throw error) */}
+      {/* <ClientComponentOne>
+        <ServerComponentOne />
+      </ClientComponentOne> */}
+    </>
+  );
+}
+```
+
+---
+
+### **Valid Patterns**
+
+| Pattern              | Status        | Description                                                                            |
+| -------------------- | ------------- | -------------------------------------------------------------------------------------- |
+| **Server ➝ Server** | Supported     | Nesting server components works fine                                                   |
+| **Client ➝ Client** | Supported     | Nesting client components is fully allowed                                             |
+| **Server ➝ Client** | Supported     | Server components can render client components inside                                  |
+| **Client ➝ Server** | Not Allowed   | Server component **cannot** be directly imported or rendered inside a client component |
+
+---
+
+### **Why Client ➝ Server Fails**
+
+When a server component is nested inside a client component:
+
+* It **inherits** the client context
+* **Runs on the client**
+* Fails if it uses server-only features (e.g., `fs` or database queries)
+
+```ts
+// Results in error:
+Module not found: Can't resolve 'fs'
+```
+
+---
+
+### **Workaround Pass Server Component as a Prop**
+
+React doesn’t require you to render components only via JSX — you can pass server components as **props or children**.
+
+```tsx
+// page.tsx
+<ClientComponentOne>
+  <ServerComponentOne />
+</ClientComponentOne>
+```
+
+```tsx
+// ClientComponentOne.tsx
+'use client';
+
+export default function ClientComponentOne({ children }: { children?: React.ReactNode }) {
+  return (
+    <>
+      <h1>Client Component One</h1>
+      {children}
+    </>
+  );
+}
+```
+
+- This keeps server and client responsibilities clearly separated.
 
 ---
