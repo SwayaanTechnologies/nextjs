@@ -77,6 +77,7 @@
 * [**`useFormStatus` Hook**](#useformstatus-hook)
 * [**`useActionState` Hook**](#useactionstate-hook)
 * [**Separating Server Actions**](#separating-server-actions)
+* [**`useFormStatus` vs `useActionState`**](#useformstatus-vs-useactionstate)
 
 ## **Introduction**
 
@@ -8004,5 +8005,83 @@ const [state, formAction, ePending] = useActionState(createProduct, {
   ```
 
 * Fill in all fields and submit → Product is added and redirected to `/products-db`
+
+---
+
+## **`useFormStatus` vs `useActionState`**
+
+Both `pending` (from `useFormStatus`) and `isPending` (from `useActionState`) are boolean values that help us **track loading state** during form or server interactions. But they have distinct use cases and scopes. Let’s break it down:
+
+* [**`useFormStatus`**](#useformstatus)
+* [**`useActionState`**](#useactionstate)
+* [**When to Use What**](#when-to-use-what)
+
+---
+
+### **`useFormStatus`**
+
+* Comes from `react-dom`
+* Tracks the **submission status of a parent form**
+* Must be used **inside a form component**
+* Commonly used for:
+
+  * Disabling a **submit** button
+  * Showing a **loading spinner**
+* Ideal for: **Reusable form-related UI components**
+
+**Example:**
+
+```tsx
+'use client';
+import { useFormStatus } from 'react-dom';
+
+export function SubmitButton() {
+  const { pending } = useFormStatus();
+
+  return (
+    <button type="submit" disabled={pending}>
+      {pending ? 'Submitting...' : 'Submit'}
+    </button>
+  );
+}
+```
+
+---
+
+### **`useActionState`**
+
+* Comes from **React**
+* Works with any server action (not limited to forms)
+* Returns:
+
+  * `state` – form or action result
+  * `formAction` – callable action
+  * `isPending` – boolean for action state
+* Ideal for: **Tracking any async server logic**, not just form submissions
+
+**Example** 
+
+```tsx
+const [state, formAction, isPending] = useActionState(createProduct, {
+  errors: {},
+});
+
+<form action={formAction}>
+  <button disabled={isPending}>Submit</button>
+</form>
+```
+
+---
+
+### **When to Use What**
+
+| Use Case                                            | Recommendation     |
+| --------------------------------------------------- | ------------------ |
+| Disabling submit button inside a form               |  `useFormStatus`   |
+| Reusable form UI components (buttons, spinners)     |  `useFormStatus`   |
+| Tracking **any** server action (even outside forms) |  `useActionState`  |
+| Complex form state management with validation       |  `useActionState`  |
+
+> Tip: You can **combine both** in some scenarios for even more control!
 
 ---
