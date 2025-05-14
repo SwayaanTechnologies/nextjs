@@ -69,6 +69,7 @@
 * [**Fetching Data in Client Components**](#fetching-data-in-client-components)
 * [**Fetching Data in Server Components**](#fetching-data-in-server-components)
 * [**Loading and Error States**](#loading-and-error-states)
+* [**Sequential Data Fetching**](#sequential-data-fetching)
 
 ## **Introduction**
 
@@ -6858,5 +6859,181 @@ await fetch('https://jsonplaceholder.typicode.com/users123');
 ```
 
 Reload the page in the browser, and you should see the red error message.
+
+---
+
+## **Sequential Data Fetching**
+
+In some scenarios, fetching data in **sequential** order is necessary when one request depends on the result of another. This can lead to longer loading times, but it's a common pattern for certain use cases, such as fetching posts and then fetching their authors.
+
+* [**Example Blog Page with Posts and Authors**](#example-blog-page-with-posts-and-authors)
+* [**Setup Folder for Sequential Data Fetching**](#setup-folder-for-sequential-data-fetching)
+* [**Typescript Type for Posts**](#typescript-type-for-posts)
+* [**Fetching Posts Sequentially**](#fetching-posts-sequentially)
+* [**Fetching the Author for Each Post**](#fetching-the-author-for-each-post)
+* [**Integrating Author Component**](#integrating-author-component)
+* [**Adding Suspense for Streaming**](#adding-suspense-for-streaming)
+
+---
+
+### **Example Blog Page with Posts and Authors**
+
+We’ll create a simple blog-like page by using the **Json Placeholder** API, fetching posts and their associated authors sequentially.
+
+---
+
+### **Setup Folder for Sequential Data Fetching**
+
+1. Inside your **`app`** folder, create a new folder:
+
+   ```
+   /app/posts-sequential
+   ```
+
+2. Add a `page.tsx` file inside this folder.
+
+---
+
+### **Typescript Type for Posts**
+
+Let’s start by defining the type for our posts:
+
+```ts
+type Post = {
+  userId: number;
+  id: number;
+  title: string;
+  body: string;
+};
+```
+
+---
+
+### **Fetching Posts Sequentially**
+
+We will first fetch all the posts and then display each one. For each post, we'll later fetch the author based on the `userId` in the post.
+
+```tsx
+// app/posts-sequential/page.tsx
+export default async function PostsSequential() {
+  const response = await fetch('https://jsonplaceholder.typicode.com/posts');
+  const posts: Post[] = await response.json();
+  
+  // Filter to include only posts with an ID divisible by 10
+  const filteredPosts = posts.filter(post => post.id % 10 === 0);
+
+  return (
+    <div>
+      {filteredPosts.map((post) => (
+        <div key={post.id} className="p-4 border-b border-gray-200">
+          <h2 className="font-semibold">{post.title}</h2>
+          <p>{post.body}</p>
+          <div>Author: <span>Loading...</span></div> {/* Author will be rendered later */}
+        </div>
+      ))}
+    </div>
+  );
+}
+```
+
+---
+
+### **Fetching the Author for Each Post**
+
+Next, we will create a new **`author.tsx`** component to fetch the author of each post:
+
+```tsx
+// app/posts-sequential/author.tsx
+type AuthorProps = {
+  userId: number;
+};
+
+type Author = {
+  id: number;
+  name: string;
+};
+
+export default async function Author({ userId }: AuthorProps) {
+  const response = await fetch(`https://jsonplaceholder.typicode.com/users/${userId}`);
+  const author: Author = await response.json();
+
+  return <span>{author.name}</span>;
+}
+```
+
+---
+
+### **Integrating Author Component**
+
+In `page.tsx`, import the `Author` component and replace the placeholder "Loading..." text with the `Author` component.
+
+```tsx
+import Author from './author';
+
+export default async function PostsSequential() {
+  const response = await fetch('https://jsonplaceholder.typicode.com/posts');
+  const posts: Post[] = await response.json();
+
+  const filteredPosts = posts.filter(post => post.id % 10 === 0);
+
+  return (
+    <div>
+      {filteredPosts.map((post) => (
+        <div key={post.id} className="p-4 border-b border-gray-200">
+          <h2 className="font-semibold">{post.title}</h2>
+          <p>{post.body}</p>
+          <div>
+            Author: <Author userId={post.userId} />
+          </div>
+        </div>
+      ))}
+    </div>
+  );
+}
+```
+
+---
+
+### **Adding Suspense for Streaming**
+
+Instead of blocking the UI while fetching the author, we can use **React Suspense** to show the post first and then stream in the author name in the background.
+
+1. Wrap the `Author` component in a `<Suspense>` boundary:
+
+```tsx
+import { Suspense } from 'react';
+import Author from './author';
+
+export default async function PostsSequential() {
+  const response = await fetch('https://jsonplaceholder.typicode.com/posts');
+  const posts: Post[] = await response.json();
+  const filteredPosts = posts.filter(post => post.id % 10 === 0);
+
+  return (
+    <div>
+      {filteredPosts.map((post) => (
+        <div key={post.id} className="p-4 border-b border-gray-200">
+          <h2 className="font-semibold">{post.title}</h2>
+          <p>{post.body}</p>
+          <div>
+            Author: 
+            <Suspense fallback={<span>Loading author...</span>}>
+              <Author userId={post.userId} />
+            </Suspense>
+          </div>
+        </div>
+      ))}
+    </div>
+  );
+}
+```
+
+2. Add a 1-second artificial delay in the `Author` component to demonstrate Suspense:
+
+```tsx
+await new Promise(resolve => setTimeout(resolve, 1000));  // 1 second delay
+```
+
+Now, when you reload the page, the post content will show first, and after a short delay, the author name will appear.
 
 ---
