@@ -63,6 +63,7 @@
 * [**Working with Third-Party Packages**](#working-with-third-party-packages)
 * [**Working with Context Providers**](#working-with-context-providers)
 * [**Client-only Code**](#client-only-code)
+* [**Client Component Placement**](#client-component-placement)
 
 ## **Introduction**
 
@@ -6230,5 +6231,125 @@ By using the `client-only` package:
 * You **catch client/server boundary issues early**.
 * You **enforce best practices** for architecture.
 * You **prevent runtime crashes** caused by client code running on the server.
+
+---
+
+## **Client Component Placement**
+
+Not all components need to run on the client. Strategically **placing client components as low as possible** in the tree helps optimize your app’s performance.
+
+* [**Example Structure for Client Component Placement**](#example-structure-for-client-component-placement)
+* [**Problem Putting `use client` Too High**](#problem-putting-use-client-too-high)
+* [**Solution Push State Lower**](#solution-push-state-lower)
+* [**Debugging Tip**](#debugging-tip)
+
+**Why This Matters**
+
+In Next.js with React Server Components (RSC), we:
+
+* Want most of the component tree to stay server-side (for performance)
+* Only push components to the client when **state**, **interactivity**, or **browser-only APIs** are needed
+
+> Marking a component with `'use client'` doesn't just affect that component — it affects **all of its children too**.
+
+---
+
+### **Example Structure for Client Component Placement**
+
+Let’s build a simplified layout for a **landing page**:
+
+* `LandingPage` (server)
+
+  * `Navbar` (server)
+
+    * `NavLinks` (server)
+    * `NavSearch` (needs client state)
+
+```bash
+app/
+  landing-page/
+    page.tsx         # LandingPage
+components/
+  Navbar.tsx         # Contains NavLinks & NavSearch
+  NavLinks.tsx       # Static links
+  NavSearch.tsx      # Search input (uses state)
+```
+
+---
+
+### **Problem Putting `use client` Too High**
+
+If we add state in `Navbar`:
+
+```tsx
+// components/Navbar.tsx
+'use client';
+
+import { useState } from 'react';
+import NavLinks from './NavLinks';
+import NavSearch from './NavSearch';
+
+export default function Navbar() {
+  const [search, setSearch] = useState('');
+
+  return (
+    <nav>
+      <NavLinks />
+      <NavSearch />
+    </nav>
+  );
+}
+```
+
+Now:
+
+* `Navbar`, `NavLinks`, and `NavSearch` all run on the **client**
+* Even static components like `NavLinks` are forced into client-side rendering
+* Unnecessary JavaScript is sent to the browser
+
+---
+
+### **Solution Push State Lower**
+
+Move the state logic and `'use client'` **into the `NavSearch` component**, which is the only part needing interactivity:
+
+```tsx
+// components/NavSearch.tsx
+'use client';
+
+import { useState } from 'react';
+
+export default function NavSearch() {
+  const [search, setSearch] = useState('');
+
+  return (
+    <input
+      type="text"
+      value={search}
+      onChange={(e) => setSearch(e.target.value)}
+      placeholder="Search..."
+    />
+  );
+}
+```
+
+Now:
+
+* `NavSearch` is a **leaf client component**
+* `Navbar` and `NavLinks` stay as **server components**
+* You get performance benefits of server components without sacrificing interactivity
+
+---
+
+### **Debugging Tip**
+
+Use `console.log()` statements to check where components render:
+
+```ts
+console.log('Navbar rendered');
+```
+
+* In dev tools, you'll see **\[server]** or **\[client]** tags in logs
+* This helps confirm where the component is running
 
 ---
