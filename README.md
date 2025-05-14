@@ -59,6 +59,7 @@
 * [**`dynamicParams`**](#dynamicparams)
 * [**Streaming**](#streaming)
 * [**Server and Client Composition Patterns**](#server-and-client-composition-patterns)
+* [**Server-only Code**](#server-only-code)
 
 ## **Introduction**
 
@@ -5746,5 +5747,120 @@ One of the powerful aspects of Next.js is how it enables mixing server and clien
 2. **Only Hydrate What’s Necessary**: Client components should only handle what’s necessary for interactivity. Don’t hydrate the entire page if only a small section requires client-side functionality.
 3. **Use Suspense for Client Components**: To improve the loading experience, you can use React’s `Suspense` to wrap client components and display a fallback while they are loading.
 4. **Optimize Data Fetching**: Keep data-fetching logic in server components to avoid sending unnecessary API requests from the client.
+
+---
+
+## **Server-only Code**
+
+When building Next.js applications with server components, it’s critical to maintain a **clear separation between server-only and client-side code**. Some logic is intended to **run exclusively on the server**, and mistakenly exposing it to the client can result in:
+
+* **Performance issues** due to unnecessarily large JavaScript bundles.
+* **Security risks** such as exposing environment variables or sensitive business logic.
+* **Runtime errors** if server-specific features are used in the browser.
+
+### **Common Use Cases for Server-only Code**
+
+Examples of server-only logic include:
+
+* Accessing environment variables (`process.env`)
+* Making direct database calls
+* Calling server-side APIs
+* Performing secure calculations
+* Using server-only packages
+
+### **Problem Accidental Client-side Import**
+
+JavaScript modules can be imported from anywhere, which means **server-only utilities can accidentally be imported in client components**, leading to serious issues. Fortunately, Next.js developers can prevent this using a community package called **`server-only`**.
+
+### **Using the `server-only` Package**
+
+This package throws a **build-time error** if a module marked as server-only is imported into a client component. Here’s how to implement and use it.
+
+---
+
+### **Step-by-Step Setup of Server-only Code**
+
+* [**Install the `server-only` Package**](#install-the-server-only-package)
+* [**Create a Server-only Utility**](#create-a-server-only-utility)
+* [**Use It in a Server Component**](#use-it-in-a-server-component)
+* [**Try Importing in a Client Component**](#try-importing-in-a-client-component)
+
+#### **Install the `server-only` Package**
+
+```bash
+npm install server-only
+```
+
+---
+
+#### **Create a Server-only Utility**
+
+Create a file `src/utils/server-utils.ts`:
+
+```ts
+// src/utils/server-utils.ts
+import 'server-only';
+
+export const serverSideFunction = () => {
+  console.log('[server] This is a secure server-side function');
+  return 'Server Result';
+};
+```
+
+The line `import 'server-only';` ensures that this module **can only be used in server components**. If you try to import it in a client component, the build will fail.
+
+---
+
+#### **Use It in a Server Component**
+
+Create a file `app/server-route/page.tsx`:
+
+```tsx
+// app/server-route/page.tsx
+import { serverSideFunction } from '@/utils/server-utils';
+
+export default function ServerRoutePage() {
+  const result = serverSideFunction();
+
+  return <h1>Server Route - Result: {result}</h1>;
+}
+```
+
+When visiting `/server-route` in your browser, you’ll see the log message in the **terminal**, and the result rendered on the page. This confirms the function is running **server-side**.
+
+---
+
+#### **Try Importing in a Client Component**
+
+Create a file `app/client-route/page.tsx`:
+
+```tsx
+// app/client-route/page.tsx
+'use client';
+
+import { serverSideFunction } from '@/utils/server-utils'; //  This will fail the build
+
+export default function ClientRoutePage() {
+  const result = serverSideFunction();
+  return <h1>Client Route - Result: {result}</h1>;
+}
+```
+
+This will cause a **build-time error** like:
+
+```
+Error: Module "server-utils.ts" is marked as server-only but was imported in a client component.
+```
+
+This is exactly what we want — to **prevent accidental inclusion of server-side logic in client bundles**.
+
+---
+
+### **Why Use `server-only`**
+
+* Prevents security leaks (e.g., exposed environment variables)
+* Reduces bundle size by eliminating server code from client bundles
+* Catches import mistakes early, during build time
+* Enforces clean architectural boundaries between server and client
 
 ---
