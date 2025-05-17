@@ -1670,6 +1670,27 @@ Now `/dashboard` will render correctly in the browser, showing the "Dashboard" h
 > 
 > * These files won't be publicly accessible or interfere with routing, unless explicitly used by a `page.tsx` or another component.
 
+In **Next.js (App Router)**, certain file names are treated as **special** because they define specific routing behaviors, layouts, or UI states.
+
+Here's a list of all the **special file names** used in the `app/` directory:
+
+---
+
+#### **Special Files in Next.js App Router**
+
+| File Name                         | Purpose                                                                   |
+| --------------------------------- | ------------------------------------------------------------------------- |
+| `page.tsx` / `page.jsx`           | Defines the actual page content rendered at the route.                    |
+| `layout.tsx` / `layout.jsx`       | Defines persistent UI (e.g., headers, sidebars) shared across routes.     |
+| `loading.tsx` / `loading.jsx`     | UI shown while loading data or lazily loading a route.                    |
+| `error.tsx` / `error.jsx`         | Handles runtime errors within a route segment.                            |
+| `not-found.tsx` / `not-found.jsx` | Renders custom 404 UI for a route if a page is not found.                 |
+| `template.tsx` / `template.jsx`   | Like `layout`, but re-renders on navigation (not cached like layout).     |
+| `route.ts` / `route.js`           | Defines an API endpoint within the `app` directory.                       |
+| `default.tsx` / `default.jsx`     | Used inside parallel routes (`@slot`) to provide a fallback route.        |
+| `head.tsx` / `head.jsx`           | Customizes `<head>` content (title, meta) for a route segment.            |
+| `favicon.ico`, `icon.png`, etc.   | Special static metadata files placed in `app/` or `public/` for favicons. |
+
 ---
 
 #### **Organizing Your Project**
