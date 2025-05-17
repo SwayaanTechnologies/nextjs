@@ -2312,7 +2312,7 @@ src/
 │   │   ├── Container.tsx
 │   │   └── Button.tsx
 │   ├── blog/
-│   │   └── PostPreview.tsx
+│   │   └── BlogPostPreview.tsx
 ├── styles/
 │   └── globals.css
 
@@ -2409,17 +2409,17 @@ export default function Card({ children, className = '' }: CardProps) {
 
 Let’s clean up `/blog/page.tsx` with a blog post preview card.
 
-* [**`components/blog/PostPreview.tsx`**](#components/blog/postpreview.tsx)
+* [**`components/blog/BlogPostPreview.tsx`**](#components/blog/blogpostpreview.tsx)
 * [**Use it in `app/blog/page.tsx`**](#use-it-in-app/blog/page.tsx)
 
-#### **`components/blog/PostPreview.tsx`**
+#### **`components/blog/BlogPostPreview.tsx`**
 
 ```tsx
 import Link from 'next/link';
 import Card from '@/components/ui/Card';
 import { Post } from '@/lib/posts';
 
-export default function PostPreview({ post }: { post: Post }) {
+export default function BlogPostPreview({ post }: { post: Post }) {
   return (
     <Card>
       <h2 className="text-xl font-bold text-gray-800">
