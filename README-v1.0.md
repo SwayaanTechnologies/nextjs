@@ -2,13 +2,14 @@
 
 ## **Table of Content**
 
-* [**Introduction**](#introduction)
-* [**Setting up development environment**](#setting-up-development-environment)
-* [**Routing**](#routing)
-* [**Layouts**](#layouts)
-* [**Styling**](#styling)
+* [**1. Introduction**](#1.-introduction)
+* [**2. Setting up development environment**](#2.-setting-up-development-environment)
+* [**3. Routing**](#3.-routing)
+* [**4. Layouts**](#4.-layouts)
+* [**5. Styling**](#5.-styling)
+* [**6. Data Fetching**](#6.-data-fetching)
 
-## **Introduction**
+## **1. Introduction**
 
 * [**What is Next.js?**](#why-learn-next.js?)
 * [**Prerequisites**](#prerequisites)
@@ -367,7 +368,7 @@ The App Router is a newer router that allows you to use React's latest features,
 
 ---
 
-## **Setting up development environment**
+## **2. Setting up development environment**
 
 * [**Installing Node.js and npm**](#installing-node.js-and-npm)
 * [**Next.js Blog Post Application Requirements**](#next.js-blog-post-application-requirements)
@@ -952,7 +953,7 @@ This is how the base UI is constructed and served at `http://localhost:3000`.
 ---
 
 
-## **Routing**
+## **3. Routing**
 
 Routing is one of the core features of **Next.js**, and it follows a **file-based routing** system. This means your app’s URL structure is directly mapped from how you organize folders and files within the `app` directory.
 
@@ -1832,7 +1833,7 @@ app/
 
 ---
 
-## **Layouts**
+## **4. Layouts**
 
 **Layouts** allow you to define **shared UI** that stays consistent across multiple routes — such as headers, footers, navigation menus, and more. Next.js makes working with layouts simple and powerful.
 
@@ -2093,7 +2094,7 @@ Here's your next tutorial section for the **README file**, focusing on **Routing
 
 ---
 
-## **Styling**
+## **5. Styling**
 
 * Goal: Apply consistent styling, extract reusable components, and lay the foundation for a beautiful, scalable UI.
 
@@ -2297,5 +2298,577 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
 - How to use Tailwind CSS professionally
 - How to organize reusable UI and layout components
 - Component design practices that scale in a real app
+
+---
+
+
+## **6. Data Fetching**
+
+💡 *Goal: Fetch blog posts dynamically and understand SSR, SSG, ISR, and caching strategies.*
+
+* [**1. Server Components vs Client Components**](#1.-server-components-vs-client-components)
+* [**2. Fetching Data in a Server Component (`fetch()`)**](#2.-fetching-data-in-a-server-component)
+* [**3. Static vs Dynamic Data Fetching**](#3.-static-vs-dynamic-data-fetching)
+* [**4. Applying Static and Dynamic Fetching**](#4.-applying-static-and-dynamic-fetching)
+* [**5. Fetching a Single Blog Post**](#5.-fetching-a-single-blog-post)
+* [**6. Generate Static Params for SSG**](#6.-generate-static-params-for-ssg)
+* [**Final Result When to Use What?**](#final-result-when-to-use-what?)
+* [**Sequential Data Fetching**](#sequential-data-fetching)
+* [**Parallel Data Fetching**](#parallel-data-fetching)
+
+---
+
+### **1. Server Components vs Client Components**
+
+**What’s the Difference?**
+
+In **Next.js 15**, components are **server-first** by default.
+
+| Feature | Server Components | Client Components |
+| --- | --- | --- |
+| Runs on | The server (before page loads) | The browser (after page loads) |
+| Can access DB/APIs | ✅ Yes (direct fetch) | ❌ No (must use API routes) |
+| Can use React state (`useState`) | ❌ No | ✅ Yes |
+| Bundle size impact | 🚀 Smaller (no JS sent to client) | 📦 Larger (more JS sent) |
+
+> Rule of thumb:
+> 
+> - **Use Server Components for data fetching & rendering**
+>
+> - **Use Client Components when user interaction is needed (`useState`, `useEffect`)**
+
+---
+
+### **2. Fetching Data in a Server Component**
+
+Next.js **automatically optimizes** `fetch()` by default.
+
+```tsx
+// app/blog/page.tsx (Fetching all posts)
+import Link from 'next/link';
+
+async function getPosts() {
+  const res = await fetch('https://jsonplaceholder.typicode.com/posts');
+  return res.json();
+}
+
+export default async function BlogPage() {
+  const posts = await getPosts();
+
+  return (
+    <div className="space-y-6">
+      {posts.slice(0, 5).map((post) => (
+        <div key={post.id}>
+          <h2 className="text-xl font-bold">
+            <Link href={`/blog/${post.id}`} className="hover:underline">
+              {post.title}
+            </Link>
+          </h2>
+          <p className="text-gray-600">{post.body.slice(0, 80)}...</p>
+        </div>
+      ))}
+    </div>
+  );
+}
+
+```
+
+> 🔹 Why does this work?
+> 
+> - Runs **server-side** before the page loads.
+> - No API calls happen **in the browser**.
+> - **SEO-friendly** since HTML is generated before it reaches the client.
+
+---
+
+### **3. Static vs Dynamic Data Fetching**
+
+By default, Next.js **caches** every `fetch()` request.
+
+**How do we control when it updates?**
+
+Next.js gives us **three main cache options:**
+
+| Fetch Option | Behavior | Use Case |
+| --- | --- | --- |
+| `{ cache: 'force-cache' }` *(default)* | Static (cached at build time) | Blog posts, product pages |
+| `{ cache: 'no-store' }` | Fetches fresh data every request | User data, real-time data |
+| `{ next: { revalidate: 60 } }` | Static, but updates every X seconds | News, price listings |
+
+---
+
+### **4. Applying Static and Dynamic Fetching**
+
+* [**Static Rendering Cache Forever**](#static-rendering-cache-forever)
+* [**Dynamic Rendering Fresh Data on Every Request**](#dynamic-rendering-fresh-data-on-every-request)
+* [**ISR Hybrid Mode**](#isr-hybrid-mode)
+
+#### **Static Rendering Cache Forever**
+
+Fetch posts **once at build time** (Fastest method).
+
+```tsx
+async function getStaticPosts() {
+  return fetch('https://jsonplaceholder.typicode.com/posts', {
+    cache: 'force-cache', // Default
+  }).then((res) => res.json());
+}
+
+```
+
+---
+
+#### **Dynamic Rendering Fresh Data on Every Request**
+
+Use this when data **changes frequently**.
+
+```tsx
+async function getSSRPosts() {
+  return fetch('https://jsonplaceholder.typicode.com/posts', {
+    cache: 'no-store', // Never cache
+  }).then((res) => res.json());
+}
+
+```
+
+---
+
+#### **ISR Hybrid Mode**
+
+Fetches **once**, **caches** it, but **updates** every 60 seconds.
+
+```tsx
+async function getISRPosts() {
+  return fetch('https://jsonplaceholder.typicode.com/posts', {
+    next: { revalidate: 60 }, // Updates every 60s
+  }).then((res) => res.json());
+}
+
+```
+
+---
+
+### **5. Fetching a Single Blog Post**
+
+Let's apply what we learned to **fetch a single blog post**.
+
+**`app/blog/[id]/page.tsx`**
+
+```tsx
+async function getPost(id: string) {
+  return fetch(`https://jsonplaceholder.typicode.com/posts/${id}`, {
+    next: { revalidate: 60 }, // ISR: Updates every 60s
+  }).then((res) => res.json());
+}
+
+export default async function BlogPostPage({ params }: { params: { id: string } }) {
+  const post = await getPost(params.id);
+
+  if (!post) return <p>Post not found.</p>;
+
+  return (
+    <article className="prose">
+      <h1>{post.title}</h1>
+      <p>{post.body}</p>
+    </article>
+  );
+}
+
+```
+
+---
+
+### **6. Generate Static Params for SSG**
+
+> ✅ For static pages (SSG), we pre-build them at deploy time.
+> 
+
+**`generateStaticParams()`**
+
+```tsx
+export async function generateStaticParams() {
+  const posts = await fetch('https://jsonplaceholder.typicode.com/posts').then((res) => res.json());
+
+  return posts.slice(0, 5).map((post) => ({
+    id: post.id.toString(),
+  }));
+}
+
+```
+
+> 🔹 Next.js builds only the first 5 blog posts at deploy time.
+> 
+> 
+> 🔹 Other posts are **generated dynamically when visited (ISR fallback).**
+> 
+
+---
+
+### **Final Result When to Use What?**
+
+| Use Case | Solution | Cache Setting |
+| --- | --- | --- |
+| Blog posts that rarely change | **SSG** | `{ cache: 'force-cache' }` |
+| User profiles, live comments | **SSR** | `{ cache: 'no-store' }` |
+| News articles, price listings | **ISR** | `{ next: { revalidate: 60 } }` |
+
+---
+
+### **Sequential Data Fetching**
+
+In some scenarios, fetching data in **sequential** order is necessary when one request depends on the result of another. This can lead to longer loading times, but it's a common pattern for certain use cases, such as fetching posts and then fetching their authors.
+
+* [**Example Blog Page with Posts and Authors**](#example-blog-page-with-posts-and-authors)
+* [**Setup Folder for Sequential Data Fetching**](#setup-folder-for-sequential-data-fetching)
+* [**Typescript Type for Posts**](#typescript-type-for-posts)
+* [**Fetching Posts Sequentially**](#fetching-posts-sequentially)
+* [**Fetching the Author for Each Post**](#fetching-the-author-for-each-post)
+* [**Integrating Author Component**](#integrating-author-component)
+* [**Adding Suspense for Streaming**](#adding-suspense-for-streaming)
+
+---
+
+#### **Example Blog Page with Posts and Authors**
+
+We’ll create a simple blog-like page by using the **Json Placeholder** API, fetching posts and their associated authors sequentially.
+
+---
+
+#### **Setup Folder for Sequential Data Fetching**
+
+1. Inside your **`app`** folder, create a new folder:
+
+   ```
+   /app/posts-sequential
+   ```
+
+2. Add a `page.tsx` file inside this folder.
+
+---
+
+#### **Typescript Type for Posts**
+
+Let’s start by defining the type for our posts:
+
+```ts
+type Post = {
+  userId: number;
+  id: number;
+  title: string;
+  body: string;
+};
+```
+
+---
+
+#### **Fetching Posts Sequentially**
+
+We will first fetch all the posts and then display each one. For each post, we'll later fetch the author based on the `userId` in the post.
+
+```tsx
+// app/posts-sequential/page.tsx
+export default async function PostsSequential() {
+  const response = await fetch('https://jsonplaceholder.typicode.com/posts');
+  const posts: Post[] = await response.json();
+  
+  // Filter to include only posts with an ID divisible by 10
+  const filteredPosts = posts.filter(post => post.id % 10 === 0);
+
+  return (
+    <div>
+      {filteredPosts.map((post) => (
+        <div key={post.id} className="p-4 border-b border-gray-200">
+          <h2 className="font-semibold">{post.title}</h2>
+          <p>{post.body}</p>
+          <div>Author: <span>Loading...</span></div> {/* Author will be rendered later */}
+        </div>
+      ))}
+    </div>
+  );
+}
+```
+
+---
+
+#### **Fetching the Author for Each Post**
+
+Next, we will create a new **`author.tsx`** component to fetch the author of each post:
+
+```tsx
+// app/posts-sequential/author.tsx
+type AuthorProps = {
+  userId: number;
+};
+
+type Author = {
+  id: number;
+  name: string;
+};
+
+export default async function Author({ userId }: AuthorProps) {
+  const response = await fetch(`https://jsonplaceholder.typicode.com/users/${userId}`);
+  const author: Author = await response.json();
+
+  return <span>{author.name}</span>;
+}
+```
+
+---
+
+#### **Integrating Author Component**
+
+In `page.tsx`, import the `Author` component and replace the placeholder "Loading..." text with the `Author` component.
+
+```tsx
+import Author from './author';
+
+export default async function PostsSequential() {
+  const response = await fetch('https://jsonplaceholder.typicode.com/posts');
+  const posts: Post[] = await response.json();
+
+  const filteredPosts = posts.filter(post => post.id % 10 === 0);
+
+  return (
+    <div>
+      {filteredPosts.map((post) => (
+        <div key={post.id} className="p-4 border-b border-gray-200">
+          <h2 className="font-semibold">{post.title}</h2>
+          <p>{post.body}</p>
+          <div>
+            Author: <Author userId={post.userId} />
+          </div>
+        </div>
+      ))}
+    </div>
+  );
+}
+```
+
+---
+
+#### **Adding Suspense for Streaming**
+
+Instead of blocking the UI while fetching the author, we can use **React Suspense** to show the post first and then stream in the author name in the background.
+
+1. Wrap the `Author` component in a `<Suspense>` boundary:
+
+```tsx
+import { Suspense } from 'react';
+import Author from './author';
+
+export default async function PostsSequential() {
+  const response = await fetch('https://jsonplaceholder.typicode.com/posts');
+  const posts: Post[] = await response.json();
+  const filteredPosts = posts.filter(post => post.id % 10 === 0);
+
+  return (
+    <div>
+      {filteredPosts.map((post) => (
+        <div key={post.id} className="p-4 border-b border-gray-200">
+          <h2 className="font-semibold">{post.title}</h2>
+          <p>{post.body}</p>
+          <div>
+            Author: 
+            <Suspense fallback={<span>Loading author...</span>}>
+              <Author userId={post.userId} />
+            </Suspense>
+          </div>
+        </div>
+      ))}
+    </div>
+  );
+}
+```
+
+2. Add a 1-second artificial delay in the `Author` component to demonstrate Suspense:
+
+```tsx
+await new Promise(resolve => setTimeout(resolve, 1000));  // 1 second delay
+```
+
+Now, when you reload the page, the post content will show first, and after a short delay, the author name will appear.
+
+---
+
+### **Parallel Data Fetching**
+
+Parallel data fetching is the process of initiating multiple requests simultaneously, reducing the total loading time when the requests don’t depend on each other. This pattern is useful when you need to fetch independent pieces of data and display them together.
+
+* [**Example User Profile Page with Posts and Albums**](#example-user-profile-page-with-posts-and-albums)
+* [**Setup Folder for Parallel Data Fetching**](#setup-folder-for-parallel-data-fetching)
+* [**Typescript Types for Posts and Albums**](#typescript-types-for-posts-and-albums)
+* [**Fetching Posts and Albums**](#fetching-posts-and-albums)
+* [**Component for User Profile**](#component-for-user-profile)
+* [**Adding a Loading State**](#adding-a-loading-state)
+* [**Creating a Loading Spinner**](#creating-a-loading-spinner)
+* [**Wrapping with Suspense**](#wrapping-with-suspense)
+
+---
+
+#### **Example User Profile Page with Posts and Albums**
+
+In this example, we'll create a **user profile page** by fetching both the user's posts and albums concurrently using **Json Placeholder API**.
+
+---
+
+#### **Setup Folder for Parallel Data Fetching**
+
+1. Inside your **`app`** folder, create a new folder:
+
+   ```
+   /app/user-parallel
+   ```
+
+2. Inside **`user-parallel`**, create a dynamic route folder:
+
+   ```
+   /app/user-parallel/[id]
+   ```
+
+3. Inside this folder, add a `page.tsx` file.
+
+---
+
+#### **Typescript Types for Posts and Albums**
+
+We’ll define the types for the posts and albums. The `userId` is common across both types:
+
+```ts
+type Post = {
+  userId: number;
+  id: number;
+  title: string;
+  body: string;
+};
+
+type Album = {
+  userId: number;
+  id: number;
+  title: string;
+};
+```
+
+---
+
+#### **Fetching Posts and Albums**
+
+We will create two functions to fetch the user's posts and albums. These functions will be defined outside the component to keep things clean.
+
+1. **Fetching Posts**:
+
+```ts
+async function getUserPosts(userId: number) {
+  const res = await fetch(`https://jsonplaceholder.typicode.com/posts?userId=${userId}`);
+  return res.json();
+}
+```
+
+2. **Fetching Albums**:
+
+```ts
+async function getUserAlbums(userId: number) {
+  const res = await fetch(`https://jsonplaceholder.typicode.com/albums?userId=${userId}`);
+  return res.json();
+}
+```
+
+---
+
+#### **Component for User Profile**
+
+Now, let’s create the component that will fetch both posts and albums in parallel using `Promise.all`:
+
+```tsx
+// app/user-parallel/[id]/page.tsx
+import { Suspense } from 'react';
+
+export default async function UserProfile({ params }: { params: { id: string } }) {
+  const userId = parseInt(params.id, 10); // Get user ID from route params
+
+  // Fetch both posts and albums in parallel
+  const [posts, albums] = await Promise.all([
+    getUserPosts(userId),
+    getUserAlbums(userId)
+  ]);
+
+  return (
+    <div className="flex">
+      <div className="w-1/2 p-4">
+        <h2 className="font-semibold">Posts</h2>
+        {posts.map((post: Post) => (
+          <div key={post.id} className="mb-4">
+            <h3>{post.title}</h3>
+            <p>{post.body}</p>
+          </div>
+        ))}
+      </div>
+      <div className="w-1/2 p-4">
+        <h2 className="font-semibold">Albums</h2>
+        {albums.map((album: Album) => (
+          <div key={album.id} className="mb-4">
+            <h3>{album.title}</h3>
+          </div>
+        ))}
+      </div>
+    </div>
+  );
+}
+```
+
+---
+
+#### **Adding a Loading State**
+
+To simulate a loading state and show how both posts and albums are fetched simultaneously, let’s add a delay to the fetching functions:
+
+```ts
+async function getUserPosts(userId: number) {
+  await new Promise(resolve => setTimeout(resolve, 1000)); // 1-second delay
+  const res = await fetch(`https://jsonplaceholder.typicode.com/posts?userId=${userId}`);
+  return res.json();
+}
+
+async function getUserAlbums(userId: number) {
+  await new Promise(resolve => setTimeout(resolve, 1000)); // 1-second delay
+  const res = await fetch(`https://jsonplaceholder.typicode.com/albums?userId=${userId}`);
+  return res.json();
+}
+```
+
+---
+
+#### **Creating a Loading Spinner**
+
+Create a new `loading.tsx` file in the same folder to show a loading spinner. This will be used while the data is being fetched:
+
+```tsx
+// app/user-parallel/[id]/loading.tsx
+export default function Loading() {
+  return (
+    <div className="flex justify-center items-center p-10">
+      <div className="spinner-border animate-spin border-4 border-t-4 border-gray-600 rounded-full w-12 h-12"></div>
+    </div>
+  );
+}
+```
+
+---
+
+#### **Wrapping with Suspense**
+
+Wrap the `UserProfile` component with a `Suspense` boundary to show the loading spinner during data fetching:
+
+```tsx
+import { Suspense } from 'react';
+import Loading from './loading';
+
+export default function UserProfilePage({ params }: { params: { id: string } }) {
+  return (
+    <Suspense fallback={<Loading />}>
+      <UserProfile params={params} />
+    </Suspense>
+  );
+}
+```
 
 ---
