@@ -2216,7 +2216,17 @@ app/
 │   └── register/
 ```
 
-> Folders wrapped in `()` denote **route groups** — organizational only, ignored in the URL path.
+> **Note:**
+>
+> - Folders wrapped in `()` denote **route groups** — organizational only, ignored in the URL path.
+>
+> - make sure to move the `page.tsx` from app to the `(admin)` folder.
+>
+> - the `layout.tsx` file in the `(admin)` folder will be used for all pages inside that group.
+>
+> - layout can be used to wrap the `page.tsx` file in the `(admin)` folder, and any other pages inside that group.
+>
+> - make sure layout.tsx having full html structure, like `<html>`, `<head>`, and `<body>` tags.
 
 ---
 
