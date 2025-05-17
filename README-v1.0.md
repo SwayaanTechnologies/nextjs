@@ -1612,6 +1612,7 @@ export default function NotFound() {
 While Next.js follows a **file-system based routing** convention, it’s also **flexible** about how you organize your files and folders. This concept is known as **file colocation**, and it plays a key role in keeping your project maintainable and scalable.
 
 * [**Understanding File Colocation**](#understanding-file-colocation)
+* [**Special Files in Next.js App Router**](#special-files-in-next.js-app-router)
 * [**Organizing Your Project**](#organizing-your-project)
 
 ---
