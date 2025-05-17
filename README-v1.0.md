@@ -9,6 +9,7 @@
 * [**5. Styling**](#5.-styling)
 * [**6. Data Fetching**](#6.-data-fetching)
 * [**7. API Routes Replacement in App Router**](#7.-api-routes-replacement-in-app-router)
+* [**8. Using TypeScript in Next.js 15**](#8.-using-typescript-in-next.js-15)
 
 ## **1. Introduction**
 
@@ -3101,5 +3102,202 @@ Use it in `app/page.tsx` or `app/blog/page.tsx` temporarily to test.
 | Error handling | Manual with status codes |
 | Simulated persistence | `lib/fake-db.ts` |
 | API calling from UI | `fetch('/api/posts')` |
+
+---
+
+## **8. Using TypeScript in Next.js 15**
+
+💡 *Goal: Achieve full type-safety across pages, API routes, server components, and client components.*
+
+**What We’ll Cover**
+
+- Typing props for pages, layouts, components
+- Typing `params` for dynamic routes
+- Typing API route handlers (Request, Response)
+- Using utility types (generics, conditional types)
+- Aliasing paths (`@/lib`, `@/components`) in `tsconfig.json`
+
+---
+
+### **1. Typing Page Props**
+
+In **dynamic routes** like `app/blog/[id]/page.tsx`, you get `params` injected automatically.
+
+**Typing `params`**
+
+```tsx
+type PageProps = {
+  params: { id: string };
+};
+
+export default function BlogPostPage({ params }: PageProps) {
+  const { id } = params;
+  return <div>Blog Post ID: {id}</div>;
+}
+
+```
+
+✅ **Tip:** Always name it `params`, as Next.js expects that.
+
+---
+
+### **2. Typing API Route Handlers**
+
+Let’s correctly type our API handlers too:
+
+`app/api/posts/[id]/route.ts`
+
+```tsx
+import { NextResponse } from 'next/server';
+
+type Context = {
+  params: { id: string };
+};
+
+export async function GET(req: Request, { params }: Context) {
+  const { id } = params;
+  return NextResponse.json({ id });
+}
+
+```
+
+✅ **Why?**
+
+- You avoid typos (`params.idd ❌`)
+- VSCode gives you autocomplete
+- Future-proof against API changes
+
+---
+
+### **3. Typing Server-Side Helpers**
+
+Remember our `lib/fake-db.ts`?
+
+Make all functions typed cleanly:
+
+```
+export type Post = {
+  id: number;
+  title: string;
+  body: string;
+};
+
+export function getPosts(): Post[] { ... }
+
+export function getPostById(id: number): Post | undefined { ... }
+
+export function addPost(post: Omit<Post, 'id'>): Post { ... }
+
+```
+
+✅ **Using `Omit<Type, 'field'>`** is a **best practice** when you want to avoid manually redefining types.
+
+---
+
+### **4. Typing Client Components**
+
+For client components like `NewPostForm.tsx`:
+
+✅ Type your `useState` hooks properly:
+
+```tsx
+const [title, setTitle] = useState<string>('');
+const [body, setBody] = useState<string>('');
+
+```
+
+✅ Type event handlers too:
+
+```tsx
+function handleChange(e: React.ChangeEvent<HTMLInputElement>) {
+  setTitle(e.target.value);
+}
+
+```
+
+✅ Type submit event:
+
+```tsx
+async function handleSubmit(e: React.FormEvent<HTMLFormElement>) { ... }
+
+```
+
+✅ Why bother?
+
+- You prevent wrong access like `e.target.value` on non-inputs.
+- You get **instant IntelliSense** while typing!
+
+---
+
+### **5. Tsconfig Aliased Paths**
+
+✅ Let’s make your imports cleaner:
+Instead of ugly:
+
+```tsx
+import { getPosts } from '../../../lib/fake-db';
+
+```
+
+We want:
+
+```tsx
+import { getPosts } from '@/lib/fake-db';
+
+```
+
+---
+
+### **Update `tsconfig.json`**
+
+```json
+{
+  "compilerOptions": {
+    "baseUrl": ".",
+    "paths": {
+      "@/*": ["./*"]
+    }
+  }
+}
+
+```
+
+> Now, @/lib, @/components, etc., will auto-resolve anywhere.
+
+---
+
+### **Strict TypeScript**
+
+Make sure your `tsconfig.json` includes:
+
+```json
+{
+  "compilerOptions": {
+    "strict": true,
+    "noImplicitAny": true,
+    "strictNullChecks": true,
+    "forceConsistentCasingInFileNames": true
+  }
+}
+
+```
+
+✅ These flags:
+
+- Catch bugs at compile time
+- Enforce best practices
+- Make collaboration smoother in big teams
+
+---
+
+### **TypeScript Recap**
+
+| Area | Type |
+| --- | --- |
+| Page props (`params`) | `type PageProps = { params: { slug: string } }` |
+| API Route Context | `type Context = { params: { id: string } }` |
+| Server-side data helpers | Use `Post` model |
+| Client-side event handlers | `ChangeEvent`, `FormEvent` |
+| Path Aliasing | `@/lib`, `@/components` |
 
 ---
