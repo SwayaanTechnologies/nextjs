@@ -6,6 +6,7 @@
 * [**Setting up development environment**](#setting-up-development-environment)
 * [**Routing**](#routing)
 * [**Layouts**](#layouts)
+* [**Styling**](#styling)
 
 ## **Introduction**
 
@@ -1154,7 +1155,7 @@ Next.js automatically mirrors your folder structure into URL routes. You don’t
 Previous example, we've seen how **nested routing** works by creating folders like `/blog/first` and `/blog/second`. However, this approach doesn't scale well for large datasets or content fetched dynamically. That’s where **dynamic routes** come in.
 
 * [**Blog Listing Dynamic Route**](#blog-listing-dynamic-route)
-* [**Step 1 Create the Static Post List**](#step-1-create-the-static-post-list)
+* [**Step 1 Create the Static Blog List**](#step-1-create-the-static-blog-list)
 * [**Step 2 Set Up the Dynamic Route**](#step-2-set-up-the-dynamic-route)
 * [**Dynamic Segments**](#dynamic-segments)
 * [**Dynamic Routing Structure Summary**](#dynamic-routing-structure-summary)
@@ -1166,7 +1167,7 @@ Previous example, we've seen how **nested routing** works by creating folders li
 
 ---
 
-#### **Step 1 Create the Static Post List**
+#### **Step 1 Create the Static Blog List**
 
 1. Inside the `app/blog/` directory.
 2. Inside `blog/`, update the `page.tsx` file:
@@ -2089,5 +2090,212 @@ Despite changing the folder structure...
 * **URLs stay the same** — because route group names are not part of the path
 
 Here's your next tutorial section for the **README file**, focusing on **Routing Metadata** in Next.js App Router:
+
+---
+
+## **Styling**
+
+* Goal: Apply consistent styling, extract reusable components, and lay the foundation for a beautiful, scalable UI.
+
+**We’ll cover:**
+
+- Project-level structure for styling
+- Global styles vs component styles
+- Tailwind best practices
+- Reusable UI components: `Card`, `Container`, `Button`
+- Organizing `components/` and `styles/`
+
+---
+
+### **Folder Setup**
+
+Let’s organize your project cleanly:
+
+```
+src/
+├── components/
+│   ├── ui/
+│   │   ├── Card.tsx
+│   │   ├── Container.tsx
+│   │   └── Button.tsx
+│   ├── blog/
+│   │   └── PostPreview.tsx
+├── styles/
+│   └── globals.css
+
+```
+
+---
+
+### **Tailwind Setup Recap**
+
+If you didn’t add Tailwind during setup, run:
+
+```bash
+npm install -D tailwindcss postcss autoprefixer
+npx tailwindcss init -p
+```
+
+Then update your config in `tailwind.config.js`:
+
+```
+content: [
+  './app/**/*.{js,ts,jsx,tsx}',
+  './components/**/*.{js,ts,jsx,tsx}',
+]
+
+```
+
+And apply styles in `app/globals.css`:
+
+```css
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+```
+
+---
+
+### **UI Component: `Container`**
+
+**`components/ui/Container.tsx`**
+
+```tsx
+type ContainerProps = {
+  children: React.ReactNode;
+  className?: string;
+};
+
+export default function Container({ children, className = '' }: ContainerProps) {
+  return (
+    <div className={`max-w-3xl mx-auto px-4 ${className}`}>
+      {children}
+    </div>
+  );
+}
+
+```
+
+Use it in `layout.tsx`:
+
+```tsx
+import Container from '@/components/ui/Container';
+
+<main>
+  <Container>{children}</Container>
+</main>
+
+```
+
+---
+
+### **UI Component: `Card`**
+
+**`components/ui/Card.tsx`**
+
+```tsx
+type CardProps = {
+  children: React.ReactNode;
+  className?: string;
+};
+
+export default function Card({ children, className = '' }: CardProps) {
+  return (
+    <div className={`border rounded-md p-4 shadow-sm bg-white ${className}`}>
+      {children}
+    </div>
+  );
+}
+
+```
+
+---
+
+### **Blog Component: `PostPreview`**
+
+Let’s clean up `/blog/page.tsx` with a blog post preview card.
+
+* [**`components/blog/PostPreview.tsx`**](#components/blog/postpreview.tsx)
+* [**Use it in `app/blog/page.tsx`**](#use-it-in-app/blog/page.tsx)
+
+#### **`components/blog/PostPreview.tsx`**
+
+```tsx
+import Link from 'next/link';
+import Card from '@/components/ui/Card';
+import { Post } from '@/lib/posts';
+
+export default function PostPreview({ post }: { post: Post }) {
+  return (
+    <Card>
+      <h2 className="text-xl font-bold text-gray-800">
+        <Link href={`/blog/${post.slug}`} className="hover:underline">
+          {post.title}
+        </Link>
+      </h2>
+      <p className="text-gray-600 mt-2">{post.content.slice(0, 80)}...</p>
+    </Card>
+  );
+}
+
+```
+
+---
+
+#### **Use it in `app/blog/page.tsx`**
+
+```tsx
+import { posts } from '@/lib/posts';
+import PostPreview from '@/components/blog/PostPreview';
+
+export default function BlogIndexPage() {
+  return (
+    <div className="space-y-6">
+      {posts.map((post) => (
+        <PostPreview key={post.slug} post={post} />
+      ))}
+    </div>
+  );
+}
+
+```
+
+---
+
+### **Final Result**
+
+You now have:
+
+- A styled list of blog posts
+- Clean layout and spacing
+- Reusable components you can scale with
+- Tailwind setup for responsive design
+
+---
+
+### **Bonus: Add a Custom Font (Optional)**
+
+**In `layout.tsx`**
+
+```tsx
+import { Inter } from 'next/font/google';
+const inter = Inter({ subsets: ['latin'] });
+
+export default function RootLayout({ children }: { children: React.ReactNode }) {
+  return (
+    <html lang="en" className={inter.className}>
+      <body>{children}</body>
+    </html>
+  );
+}
+
+```
+
+**You’ve learned:**
+
+- How to use Tailwind CSS professionally
+- How to organize reusable UI and layout components
+- Component design practices that scale in a real app
 
 ---
