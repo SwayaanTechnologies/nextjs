@@ -4,11 +4,14 @@
 
 * [**Introduction**](#introduction)
 * [**Setting up development environment**](#setting-up-development-environment)
+* [**Routing**](#routing)
 
 ## **Introduction**
 
 * [**What is Next.js?**](#why-learn-next.js?)
 * [**Prerequisites**](#prerequisites)
+* [**Libraries vs Frameworks**](#libraries-vs-frameworks)
+* [**Example Projects Built with React and Next.js**](#example-projects-built-with-react-and-next.js)
 * [**Why Learn Next.js?**](#why-learn-next.js?)
 * [**React Understanding**](#react-understanding)
 * [**Before We Start**](#before-we-start)
@@ -44,6 +47,50 @@ Before starting with Next.js, you should be familiar with:
   * Props and state
   * JSX
   * React Hooks
+
+---
+
+### **Libraries vs Frameworks**
+
+| Aspect                   | Library                                                               | Framework                                                                                                  |
+| ------------------------ | --------------------------------------------------------------------- | ---------------------------------------------------------------------------------------------------------- |
+| **Definition**           | A collection of reusable functions or tools you can call when needed. | A complete structure that provides a foundation and flow for your application.                             |
+| **Control**              | **You** control the flow of the application.                          | The **framework** controls the flow; you fill in the blanks.                                               |
+| **Inversion of Control** | **No** inversion of control – you call the library.                   | **Yes** – the framework calls your code (known as "Hollywood Principle": *Don’t call us, we’ll call you*). |
+| **Flexibility**          | More flexible, you pick and choose when/how to use it.                | Less flexible; you're expected to follow framework conventions.                                            |
+| **Examples**             | Lodash, Axios, React (often considered a library), jQuery             | Angular, Next.js, Django, Ruby on Rails                                                                    |
+
+---
+
+### **Example Projects Built with React and Next.js**
+
+**React Projects**
+
+| Project Name         | Description               | Key Features                                   |
+| -------------------- | ------------------------- | ---------------------------------------------- |
+| **To-Do List App**   | Basic task management     | CRUD, state management, component lifecycle    |
+| **Weather App**      | Real-time weather fetch   | API calls, `useEffect`, conditional rendering  |
+| **Calculator App**   | Basic calculator          | Event handling, state updates                  |
+| **Chat App**         | Real-time messaging       | WebSocket/Firebase, state syncing              |
+| **Movie Search App** | Search movie database     | API fetch, search, modals                      |
+| **E-commerce UI**    | Product list, cart system | React Router, Context API, reusable components |
+
+---
+
+**Next.js Projects**
+
+| Project Name              | Description                             | Key Features                                           |
+| ------------------------- | --------------------------------------- | ------------------------------------------------------ |
+| **Blog App**              | Markdown blog with SEO                  | App Router, SSG, dynamic routing, metadata             |
+| **Portfolio Website**     | Personal site                           | Static generation, image optimization                  |
+| **E-commerce Platform**   | Full shop with Stripe                   | SSR/ISR, API routes, client/server components          |
+| **Admin Dashboard**       | Data dashboard for authenticated users  | Protected routes, server components, charts            |
+| **Multi-language Site**   | Localized content                       | i18n, route-based language switching                   |
+| **Auth App**              | Login, register, session-based access   | Middleware, next-auth, protected routing               |
+| **CMS Blog**              | Blog using a headless CMS like Sanity   | ISR/SSG, API fetch, dynamic metadata                   |
+| **Real-Time Chat App**    | Chat system with live updates           | API routes, WebSockets, real-time UI updates           |
+| **Job Board**             | Job listings and filter                 | Dynamic routes, SSG/SSR, metadata                      |
+| **SaaS Site + Dashboard** | Public landing + private user dashboard | App Router layouts, auth protection, role-based access |
 
 ---
 
