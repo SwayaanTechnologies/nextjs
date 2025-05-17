@@ -8,6 +8,7 @@
 * [**4. Layouts**](#4.-layouts)
 * [**5. Styling**](#5.-styling)
 * [**6. Data Fetching**](#6.-data-fetching)
+* [**7. API Routes Replacement in App Router**](#7.-api-routes-replacement-in-app-router)
 
 ## **1. Introduction**
 
@@ -1656,9 +1657,15 @@ Now add a `page.tsx` file:
 
 ```tsx
 // app/dashboard/page.tsx
-
+import LineChart from './LineChart';
+ 
 export default function Dashboard() {
-  return <h1>Dashboard</h1>;
+    return (
+        <div>
+            <h1>Dashboard</h1>
+            <LineChart />
+        </div>
+    );
 }
 ```
 
@@ -2111,8 +2118,6 @@ Despite changing the folder structure...
 * `/login` and `/register` still work — now using the **auth layout** (minimal)
 * `/dashboard`, `/users`, and `/` now use the **admin layout** (with header & footer)
 * **URLs stay the same** — because route group names are not part of the path
-
-Here's your next tutorial section for the **README file**, focusing on **Routing Metadata** in Next.js App Router:
 
 ---
 
@@ -2893,5 +2898,208 @@ export default function UserProfilePage({ params }: { params: { id: string } }) 
   );
 }
 ```
+
+---
+
+## **7. API Routes Replacement in App Router**
+
+💡 *Goal: Replace traditional `pages/api/*` routes with modern `app/api/*/route.ts` handlers in Next.js 15.*
+
+We’ll build a real **API layer** for our blog:
+
+- `GET /api/posts` – List all posts
+- `GET /api/posts/:id` – Get a single post
+- `POST /api/posts` – Add a new post (simulated)
+- Handle errors and JSON parsing
+
+---
+
+> Note: In real apps, you’d hit a DB or external API.
+
+Here, we’ll use an in-memory array to simulate persistence.
+
+---
+
+### **1. Folder & File Structure**
+
+```
+app/
+└── api/
+    └── posts/
+        ├── route.ts        ← GET / POST
+        └── [id]/
+            └── route.ts    ← GET /api/posts/:id
+
+```
+
+---
+
+### **2. Setup Fake DB**
+
+✅ Create `lib/fake-db.ts`:
+
+```
+export type Post = {
+  id: number;
+  title: string;
+  body: string;
+};
+
+let posts: Post[] = [
+  { id: 1, title: 'Hello from API', body: 'This is an API-powered post.' },
+  { id: 2, title: 'Server Actions & Route Handlers', body: 'Let’s build APIs in app/api.' },
+];
+
+export function getPosts() {
+  return posts;
+}
+
+export function getPostById(id: number) {
+  return posts.find(p => p.id === id);
+}
+
+export function addPost(post: Omit<Post, 'id'>) {
+  const newPost = { ...post, id: Date.now() };
+  posts.unshift(newPost);
+  return newPost;
+}
+
+```
+
+---
+
+### **3. Implement `GET` and `POST` Routes**
+
+`app/api/posts/route.ts`
+
+```
+import { NextResponse } from 'next/server';
+import { getPosts, addPost } from '@/lib/fake-db';
+
+export async function GET() {
+  const posts = getPosts();
+  return NextResponse.json(posts);
+}
+
+export async function POST(req: Request) {
+  try {
+    const body = await req.json();
+    if (!body.title || !body.body) {
+      return NextResponse.json({ error: 'Missing fields' }, { status: 400 });
+    }
+
+    const newPost = addPost({ title: body.title, body: body.body });
+    return NextResponse.json(newPost, { status: 201 });
+  } catch (e) {
+    return NextResponse.json({ error: 'Invalid JSON' }, { status: 400 });
+  }
+}
+
+```
+
+### **Test with `curl` or Postman**
+
+```bash
+curl http://localhost:3000/api/posts
+
+```
+
+```bash
+curl -X POST http://localhost:3000/api/posts \
+  -H "Content-Type: application/json" \
+  -d '{"title": "New from client", "body": "Just testing"}'
+
+```
+
+---
+
+### **4. Implement `GET /api/posts/:id`**
+
+**`app/api/posts/[id]/route.ts`**
+
+```
+import { NextResponse } from 'next/server';
+import { getPostById } from '@/lib/fake-db';
+
+export async function GET(_: Request, { params }: { params: { id: string } }) {
+  const id = parseInt(params.id);
+  const post = getPostById(id);
+
+  if (!post) {
+    return NextResponse.json({ error: 'Not found' }, { status: 404 });
+  }
+
+  return NextResponse.json(post);
+}
+
+```
+
+---
+
+### **Client-side Fetch Example**
+
+Let’s create a Client Component to call our API:
+
+**`components/blog/NewPostForm.tsx`**
+
+```tsx
+'use client';
+
+import { useState } from 'react';
+
+export default function NewPostForm() {
+  const [title, setTitle] = useState('');
+  const [body, setBody] = useState('');
+  const [success, setSuccess] = useState(false);
+
+  async function handleSubmit(e: React.FormEvent) {
+    e.preventDefault();
+    const res = await fetch('/api/posts', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ title, body }),
+    });
+
+    if (res.ok) setSuccess(true);
+  }
+
+  return (
+    <form onSubmit={handleSubmit} className="space-y-4">
+      <input
+        placeholder="Title"
+        value={title}
+        onChange={(e) => setTitle(e.target.value)}
+        className="border p-2 w-full"
+      />
+      <textarea
+        placeholder="Body"
+        value={body}
+        onChange={(e) => setBody(e.target.value)}
+        className="border p-2 w-full"
+      />
+      <button className="bg-blue-600 text-white px-4 py-2 rounded" type="submit">
+        Add Post
+      </button>
+      {success && <p className="text-green-600">Post added!</p>}
+    </form>
+  );
+}
+
+```
+
+Use it in `app/page.tsx` or `app/blog/page.tsx` temporarily to test.
+
+---
+
+### **Recap of This Session**
+
+| Concept | Used In |
+| --- | --- |
+| Route Handlers | `app/api/*/route.ts` |
+| Method routing (GET/POST) | Server functions |
+| JSON parsing | `await req.json()` |
+| Error handling | Manual with status codes |
+| Simulated persistence | `lib/fake-db.ts` |
+| API calling from UI | `fetch('/api/posts')` |
 
 ---
