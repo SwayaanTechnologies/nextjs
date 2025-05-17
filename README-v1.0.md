@@ -2520,9 +2520,15 @@ You now have:
 
 **In `layout.tsx`**
 
+- The `next/font` module automatically optimizes your fonts and removes external network requests for improved privacy and performance.
+
+- It includes built-in self-hosting for any font file. This means you can optimally load web fonts with no layout shift.
+
+- To start using `next/font`, import it from `next/font/local` or `next/font/google`, call it as a function with the appropriate options, and set the className of the element you want to apply the font to. For example:
+
 ```tsx
 import { Inter } from 'next/font/google';
-const inter = Inter({ subsets: ['latin'] });
+const inter = Inter({ weight: '400' , subsets: ['latin'] });
 
 export default function RootLayout({ children }: { children: React.ReactNode }) {
   return (
@@ -2533,6 +2539,8 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
 }
 
 ```
+
+> **Note**: Modify the `weight` and `subsets` options as per your requirements.
 
 **You’ve learned:**
 
