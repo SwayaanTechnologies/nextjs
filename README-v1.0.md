@@ -731,17 +731,18 @@ To develop a **basic blog post application** using **Next.js 15** that showcases
 
 ### **Creating a new Next.js 15 app with App Router**
 
-* [**Step 1 Create a Project Folder**](#step-1-create-a-project-folder)
-* [**Step 2 Create a New Next.js App for Blog Post**](#step-2-create-a-new-next.js-app-for-blog-post)
+* [**Step 1 Create a Work Space Folder**](#step-1-create-a-work-space-folder)
+* [**Step 2 Create a New Next.js Project for Blog Post**](#step-2-create-a-new-next.js-project-for-blog-post)
 * [**Step 3 Run the Development Server**](#step-3-run-the-development-server)
+* [**Step 4 Make Your First Edit**](#step-4-make-your-first-edit)
 
-#### **Step 1 Create a Project Folder**
+#### **Step 1 Create a Work Space Folder**
 
 Create a folder to store your project files:
 
 ```bash
-mkdir blog-post-app
-cd blog-post-app
+mkdir workspace
+cd workspace
 ```
 
 Open the folder in your code editor. If you're using VS Code:
@@ -752,7 +753,7 @@ code .
 
 ---
 
-### **Step 2 Create a New Next.js App for Blog Post**
+#### **Step 2 Create a New Next.js Project for Blog Post**
 
 Run the following command in your terminal to scaffold a new Next.js project:
 
@@ -775,7 +776,7 @@ You will be prompted to answer some configuration questions. Use the following c
 
 Once completed, a new folder called `blog-post-app` will be created with your Next.js project setup.
 
-### **Step 3 Run the Development Server**
+#### **Step 3 Run the Development Server**
 
 Navigate into the project folder:
 
@@ -795,7 +796,7 @@ You should see the default Next.js welcome page.
 
 ---
 
-### **Step 4 Make Your First Edit**
+#### **Step 4 Make Your First Edit**
 
 To test live editing, follow these steps:
 
