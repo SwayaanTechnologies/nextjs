@@ -542,7 +542,7 @@ Visit `http://localhost:3000/` in your browser—you'll see "Welcome Home" rende
 
 ### **Scenario 2 Create `About` and `Profile` Routes**
 
-We’ll now create two new routes:
+We’ll now create two new routes(Multiple routes):
 
 * `/about` → shows an About page
 * `/profile` → shows a Profile page
