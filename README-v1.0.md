@@ -1297,7 +1297,7 @@ src/
 2. Inside `comments/`, create a `page.tsx` file:
 
 ```tsx
-export default function Comments() {
+export default async function Comments() {
   return <h1>Comments Section</h1>;
 }
 ```
@@ -1326,7 +1326,7 @@ type Params = {
   };
 };
 
-export default function CommentDetails({ params }: Params) {
+export default async function CommentDetails({ params }: Params) {
   const { blogId, commentId } = params;
 
   return <h1>Details about Comment {commentId} on Blog {blogId}</h1>;
