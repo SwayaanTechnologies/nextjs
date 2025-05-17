@@ -948,3 +948,666 @@ This is how the base UI is constructed and served at `http://localhost:3000`.
 | 🛠️ **Recommended Use** | From Next.js 13+ with App Router enabled | Default in older Next.js versions |
 
 ---
+
+
+## **Routing**
+
+Routing is one of the core features of **Next.js**, and it follows a **file-based routing** system. This means your app’s URL structure is directly mapped from how you organize folders and files within the `app` directory.
+
+* [**Key Routing Conventions in Next.js**](#key-routing-conventions-in-next.js)
+* [**Simple Routing Examples**](#simple-routing-examples)
+* [**Multiple Routes**](#multiple-routes)
+* [**Nested Routes**](#nested-routes)
+* [**Dynamic Routes**](#dynamic-routes)
+* [**Nested Dynamic Routes**](#nested-dynamic-routes)
+* [**Catch-all Segments**](#catch-all-segments)
+* [**Not Found Page**](#not-found-page)
+
+---
+
+### **Key Routing Conventions in Next.js**
+
+Next.js routing is based on a few important conventions:
+
+1. **All routes must live inside the `app/` folder** (which itself lives inside `src/`).
+2. **Each route must be defined in a file named `page.tsx`** (or `page.js` if not using TypeScript).
+3. **Each folder represents a segment of the URL path.**
+
+---
+
+### **Simple Routing Examples**
+
+We want a simple homepage available at: `http://localhost:3000/`.
+
+**Steps:**
+
+1. Inside the `src/` directory, create a new folder called `app/`.
+2. Inside the `app/` folder, create a file named `page.tsx`.
+3. Add the following code:
+
+```tsx
+export default function Home() {
+  return <h1>Welcome Home</h1>;
+}
+```
+
+4. Start the dev server:
+
+```bash
+npm run dev
+```
+
+Visit `http://localhost:3000/` in your browser—you'll see "Welcome Home" rendered.
+
+> **Note**: Even though we deleted the original `layout.tsx`, Next.js will regenerate it behind the scenes as part of its default behavior. We'll cover layouts in detail later.
+
+---
+
+### **Multiple Routes**
+
+We’ll now create two new routes(Multiple routes):
+
+* `/about` → shows an About page
+* `/profile` → shows a Profile page
+
+**Steps:**
+
+1. In the `app/` folder, create a new folder named `about/`.
+2. Inside `about/`, create a file named `page.tsx` with:
+
+```tsx
+export default function About() {
+  return <h1>About Me</h1>;
+}
+```
+
+3. Similarly, create another folder inside `app/` called `profile/`.
+4. Inside `profile/`, create `page.tsx` with:
+
+```tsx
+export default function Profile() {
+  return <h1>My Profile</h1>;
+}
+```
+
+5. Save the files and navigate to the URLs:
+
+   * `http://localhost:3000/about` → displays "About Me"
+   * `http://localhost:3000/profile` → displays "My Profile"
+
+---
+
+#### **Summary of Key Routing Concepts**
+
+* `page.tsx` inside the `app/` folder maps to the root route `/`.
+
+* Each folder in `app/` represents a **URL segment**.
+
+* A `page.tsx` file inside a folder maps to that folder's **route path**.
+
+  For example:
+
+  ```
+  src/
+  └── app/
+      ├── page.tsx              --> /
+      ├── about/
+      │   └── page.tsx          --> /about
+      └── profile/
+          └── page.tsx          --> /profile
+  ```
+
+* If a user navigates to a route that doesn’t exist (e.g., `/dashboard`), Next.js automatically returns a **404 Not Found** page.
+
+---
+
+### **Nested Routes**
+
+Routing uses a **file-based routing system**, where folders and files under the `app/` directory determine the structure of your application’s URLs. Now, let’s explore **nested routing** by implementing a `blog` section with its own sub-routes.
+
+* [**Create a Blog Route with Nested Pages**](#create-a-blog-route-with-nested-pages)
+* [**Creating Nested Routes**](#creating-nested-routes)
+* [**Route Structure Summary**](#route-structure-summary)
+
+---
+
+#### **Create a Blog Route with Nested Pages**
+
+We want to implement the following routes:
+
+* `/blog` – Main blog landing page
+* `/blog/first` – First blog post
+* `/blog/second` – Second blog post
+
+**Steps:**
+
+1. Inside the `app/` directory, create a folder named `blog/`.
+2. Inside `blog/`, create a `page.tsx` file:
+
+```tsx
+export default function Blog() {
+  return <h1>My Blog</h1>;
+}
+```
+
+3. This will render at `http://localhost:3000/blog`.
+
+---
+
+#### **Creating Nested Routes**
+
+To handle `/blog/first` and `/blog/second`, follow these steps:
+
+1. Inside the `blog/` folder, create two subfolders: `first/` and `second/`.
+2. In each of those folders, create a `page.tsx` file:
+
+**`app/blog/first/page.tsx`**
+
+```tsx
+export default function FirstBlogPost() {
+  return <h1>First Blog Post</h1>;
+}
+```
+
+`app/blog/second/page.tsx`
+
+```tsx
+export default function SecondBlogPost() {
+  return <h1>Second Blog Post</h1>;
+}
+```
+
+3. Now the following routes are available:
+
+   * `http://localhost:3000/blog/first` → shows *First Blog Post*
+   * `http://localhost:3000/blog/second` → shows *Second Blog Post*
+
+---
+
+#### **Route Structure Summary**
+
+Your folder and file structure now looks like this:
+
+```
+src/
+└── app/
+    └── blog/
+        ├── page.tsx           → /blog
+        ├── first/
+        │   └── page.tsx       → /blog/first
+        └── second/
+            └── page.tsx       → /blog/second
+```
+
+**Key Takeaway**
+
+Next.js automatically mirrors your folder structure into URL routes. You don’t need to write route configuration files or install any extra libraries—**just follow the folder and file naming conventions**, and routing will work out of the box.
+
+---
+
+### **Dynamic Routes**
+
+Previous example, we've seen how **nested routing** works by creating folders like `/blog/first` and `/blog/second`. However, this approach doesn't scale well for large datasets or content fetched dynamically. That’s where **dynamic routes** come in.
+
+* [**Blog Listing Dynamic Route**](#blog-listing-dynamic-route)
+* [**Step 1 Create the Static Post List**](#step-1-create-the-static-post-list)
+* [**Step 2 Set Up the Dynamic Route**](#step-2-set-up-the-dynamic-route)
+* [**Dynamic Segments**](#dynamic-segments)
+* [**Dynamic Routing Structure Summary**](#dynamic-routing-structure-summary)
+
+#### **Blog Listing Dynamic Route**
+
+* `/blog/posts/[postId]` – Dynamic route for blog posts.
+* `[postId]` is a **dynamic segment** that can match any blog post ID.
+
+---
+
+#### **Step 1 Create the Static Post List**
+
+1. Inside the `app/blog/` directory, create a `posts/` folder.
+2. Inside `posts/`, create a `page.tsx` file:
+
+```tsx
+export default function PostList() {
+  return (
+    <div>
+      <h1>Blog Post List</h1>
+      <h2>Post 1</h2>
+      <h2>Post 2</h2>
+      <h2>Post 3</h2>
+    </div>
+  );
+}
+```
+
+* This page will render at `http://localhost:3000/blog/posts`.
+
+---
+
+#### **Step 2 Set Up the Dynamic Route**
+
+Manually creating a folder for every blog ID (like `/blog/posts/1`, `/blog/posts/2`, etc.) isn’t scalable. Instead, we use **dynamic segments**.
+
+1. Inside the `blog/posts/` folder, create a new folder named `[blogId]/`.
+2. Inside `[blogId]/`, create a `page.tsx` file:
+
+```tsx
+// app/blog/posts/[blogId]/page.tsx
+
+type Params = {
+  params: {
+    productId: string;
+  };
+};
+
+export default async function PostDetails({ params }: Params) {
+  const { blogId } = params;
+
+  return <h1>Details about Blog Post {blogId}</h1>;
+}
+```
+
+* This file handles all routes like:
+
+  * `/blog/posts/1`
+  * `/blog/posts/2`
+
+---
+
+#### **Dynamic Segments**
+
+* A folder name in square brackets like `[blogId]` tells Next.js to treat it as a **dynamic route parameter**.
+* The `params` object contains all route parameters and is **available to server components** as a prop.
+
+---
+
+#### **Dynamic Routing Structure Summary**
+
+Here’s what your folder structure looks like now:
+
+```
+src/
+└── app/
+    └── blog/
+        ├── page.tsx
+        ├── posts/
+        │   ├── page.tsx        → /blog/posts
+        │   └── [blogId]/
+        │       └── page.tsx    → /blog/posts/[blogId]
+```
+
+Now any route that matches '/`blog/posts/[blogId]` will be handled by the `page.tsx` file inside the `[blogId]` folder.
+
+**Example Output**
+
+* Visiting `http://localhost:3000/blog/posts/1` will show: **Details about Blog Post 1**
+* Visiting `http://localhost:3000/blog/posts/2` will show: **Details about Blog Post 2**
+
+---
+
+### **Nested Dynamic Routes**
+
+In many real-world applications, you'll often need to handle **multiple dynamic segments** in a single URL. That’s where **nested dynamic routing** becomes incredibly useful.
+
+* [**Post Comments Dynamic Route**](#post-comments-dynamic-route)
+* [**Step-by-Step Setup**](#step-by-step-setup)
+* [**Nested Dynamic Routing Structure Summary**](#nested-dynamic-routing-structure-summary)
+
+---
+
+#### **Post Comments Dynamic Route**
+
+We’ve already implemented dynamic post detail pages at:
+
+* `/blog/posts/[postId]` – Displays details about a specific blog post.
+
+Now, we want to add a **nested dynamic route** for comments:
+
+* `/blog/posts/[postId]/comments/[commentId]` – Displays details about a specific comment on a blog post.
+* `[postId]` and `[commentId]` are both dynamic segments.
+
+---
+
+#### **Step-by-Step Setup**
+
+* [**Step 1 Start from Existing Dynamic Route**](#step-1-start-from-existing-dynamic-route)
+* [**Step 2 Add `comments/` Folder**](#step-2-add-comments/-folder)
+* [**Step 3 Add Dynamic `[commentId]/` Folder**](#step-3-add-dynamic-[commentId]/-folder)
+
+---
+
+##### **Step 1 Start from Existing Dynamic Route**
+
+We already have this structure:
+
+```
+src/
+└── app/
+    └── blog/
+        ├── page.tsx
+        ├── posts/
+        │   ├── page.tsx        → /blog/posts
+        │   └── [postId]/
+        │       └── page.tsx    → /blog/posts/[postId]
+```
+
+---
+
+##### **Step 2 Add `comments/` Folder**
+
+1. Inside the `posts/[postId]/` folder, create a new folder named `comments/`.
+
+2. Inside `comments/`, create a `page.tsx` file:
+
+```tsx
+export default function Comments() {
+  return <h1>Comments Section</h1>;
+}
+```
+
+3. This will render at `http://localhost:3000/blog/posts/[postId]/comments`.
+
+4. Save the file and navigate to `http://localhost:3000/blog/posts/1/comments` in your browser. You should see "Comments Section" displayed.
+
+5. Now, we want to add a dynamic route for individual comments.
+
+---
+
+##### **Step 3 Add Dynamic `[commentId]/` Folder**
+
+1. Inside the `comments/` folder, create a new folder named `[commentId]/`.
+
+2. Inside `[commentId]/`, create a `page.tsx` file:
+
+```tsx
+// app/blog/posts/[postId]/comments/[commentId]/page.tsx
+
+type Params = {
+  params: {
+    postId: string;
+    commentId: string;
+  };
+};
+
+export default function CommentDetails({ params }: Params) {
+  const { postId, commentId } = params;
+
+  return <h1>Details about Comment {commentId} on Post {postId}</h1>;
+}
+```
+
+3. This file will handle all routes like:
+
+   * `/blog/posts/1/comments/1`
+   * `/blog/posts/1/comments/2`
+   * `/blog/posts/2/comments/1`
+
+4. Save the file and navigate to `http://localhost:3000/blog/posts/1/comments/1` in your browser. You should see "Details about Comment 1 on Post 1" displayed.
+
+---
+
+#### **Nested Dynamic Routing Structure Summary**
+
+Here’s what your folder structure looks like now:
+
+```
+src/
+└── app/
+    └── blog/
+        ├── page.tsx
+        └── posts/
+            ├── page.tsx                → /blog/posts
+            └── [postId]/
+                ├── page.tsx            → /blog/posts/[postId]
+                └── comments/
+                    ├── page.tsx        → /blog/posts/[postId]/comments
+                    └── [commentId]/
+                        └── page.tsx    → /blog/posts/[postId]/comments/:[commentId]
+```
+
+**Key Takeaway**
+
+You can create nested dynamic routes easily using folders with square brackets:
+
+* `[postId]` for dynamic segments
+* `[commentId]` for nested dynamic segments
+* This allows you to create complex URL structures without writing any additional routing logic.
+
+---
+
+### **Catch-all Segments**
+
+Catch-all segments in Next.js allow you to handle dynamic routes with multiple path segments using just a **single file**. This is especially powerful for documentation sites, wikis, and other apps that require deeply nested or flexible routing structures.
+
+* [**Documentation Site with Nested Routes**](#documentation-site-with-nested-routes)
+* [**Use a Catch-all Route**](#use-a-catch-all-route)
+* [**Optional Catch-all Segments**](#optional-catch-all-segments)
+* [**Catch-all Segments Structure Summary**](#catch-all-segments-structure-summary)
+
+---
+
+#### **Documentation Site with Nested Routes**
+
+Imagine building a documentation site where each feature contains several concepts, and each concept might have further nested examples. Example routes:
+
+```
+/docs/feature1/concept1  
+/docs/feature1/concept2  
+/docs/feature2/concept1/example1  
+...
+```
+
+Now, if you had 20 features and each had 20 concepts, you'd be looking at **400+ different routes**. File-based routing would make this hard to scale—unless we use **dynamic** and **catch-all segments**.
+
+---
+
+#### **Use a Catch-all Route**
+
+We can simplify this setup to just **one** route handler using a catch-all segment.
+
+* [**Step 1 Create the Catch-all Folder**](#step-1-create-the-catch-all-folder)
+* [**Step 2 Implement the Component**](#step-2-implement-the-component)
+
+##### **Step 1 Create the Catch-all Folder**
+
+In your `app` directory, create the following structure:
+
+```
+app/
+└── docs/
+    └── [...slug]/
+        └── page.tsx
+```
+
+* The folder `[...slug]` uses the `...` syntax (like the JavaScript spread operator), which means: “match **any number of path segments**.”
+* Inside `[...slug]`, create a `page.tsx` file.
+
+---
+
+##### **Step 2 Implement the Component**
+
+Here’s a simple example of how to access and display the segments:
+
+```tsx
+// app/docs/[...slug]/page.tsx
+
+type Params = {
+  params: {
+    slug?: string[];
+  };
+};
+
+export default async function DocsPage({ params }: Params) {
+  const slug = params.slug ?? [];
+
+  if (slug.length === 2) {
+    return <h1>Viewing docs for feature "{slug[0]}" and concept "{slug[1]}"</h1>;
+  }
+
+  if (slug.length === 1) {
+    return <h1>Viewing docs for feature "{slug[0]}"</h1>;
+  }
+
+  return <h1>Docs homepage</h1>;
+}
+```
+
+Now try visiting these routes:
+
+* `/docs/routing` → Viewing docs for feature **routing**
+
+* `/docs/routing/catch-all-segments` → Viewing docs for feature **routing** and concept **catch-all-segments**
+
+* `/docs` → You’ll see a **404** error (but we’ll fix that next!)
+
+---
+
+#### **Optional Catch-all Segments**
+
+To handle even `/docs` using the same file, make the segment **optional** by renaming the folder to:
+
+```
+[[...slug]]
+```
+
+So now the structure becomes:
+
+```
+app/
+└── docs/
+    └── [[...slug]]/
+        └── page.tsx
+```
+
+Now, `/docs` will also be matched and render the same page component.
+
+**Use Cases**
+
+Use **optional catch-all segments** when:
+
+* You want a single page to handle multiple levels of routes.
+* The layout or logic of the page depends on the depth or content of the route.
+
+---
+
+#### **Catch-all Segments Structure Summary**
+
+```
+app/
+├── page.tsx                  → /
+└── docs/
+    └── [[...slug]]/
+        └── page.tsx          → /docs/* (all depths)
+```
+
+* **Catch-all segments** (`[...slug]`) match any number of nested route segments.
+* **Optional catch-all segments** (`[[...slug]]`) also match when no segments are present.
+* Use `params.slug` to access the segments in your component.
+* Ideal for documentation sites, blogs, and pages with variable depth.
+
+---
+
+### **Not Found Page**
+
+Next.js makes it simple to define a **custom 404 page** using the App Router. This allows you to provide a more branded and user-friendly experience when users navigate to a route that doesn’t exist.
+
+By default, visiting an unknown route (e.g. `http://localhost:3000/building`) will display a generic Next.js 404 page, which is fine for development but insufficient for production environments.
+
+* [**Step 1 Create a Global Not Found Page**](#step-1-create-a-global-not-found-page)
+* [**Triggering Not Found Programmatically**](#triggering-not-found-programmatically)
+* [**Route-Specific Not Found**](#route-specific-not-found)
+
+---
+
+#### **Step 1 Create a Global Not Found Page**
+
+Create a `not-found.tsx` file in the `app/` directory:
+
+```
+app/
+├── not-found.tsx
+```
+
+```tsx
+// app/not-found.tsx
+
+export default function NotFound() {
+  return (
+    <div>
+      <h2>Page Not Found</h2>
+      <p>Could not find the requested resource.</p>
+    </div>
+  );
+}
+```
+
+This file will **automatically** be used by Next.js for all unmatched routes.
+
+---
+
+#### **Triggering Not Found Programmatically**
+
+Sometimes you want to manually show a 404 page from within a page. For example, if your post comment system should not show comments above ID 1000, use the `notFound()` function:
+
+```tsx
+// app/blog/posts/[postId]/comments/[commentId]/page.tsx
+import { notFound } from 'next/navigation';
+
+export default function PostCommnet({ params }: { params: { commentId: string } }) {
+  const commentId = parseInt(params.commentId);
+
+  if (commentId > 1000) {
+    notFound();
+  }
+
+  return <h1>Comment ID: {commentId}</h1>;
+}
+```
+
+---
+
+#### **Route-Specific Not Found**
+
+You can also create **section-specific** not-found pages by adding `not-found.tsx` within route folders. Next.js will use the **closest** matching `not-found.tsx`.
+
+For example:
+
+```
+src/
+└── app/
+    ├── not-found.tsx
+    └── blog/
+        ├── not-found.tsx
+        └── posts/
+            └── [postId]/
+                └── comments/
+                    └── [commentId]/
+                        └── not-found.tsx
+```
+
+```tsx
+// app/blog/posts/[postId]/comments/[commentId]/not-found.tsx
+
+'use client';
+
+import { usePathname } from 'next/navigation';
+
+export default function NotFound() {
+  const pathname = usePathname();
+  const segments = pathname.split('/');
+
+  const postId = segments[2];
+  const commentId = segments[4];
+
+    return (
+        <div>
+        <h2>Comment Not Found</h2>
+        <p>Could not find comment {commentId} for post {postId}.</p>
+        </div>
+    );
+}
+```
+
+> **Note:** Since you're using the `usePathname()` hook, mark this file as a **client component** with `'use client'`.
+
+---
