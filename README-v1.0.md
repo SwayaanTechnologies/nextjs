@@ -1207,7 +1207,7 @@ type Params = {
 };
 
 export default async function BlogDetails({ params }: Params) {
-  const { blogId } = params;
+  const { blogId } = await params;
 
   return <h1>Details about Blog {blogId}</h1>;
 }
@@ -1298,7 +1298,7 @@ src/
 2. Inside `comments/`, create a `page.tsx` file:
 
 ```tsx
-export default function Comments() {
+export default async function Comments() {
   return <h1>Comments Section</h1>;
 }
 ```
@@ -1327,8 +1327,8 @@ type Params = {
   };
 };
 
-export default function CommentDetails({ params }: Params) {
-  const { blogId, commentId } = params;
+export default async function CommentDetails({ params }: Params) {
+  const { blogId, commentId } = await params;
 
   return <h1>Details about Comment {commentId} on Blog {blogId}</h1>;
 }
@@ -2300,6 +2300,7 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
 - Component design practices that scale in a real app
 
 ---
+
 
 
 ## **6. Data Fetching**
