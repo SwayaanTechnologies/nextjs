@@ -1206,7 +1206,7 @@ type Params = {
 };
 
 export default async function BlogDetails({ params }: Params) {
-  const { blogId } = params;
+  const { blogId } = await params;
 
   return <h1>Details about Blog {blogId}</h1>;
 }
@@ -1327,7 +1327,7 @@ type Params = {
 };
 
 export default async function CommentDetails({ params }: Params) {
-  const { blogId, commentId } = params;
+  const { blogId, commentId } = await params;
 
   return <h1>Details about Comment {commentId} on Blog {blogId}</h1>;
 }
