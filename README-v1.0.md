@@ -2322,30 +2322,52 @@ src/
 
 ### **Tailwind Setup Recap**
 
-If you didn’t add Tailwind during setup, run:
+**If you didn’t add Tailwind during setup, run:**
 
 ```bash
-npm install -D tailwindcss postcss autoprefixer
-npx tailwindcss init -p
+npm install tailwindcss @tailwindcss/postcss postcss
 ```
 
-Then update your config in `tailwind.config.js`:
-
-```
-content: [
-  './app/**/*.{js,ts,jsx,tsx}',
-  './components/**/*.{js,ts,jsx,tsx}',
-]
-
-```
-
-And apply styles in `app/globals.css`:
+**And apply styles in `app/globals.css`:**
 
 ```css
-@tailwind base;
-@tailwind components;
-@tailwind utilities;
+@import "tailwindcss";
+```
 
+**Configure PostCSS Plugins**
+
+```mjs
+const config = {
+  plugins: {
+    "@tailwindcss/postcss": {},
+  },
+};
+export default config;
+```
+
+**page.tsx**
+
+```tsx
+export default function Home() {
+  return (
+    <h1 className="text-3xl font-bold underline">
+      Hello world!
+    </h1>
+  )
+}
+```
+
+**Make sure to import `globals.css` in your `layout.tsx`:**
+
+```tsx  
+import './globals.css';
+export default function RootLayout({ children }: { children: React.ReactNode }) {
+  return (
+    <html lang="en">
+      <body>{children}</body>
+    </html>
+  );
+}
 ```
 
 ---
@@ -2409,8 +2431,35 @@ export default function Card({ children, className = '' }: CardProps) {
 
 Let’s clean up `/blog/page.tsx` with a blog post preview card.
 
+* [**`app/lib/posts.ts`**](#applibpoststs)
 * [**`components/blog/BlogPostPreview.tsx`**](#components/blog/blogpostpreview.tsx)
 * [**Use it in `app/blog/page.tsx`**](#use-it-in-app/blog/page.tsx)
+
+#### **`app/lib/posts.ts`**
+
+```tsx
+// lib/posts.ts
+export type Post = {
+  title: string;
+  slug: string;
+  content: string;
+};
+
+export const posts: Post[] = [
+  {
+    title: 'Getting Started with Next.js 15',
+    slug: 'getting-started',
+    content: 'Welcome to the world of Next.js 15 App Router!',
+  },
+  {
+    title: 'Understanding React Server Components',
+    slug: 'react-server-components',
+    content: 'RSCs let you build fast and dynamic apps without shipping JS!',
+  },
+];
+```
+
+> **Note:** This is a mock data file. In a real app, you’d fetch this from an API or database.
 
 #### **`components/blog/BlogPostPreview.tsx`**
 
