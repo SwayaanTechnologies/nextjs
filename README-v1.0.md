@@ -5,6 +5,7 @@
 * [**Introduction**](#introduction)
 * [**Setting up development environment**](#setting-up-development-environment)
 * [**Routing**](#routing)
+* [**Layouts**](#layouts)
 
 ## **Introduction**
 
@@ -1160,60 +1161,60 @@ Previous example, we've seen how **nested routing** works by creating folders li
 
 #### **Blog Listing Dynamic Route**
 
-* `/blog/posts/[postId]` – Dynamic route for blog posts.
-* `[postId]` is a **dynamic segment** that can match any blog post ID.
+* `/blog/[blogId]` – Dynamic route for blog posts.
+* `[blogId]` is a **dynamic segment** that can match any blog post ID.
 
 ---
 
 #### **Step 1 Create the Static Post List**
 
-1. Inside the `app/blog/` directory, create a `posts/` folder.
-2. Inside `posts/`, create a `page.tsx` file:
+1. Inside the `app/blog/` directory.
+2. Inside `blog/`, update the `page.tsx` file:
 
 ```tsx
-export default function PostList() {
+export default function BlogList() {
   return (
     <div>
-      <h1>Blog Post List</h1>
-      <h2>Post 1</h2>
-      <h2>Post 2</h2>
-      <h2>Post 3</h2>
+      <h1>Blog List</h1>
+      <h2>Blog 1</h2>
+      <h2>Blog 2</h2>
+      <h2>Blog 3</h2>
     </div>
   );
 }
 ```
 
-* This page will render at `http://localhost:3000/blog/posts`.
+* This page will render at `http://localhost:3000/blog/`.
 
 ---
 
 #### **Step 2 Set Up the Dynamic Route**
 
-Manually creating a folder for every blog ID (like `/blog/posts/1`, `/blog/posts/2`, etc.) isn’t scalable. Instead, we use **dynamic segments**.
+Manually creating a folder for every blog ID (like `/blog/1`, `/blog/2`, etc.) isn’t scalable. Instead, we use **dynamic segments**.
 
-1. Inside the `blog/posts/` folder, create a new folder named `[blogId]/`.
+1. Inside the `blog/` folder, create a new folder named `[blogId]/`.
 2. Inside `[blogId]/`, create a `page.tsx` file:
 
 ```tsx
-// app/blog/posts/[blogId]/page.tsx
+// app/blog/[blogId]/page.tsx
 
 type Params = {
   params: {
-    productId: string;
+    blogId: string;
   };
 };
 
-export default async function PostDetails({ params }: Params) {
+export default async function BlogDetails({ params }: Params) {
   const { blogId } = params;
 
-  return <h1>Details about Blog Post {blogId}</h1>;
+  return <h1>Details about Blog {blogId}</h1>;
 }
 ```
 
 * This file handles all routes like:
 
-  * `/blog/posts/1`
-  * `/blog/posts/2`
+  * `/blog/1`
+  * `/blog/2`
 
 ---
 
@@ -1233,18 +1234,16 @@ src/
 └── app/
     └── blog/
         ├── page.tsx
-        ├── posts/
-        │   ├── page.tsx        → /blog/posts
-        │   └── [blogId]/
-        │       └── page.tsx    → /blog/posts/[blogId]
+        └── [blogId]/
+            └── page.tsx    → /blog/[blogId]
 ```
 
-Now any route that matches '/`blog/posts/[blogId]` will be handled by the `page.tsx` file inside the `[blogId]` folder.
+Now any route that matches '/`blog/[blogId]` will be handled by the `page.tsx` file inside the `[blogId]` folder.
 
 **Example Output**
 
-* Visiting `http://localhost:3000/blog/posts/1` will show: **Details about Blog Post 1**
-* Visiting `http://localhost:3000/blog/posts/2` will show: **Details about Blog Post 2**
+* Visiting `http://localhost:3000/blog/1` will show: **Details about Blog 1**
+* Visiting `http://localhost:3000/blog/2` will show: **Details about Blog 2**
 
 ---
 
@@ -1252,22 +1251,22 @@ Now any route that matches '/`blog/posts/[blogId]` will be handled by the `page.
 
 In many real-world applications, you'll often need to handle **multiple dynamic segments** in a single URL. That’s where **nested dynamic routing** becomes incredibly useful.
 
-* [**Post Comments Dynamic Route**](#post-comments-dynamic-route)
+* [**Blog Comments Dynamic Route**](#blog-comments-dynamic-route)
 * [**Step-by-Step Setup**](#step-by-step-setup)
 * [**Nested Dynamic Routing Structure Summary**](#nested-dynamic-routing-structure-summary)
 
 ---
 
-#### **Post Comments Dynamic Route**
+#### **Blog Comments Dynamic Route**
 
-We’ve already implemented dynamic post detail pages at:
+We’ve already implemented dynamic blog detail pages at:
 
-* `/blog/posts/[postId]` – Displays details about a specific blog post.
+* `/blog/[blogId]` – Displays details about a specific blog post.
 
 Now, we want to add a **nested dynamic route** for comments:
 
-* `/blog/posts/[postId]/comments/[commentId]` – Displays details about a specific comment on a blog post.
-* `[postId]` and `[commentId]` are both dynamic segments.
+* `/blog/[blogId]/comments/[commentId]` – Displays details about a specific comment on a blog post.
+* `[blogId]` and `[commentId]` are both dynamic segments.
 
 ---
 
@@ -1288,17 +1287,11 @@ src/
 └── app/
     └── blog/
         ├── page.tsx
-        ├── posts/
-        │   ├── page.tsx        → /blog/posts
-        │   └── [postId]/
-        │       └── page.tsx    → /blog/posts/[postId]
+        ├── [blogId]/
+        │   └── page.tsx    → /blog/[blogId]
 ```
 
----
-
-##### **Step 2 Add `comments/` Folder**
-
-1. Inside the `posts/[postId]/` folder, create a new folder named `comments/`.
+1. Inside the `blog/[blogId]/` folder, create a new folder named `comments/`.
 
 2. Inside `comments/`, create a `page.tsx` file:
 
@@ -1308,9 +1301,9 @@ export default function Comments() {
 }
 ```
 
-3. This will render at `http://localhost:3000/blog/posts/[postId]/comments`.
+3. This will render at `http://localhost:3000/blog/[blogId]/comments`.
 
-4. Save the file and navigate to `http://localhost:3000/blog/posts/1/comments` in your browser. You should see "Comments Section" displayed.
+4. Save the file and navigate to `http://localhost:3000/blog/1/comments` in your browser. You should see "Comments Section" displayed.
 
 5. Now, we want to add a dynamic route for individual comments.
 
@@ -1323,29 +1316,29 @@ export default function Comments() {
 2. Inside `[commentId]/`, create a `page.tsx` file:
 
 ```tsx
-// app/blog/posts/[postId]/comments/[commentId]/page.tsx
+// app/blog/[blogId]/comments/[commentId]/page.tsx
 
 type Params = {
   params: {
-    postId: string;
+    blogId: string;
     commentId: string;
   };
 };
 
 export default function CommentDetails({ params }: Params) {
-  const { postId, commentId } = params;
+  const { blogId, commentId } = params;
 
-  return <h1>Details about Comment {commentId} on Post {postId}</h1>;
+  return <h1>Details about Comment {commentId} on Blog {blogId}</h1>;
 }
 ```
 
 3. This file will handle all routes like:
 
-   * `/blog/posts/1/comments/1`
-   * `/blog/posts/1/comments/2`
-   * `/blog/posts/2/comments/1`
+   * `/blog/1/comments/1`
+   * `/blog/1/comments/2`
+   * `/blog/2/comments/1`
 
-4. Save the file and navigate to `http://localhost:3000/blog/posts/1/comments/1` in your browser. You should see "Details about Comment 1 on Post 1" displayed.
+4. Save the file and navigate to `http://localhost:3000/blog/1/comments/1` in your browser. You should see "Details about Comment 1 on Blog 1" displayed.
 
 ---
 
@@ -1358,21 +1351,19 @@ src/
 └── app/
     └── blog/
         ├── page.tsx
-        └── posts/
-            ├── page.tsx                → /blog/posts
-            └── [postId]/
-                ├── page.tsx            → /blog/posts/[postId]
-                └── comments/
-                    ├── page.tsx        → /blog/posts/[postId]/comments
-                    └── [commentId]/
-                        └── page.tsx    → /blog/posts/[postId]/comments/:[commentId]
+        └── [blogId]/
+            ├── page.tsx            → /blog/[blogId]
+            └── comments/
+                ├── page.tsx        → /blog/[blogId]/comments
+                └── [commentId]/
+                    └── page.tsx    → /blog/[blogId]/comments/[commentId]
 ```
 
 **Key Takeaway**
 
 You can create nested dynamic routes easily using folders with square brackets:
 
-* `[postId]` for dynamic segments
+* `[blogId]` for dynamic segments
 * `[commentId]` for nested dynamic segments
 * This allows you to create complex URL structures without writing any additional routing logic.
 
@@ -1553,10 +1544,10 @@ This file will **automatically** be used by Next.js for all unmatched routes.
 Sometimes you want to manually show a 404 page from within a page. For example, if your post comment system should not show comments above ID 1000, use the `notFound()` function:
 
 ```tsx
-// app/blog/posts/[postId]/comments/[commentId]/page.tsx
+// app/blog/[blogId]/comments/[commentId]/page.tsx
 import { notFound } from 'next/navigation';
 
-export default function PostCommnet({ params }: { params: { commentId: string } }) {
+export default function BlogComment({ params }: { params: { commentId: string } }) {
   const commentId = parseInt(params.commentId);
 
   if (commentId > 1000) {
@@ -1581,15 +1572,14 @@ src/
     ├── not-found.tsx
     └── blog/
         ├── not-found.tsx
-        └── posts/
-            └── [postId]/
-                └── comments/
-                    └── [commentId]/
-                        └── not-found.tsx
+        └── [blogId]/
+            └── comments/
+                └── [commentId]/
+                    └── not-found.tsx
 ```
 
 ```tsx
-// app/blog/posts/[postId]/comments/[commentId]/not-found.tsx
+// app/blog/[blogId]/comments/[commentId]/not-found.tsx
 
 'use client';
 
@@ -1599,13 +1589,13 @@ export default function NotFound() {
   const pathname = usePathname();
   const segments = pathname.split('/');
 
-  const postId = segments[2];
+  const blogId = segments[2];
   const commentId = segments[4];
 
     return (
         <div>
         <h2>Comment Not Found</h2>
-        <p>Could not find comment {commentId} for post {postId}.</p>
+        <p>Could not find comment {commentId} for blog {blogId}.</p>
         </div>
     );
 }
@@ -1838,5 +1828,86 @@ app/
 > URLs stay clean — just like before.
 >
 > Internally, code is now much better organized.
+
+---
+
+## **Layouts**
+
+**Layouts** allow you to define **shared UI** that stays consistent across multiple routes — such as headers, footers, navigation menus, and more. Next.js makes working with layouts simple and powerful.
+
+* [**What Is a Layout?**](#what-is-a-layout?)
+* [**The Root Layout**](#the-root-layout)
+* [**Example Basic Layout**](#example-basic-layout)
+* [**How It Renders**](#how-it-renders)
+
+---
+
+### **What Is a Layout?**
+
+A layout is a **React component** that wraps your route-specific page content using the `children` prop.
+
+**Common use cases:**
+
+* Headers and footers
+* Sidebars
+* Authentication wrappers
+* Global layout styles
+
+---
+
+### **The Root Layout**
+
+Every Next.js project using the App Router **must** include a `layout.tsx` file in the root of the `app/` directory.
+
+```bash
+app/
+├── layout.tsx   ← Root layout (mandatory)
+├── page.tsx     ← Home page content
+```
+
+> If you delete `layout.tsx`, Next.js **automatically regenerates it**.
+
+---
+
+### **Example Basic Layout**
+
+Here's a minimal `layout.tsx` file with shared layout content:
+
+```tsx
+// app/layout.tsx
+export default function RootLayout({ children }: { children: React.ReactNode }) {
+  return (
+    <html lang="en">
+      <body>
+        <header style={{ backgroundColor: "lightblue", padding: "1rem" }}>
+          <p>Header</p>
+        </header>
+
+        {children}  {/* Page-specific content gets rendered here */}
+
+        <footer style={{ backgroundColor: "ghostwhite", padding: "1rem" }}>
+          <p>Footer</p>
+        </footer>
+      </body>
+    </html>
+  );
+}
+```
+
+- The `children` prop dynamically renders the content of `page.tsx` for the current route.
+
+---
+
+### **How It Renders**
+
+When you visit:
+
+* `/` → content from `app/page.tsx` is injected into `layout.tsx`
+* `/about` → content from `app/about/page.tsx` is injected
+* `/profile` → content from `app/profile/page.tsx` is injected
+
+But the **layout remains constant** — with the same header and footer.
+
+> This helps maintain consistent structure and styling across all pages.
 
 ---
