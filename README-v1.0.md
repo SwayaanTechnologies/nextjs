@@ -1839,6 +1839,8 @@ app/
 * [**The Root Layout**](#the-root-layout)
 * [**Example Basic Layout**](#example-basic-layout)
 * [**How It Renders**](#how-it-renders)
+* [**Nested Layouts**](#nested-layouts)
+* [**Multiple Root Layouts**](#multiple-root-layouts)
 
 ---
 
@@ -1909,5 +1911,183 @@ When you visit:
 But the **layout remains constant** — with the same header and footer.
 
 > This helps maintain consistent structure and styling across all pages.
+
+---
+
+### **Nested Layouts**
+
+In addition to the required **root layout**, Next.js allows you to create **nested layouts** — layouts that apply to a specific route or group of routes. This gives you fine-grained control over the UI for different sections of your app.
+
+* [**Why Use Nested Layouts?**](#why-use-nested-layouts?)
+* [**Example Nested Layout for Blog Details**](#example-nested-layout-for-blog-details)
+* [**Nested Layout How It Renders**](#nested-layout-how-it-renders)
+
+---
+
+#### **Why Use Nested Layouts?**
+
+You might want:
+
+* A custom layout for blog details pages
+* A cleaner layout for authentication routes
+* Unique sidebars or headers for specific sections
+
+Nested layouts make that possible.
+
+---
+
+#### **Example Nested Layout for Blog Details**
+
+Let’s build a special layout for blog detail pages:
+
+* [**File structure**](#file-structure)
+* [**`blog/[blogId]/layout.tsx`**](#blog/[blogid]/layout.tsx)
+
+##### **File structure**
+
+```
+app/
+├── layout.tsx                   # Root layout (with header/footer)
+├── blog/
+│   ├── page.tsx                 # Blog list page
+│   └── [blogId]/
+│       ├── page.tsx            # Blog detail by ID
+│       └── layout.tsx          # Custom layout for blog details
+```
+
+##### **`blog/[blogId]/layout.tsx`**
+
+Create `layout.tsx` in `[blogId]` folder:
+
+```tsx
+// app/blog/[blogId]/layout.tsx
+export default function BlogDetailsLayout({ children }: { children: React.ReactNode }) {
+  return (
+    <>
+      <h2>Featured Blogs</h2>
+      {children}
+    </>
+  );
+}
+```
+
+This layout will **wrap around** the page at `blog/[blogId]/page.tsx`.
+
+---
+
+#### **Nested Layout How It Renders**
+
+Let’s walk through what happens when you visit different routes:
+
+| URL           | Layouts Applied                               | Content Rendered                                   |
+| ------------- | --------------------------------------------- | -------------------------------------------------- |
+| `/`           | `app/layout.tsx`                              | Root layout → `app/page.tsx`                       |
+| `/blog`      | `app/layout.tsx`                              | Root layout → `blog/page.tsx`                      |
+| `/blog/1`    | `app/layout.tsx` → `blog/[blogId]/layout.tsx` | Root layout → BlogDetails layout → Blog page      |
+
+- The `blog/[blogId]/layout.tsx` file only applies to dynamic blog routes — it adds the `Featured Blogs` heading above the main page content.
+
+---
+
+
+### **Multiple Root Layouts**
+
+By default, your Next.js app has **one root layout** (`layout.tsx` in the `app/` folder), which wraps every page in your application. But what if different parts of your app require **different layouts**?
+
+For example:
+
+* Marketing pages (e.g., `/revenue`, `/customers`) need a **header and footer**
+* Authentication pages (e.g., `/login`, `/register`) should be **clean and minimal**
+
+This is where **multiple root layouts** — powered by **route groups** — come in.
+
+* [**Set Up Multiple Root Layouts**](#set-up-multiple-root-layouts)
+
+---
+
+### **Set Up Multiple Root Layouts**
+
+We’ll organize our app using **route groups**, which let us apply layouts without affecting URLs.
+
+* [**Create Route Groups**](#create-route-groups)
+* [**Create Layouts for Each Route Group**](#create-layouts-for-each-route-group)
+* [**Move Pages into Route Groups**](#move-pages-into-route-groups)
+
+#### **Create Route Groups**
+
+In your `app/` folder:
+
+```
+app/
+├── (admin)/           ← Route group for admin pages
+│   ├── layout.tsx         ← Admin layout (with header & footer)
+│   ├── page.tsx           ← Home page
+│   ├── dashboard/
+│   └── users/
+├── (auth)/                ← Route group for auth pages
+│   ├── layout.tsx         ← Auth layout (footer only)
+│   ├── login/
+│   └── register/
+```
+
+> Folders wrapped in `()` denote **route groups** — organizational only, ignored in the URL path.
+
+---
+
+#### **Create Layouts for Each Route Group**
+
+**`(admin)/layout.tsx`**
+
+```tsx
+// app/(admin)/layout.tsx
+export default function AdminLayout({ children }: { children: React.ReactNode }) {
+  return (
+    <>
+      <header style={{ backgroundColor: "lightblue", padding: "1rem" }}>
+        <p>Header</p>
+      </header>
+      {children}
+      <footer style={{ backgroundColor: "ghostwhite", padding: "1rem" }}>
+        <p>Footer</p>
+      </footer>
+    </>
+  );
+}
+```
+
+**`(auth)/layout.tsx`**
+
+```tsx
+// app/(auth)/layout.tsx
+export default function AuthLayout({ children }: { children: React.ReactNode }) {
+  return (
+    <>
+      {children}
+      <footer style={{ backgroundColor: "ghostwhite", padding: "1rem" }}>
+        <p>Footer</p>
+      </footer>
+    </>
+  );
+}
+```
+
+---
+
+#### **Move Pages into Route Groups**
+
+* Move `login/` and `register/` into the `(auth)/` folder
+* Move `dashboard/`, `users/`, and the main `page.tsx` into the `(admin)/` folder
+
+> Every page now lives **inside a route group**, each with its **own root layout**.
+
+**What Happens Now?**
+
+Despite changing the folder structure...
+
+* `/login` and `/register` still work — now using the **auth layout** (minimal)
+* `/dashboard`, `/users`, and `/` now use the **admin layout** (with header & footer)
+* **URLs stay the same** — because route group names are not part of the path
+
+Here's your next tutorial section for the **README file**, focusing on **Routing Metadata** in Next.js App Router:
 
 ---
