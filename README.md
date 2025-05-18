@@ -20,6 +20,7 @@
 * [**Multiple Root Layouts**](#multiple-root-layouts)
 * [**Routing Metadata**](#routing-metadata)
 * [**`title` Metadata**](#title-metadata)
+* [**Linking Component Navigation**](#linking-component-navigation)
 * [**Active Links**](#active-links)
 * [**`params` and `searchParams`**](#params-and-searchparams)
 * [**Navigating Programmatically**](#navigating-programmatically)
@@ -1878,6 +1879,126 @@ Result: The title will simply be `Blog`, ignoring any template logic from higher
 | Consistent formatting needed  | `title.template` + child titles |
 | Break template inheritance    | `title.absolute`                |
 | Global fallback for all pages | `title.default`                 |
+
+---
+
+## **Linking Component Navigation**
+
+So far, we’ve tested our routes by typing URLs directly in the browser, but that's not how users interact with a website. In a real-world application, users navigate using links. Let’s explore how to enable smooth **client-side navigation** using the `Link` component provided by **Next.js**.
+
+---
+
+### **Basic Navigation with the `Link` Component**
+
+The `Link` component is the primary way to navigate between routes in a Next.js app. It enhances the native anchor element (`<a>`) and supports **client-side transitions** without a full page reload.
+
+**Syntax:**
+
+```tsx
+import Link from 'next/link';
+
+<Link href="/about">About</Link>
+```
+
+---
+
+### **Adding Links to the Home Page**
+
+Let’s add navigation links from the homepage:
+
+**File**: `app/page.tsx`
+
+```tsx
+import Link from 'next/link';
+
+export default function Home() {
+  return (
+    <>
+      <h1>Welcome</h1>
+      <Link href="/blog">Blog</Link>
+      <br />
+      <Link href="/products">Products</Link>
+    </>
+  );
+}
+```
+
+* Clicking **Blog** takes you to `/blog`
+* Clicking **Products** takes you to `/products`
+
+---
+
+### **Adding a "Home" Link on Other Pages**
+
+In `app/products/page.tsx`, import the `Link` component and add a "Home" button:
+
+```tsx
+import Link from 'next/link';
+
+export default function ProductList() {
+  return (
+    <>
+      <h1>Product List</h1>
+      <Link href="/">Home</Link>
+    </>
+  );
+}
+```
+
+This provides users a way to return to the homepage.
+
+---
+
+### **Dynamic Links for Products**
+
+Let’s turn each product heading into a link to its detail page.
+
+Assuming product routes follow this pattern: `/products/1`, `/products/2`, etc.
+
+```tsx
+<Link href={`/products/${product.id}`}>{product.title}</Link>
+```
+
+Example hardcoded version:
+
+```tsx
+<h2>
+  <Link href="/products/1">Product 1</Link>
+</h2>
+<h2>
+  <Link href="/products/2">Product 2</Link>
+</h2>
+<h2>
+  <Link href="/products/3">Product 3</Link>
+</h2>
+```
+
+Or using a dynamic ID from a variable:
+
+```tsx
+const productId = 100;
+
+<Link href={`/products/${productId}`}>Product 100</Link>
+```
+
+---
+
+### **Using the `replace` Prop**
+
+The `replace` prop controls how the browser's history is updated.
+
+```tsx
+<Link href="/products/3" replace>Product 3</Link>
+```
+
+* **Without `replace`**: Each navigation adds a new history entry.
+* **With `replace`**: Replaces the current entry instead of adding a new one.
+
+**Example:**
+
+1. Navigate to Products List
+2. Click on Product 3 (with `replace`)
+3. Press browser back button → goes **back to home**, **skipping** the product list page
 
 ---
 
