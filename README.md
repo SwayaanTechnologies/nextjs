@@ -33,6 +33,7 @@
 * [**Handling Global Errors**](#handling-global-errors)
 * [**Parallel Routes**](#parallel-routes)
 * [**Handling Unmatched Routes**](#handling-unmatched-routes)
+* [**Conditional Routes**](#conditional-routes)
 * [**Intercepting Routes**](#intercepting-routes)
 * [**Parallel Intercepting Routes**](#parallel-intercepting-routes)
 * [**Route Handlers**](#route-handlers)
@@ -3348,8 +3349,8 @@ With **conditional routes**, you can render completely separate components under
 
 We’ll implement a basic authentication check that determines whether to show:
 
-* 📊 A dashboard (for authenticated users), or
-* 🔐 A login page (for unauthenticated users)
+* A dashboard (for authenticated users), or
+* A login page (for unauthenticated users)
   All at the **same route**: `/complex-dashboard`
 
 ---
