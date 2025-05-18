@@ -2,14 +2,18 @@
 
 ## **Table of Content**
 
+**Day 1**
+
 * [**1. Introduction**](#1.-introduction)
 * [**2. Setting up development environment**](#2.-setting-up-development-environment)
-* [**3. Routing**](#3.-routing)
-* [**4. Layouts**](#4.-layouts)
-* [**5. Styling**](#5.-styling)
+* [**3. Layouts**](#3.-layouts)
+* [**4. Styling**](#4.-styling)
+* [**5. Routing**](#5.-routing)
 * [**6. Data Fetching**](#6.-data-fetching)
 * [**7. API Routes Replacement in App Router**](#7.-api-routes-replacement-in-app-router)
 * [**8. Using TypeScript in Next.js 15**](#8.-using-typescript-in-next.js-15)
+
+**Day 2**
 
 ## **1. Introduction**
 
@@ -954,8 +958,694 @@ This is how the base UI is constructed and served at `http://localhost:3000`.
 
 ---
 
+## **3. Layouts**
 
-## **3. Routing**
+**Layouts** allow you to define **shared UI** that stays consistent across multiple routes — such as headers, footers, navigation menus, and more. Next.js makes working with layouts simple and powerful.
+
+* [**What Is a Layout?**](#what-is-a-layout?)
+* [**The Root Layout**](#the-root-layout)
+* [**Example Basic Layout**](#example-basic-layout)
+* [**How It Renders**](#how-it-renders)
+* [**Nested Layouts**](#nested-layouts)
+* [**Multiple Root Layouts**](#multiple-root-layouts)
+
+---
+
+### **What Is a Layout?**
+
+A layout is a **React component** that wraps your route-specific page content using the `children` prop.
+
+**Common use cases:**
+
+* Headers and footers
+* Sidebars
+* Authentication wrappers
+* Global layout styles
+
+---
+
+### 1. **`React.ReactNode`**
+
+- `React.ReactNode` is used to type the `children` prop. It represents any valid React content (e.g., JSX, strings, numbers, arrays, `null`, etc.).
+- This is essential for layouts because they often wrap and render page-specific content passed as `children`.
+ 
+Example:
+
+```tsx
+export default function Layout({ children }: { children: React.ReactNode }) {
+  return <div>{children}</div>;
+}
+```
+ 
+### 2. **`children` Prop**
+   
+- The `children` prop is a special prop in React that allows you to pass nested content into a component.
+- In layouts, `children` is used to render the content of the specific page within the layout structure.
+ 
+Example: `/app/layout.tsx`
+
+```tsx
+export default function RootLayout({ children }: { children: React.ReactNode }) {
+  return (
+    <html lang="en">
+      <body>
+        {children}  {/* Page-specific content gets rendered here */}
+      </body>
+    </html>
+  );
+}
+```
+ 
+### 3. **HTML Structure**
+   
+- Layouts often define the overall HTML structure of the application, such as `<html>`, `<head>`, and `<body>` tags.
+- In Next.js, layouts are used to wrap pages with consistent elements like headers, footers, or navigation bars.
+ 
+Example:
+
+```tsx
+return (
+  <html lang="en">
+    <body>
+      <header>Header</header>
+      {children}
+      <footer>Footer</footer>
+    </body>
+  </html>
+);
+```
+ 
+### 4. **Styling**
+   
+- Layouts often include global or shared styles, such as CSS for headers, footers, or sidebars.
+- Inline styles, CSS modules, or global CSS files can be used.
+ 
+Example:
+   
+```tsx
+<header style={{ backgroundColor: "lightblue", padding: "1rem" }}>Header</header>
+```
+ 
+### 5. **Context Providers**
+   
+- Layouts are a great place to include React Context Providers for managing global state, themes, or authentication.
+ 
+Example:
+   
+```tsx
+import { ThemeProvider } from "./theme-context";
+ 
+export default function RootLayout({ children }: { children: React.ReactNode }) {
+  return (
+    <ThemeProvider>
+      <html lang="en">
+        <body>{children}</body>
+      </html>
+    </ThemeProvider>
+  );
+}
+```
+ 
+### 6. **Metadata and SEO**
+
+- In Next.js, layouts often include metadata for SEO, such as `<title>` and `<meta>` tags, using the `Head` component.
+ 
+Example:
+
+```tsx
+import Head from "next/head";
+ 
+export default function RootLayout({ children }: { children: React.ReactNode }) {
+  return (
+    <>
+      <Head>
+        <title>My App</title>
+        <meta name="description" content="My App Description" />
+      </Head>
+      <html lang="en">
+        <body>{children}</body>
+      </html>
+    </>
+  );
+}
+```
+ 
+### 7. **Dynamic Layouts**
+   
+- Layouts can be dynamic, adapting based on props or context (e.g., different headers for authenticated vs. unauthenticated users).
+ 
+Example:
+
+```tsx
+export default function RootLayout({ children, isLoggedIn }: { children: React.ReactNode; isLoggedIn: boolean }) {
+  return (
+    <html lang="en">
+      <body>
+        {isLoggedIn ? <header>Welcome Back</header> : <header>Please Log In</header>}
+        {children}
+      </body>
+    </html>
+  );
+}
+```
+
+### 8. **Nested Layouts**
+   
+- Next.js supports nested layouts, where a layout can wrap another layout. This is useful for creating layouts specific to certain sections of the app.
+ 
+Example:
+
+```bash
+app/
+├── layout.tsx       // Root layout
+├── dashboard/
+│   ├── layout.tsx   // Dashboard-specific layout
+│   ├── page.tsx     // Dashboard page
+```
+ 
+In `dashboard/layout.tsx`:
+
+```tsx
+export default function DashboardLayout({ children }: { children: React.ReactNode }) {
+  return (
+    <div>
+      <aside>Sidebar</aside>
+      <main>{children}</main>
+    </div>
+  );
+}
+``` 
+
+---
+
+### **The Root Layout**
+
+Every Next.js project using the App Router **must** include a `layout.tsx` file in the root of the `app/` directory.
+
+```bash
+app/
+├── layout.tsx   ← Root layout (mandatory)
+├── page.tsx     ← Home page content
+```
+
+> If you delete `layout.tsx`, Next.js **automatically regenerates it**.
+
+---
+
+### **Example Basic Layout**
+
+Here's a minimal `layout.tsx` file with shared layout content:
+
+```tsx
+// app/layout.tsx
+export default function RootLayout({ children }: { children: React.ReactNode }) {
+  return (
+    <html lang="en">
+      <body>
+        <header style={{ backgroundColor: "lightblue", padding: "1rem" }}>
+          <p>Header</p>
+        </header>
+
+        {children}  {/* Page-specific content gets rendered here */}
+
+        <footer style={{ backgroundColor: "ghostwhite", padding: "1rem" }}>
+          <p>Footer</p>
+        </footer>
+      </body>
+    </html>
+  );
+}
+```
+
+- The `children` prop dynamically renders the content of `page.tsx` for the current route.
+
+---
+
+### **How It Renders**
+
+When you visit:
+
+* `/` → content from `app/page.tsx` is injected into `layout.tsx`
+* `/about` → content from `app/about/page.tsx` is injected
+* `/profile` → content from `app/profile/page.tsx` is injected
+
+But the **layout remains constant** — with the same header and footer.
+
+> This helps maintain consistent structure and styling across all pages.
+
+---
+
+### **Nested Layouts**
+
+In addition to the required **root layout**, Next.js allows you to create **nested layouts** — layouts that apply to a specific route or group of routes. This gives you fine-grained control over the UI for different sections of your app.
+
+* [**Why Use Nested Layouts?**](#why-use-nested-layouts?)
+* [**Example Nested Layout for Blog Details**](#example-nested-layout-for-blog-details)
+* [**Nested Layout How It Renders**](#nested-layout-how-it-renders)
+
+---
+
+#### **Why Use Nested Layouts?**
+
+You might want:
+
+* A custom layout for blog details pages
+* A cleaner layout for authentication routes
+* Unique sidebars or headers for specific sections
+
+Nested layouts make that possible.
+
+---
+
+#### **Example Nested Layout for Blog Details**
+
+Let’s build a special layout for blog detail pages:
+
+* [**File structure**](#file-structure)
+* [**`blog/[blogId]/layout.tsx`**](#blog/[blogid]/layout.tsx)
+
+##### **File structure**
+
+```
+app/
+├── layout.tsx                   # Root layout (with header/footer)
+├── blog/
+│   ├── page.tsx                 # Blog list page
+│   └── [blogId]/
+│       ├── page.tsx            # Blog detail by ID
+│       └── layout.tsx          # Custom layout for blog details
+```
+
+##### **`blog/[blogId]/layout.tsx`**
+
+Create `layout.tsx` in `[blogId]` folder:
+
+```tsx
+// app/blog/[blogId]/layout.tsx
+export default function BlogDetailsLayout({ children }: { children: React.ReactNode }) {
+  return (
+    <>
+      <h2>Featured Blogs</h2>
+      {children}
+    </>
+  );
+}
+```
+
+This layout will **wrap around** the page at `blog/[blogId]/page.tsx`.
+
+---
+
+#### **Nested Layout How It Renders**
+
+Let’s walk through what happens when you visit different routes:
+
+| URL           | Layouts Applied                               | Content Rendered                                   |
+| ------------- | --------------------------------------------- | -------------------------------------------------- |
+| `/`           | `app/layout.tsx`                              | Root layout → `app/page.tsx`                       |
+| `/blog`      | `app/layout.tsx`                              | Root layout → `blog/page.tsx`                      |
+| `/blog/1`    | `app/layout.tsx` → `blog/[blogId]/layout.tsx` | Root layout → BlogDetails layout → Blog page      |
+
+- The `blog/[blogId]/layout.tsx` file only applies to dynamic blog routes — it adds the `Featured Blogs` heading above the main page content.
+
+---
+
+
+### **Multiple Root Layouts**
+
+By default, your Next.js app has **one root layout** (`layout.tsx` in the `app/` folder), which wraps every page in your application. But what if different parts of your app require **different layouts**?
+
+For example:
+
+* Admin pages (e.g., `/dashboard`, `/users`) need a **header and footer**
+* Authentication pages (e.g., `/login`, `/register`) should be **clean and minimal**
+
+This is where **multiple root layouts** — powered by **route groups** — come in.
+
+* [**Set Up Multiple Root Layouts**](#set-up-multiple-root-layouts)
+
+---
+
+### **Set Up Multiple Root Layouts**
+
+We’ll organize our app using **route groups**, which let us apply layouts without affecting URLs.
+
+* [**Create Route Groups**](#create-route-groups)
+* [**Create Layouts for Each Route Group**](#create-layouts-for-each-route-group)
+* [**Move Pages into Route Groups**](#move-pages-into-route-groups)
+
+#### **Create Route Groups**
+
+In your `app/` folder:
+
+```
+app/
+├── (admin)/           ← Route group for admin pages
+│   ├── layout.tsx         ← Admin layout (with header & footer)
+│   ├── page.tsx           ← Home page
+│   ├── dashboard/
+│   └── users/
+├── (auth)/                ← Route group for auth pages
+│   ├── layout.tsx         ← Auth layout (footer only)
+│   ├── login/
+│   └── register/
+```
+
+> **Note:**
+>
+> - Folders wrapped in `()` denote **route groups** — organizational only, ignored in the URL path.
+>
+> - make sure to move the `page.tsx` from app to the `(admin)` folder.
+>
+> - the `layout.tsx` file in the `(admin)` folder will be used for all pages inside that group.
+>
+> - layout can be used to wrap the `page.tsx` file in the `(admin)` folder, and any other pages inside that group.
+>
+> - make sure layout.tsx having full html structure, like `<html>`, `<head>`, and `<body>` tags.
+
+---
+
+#### **Create Layouts for Each Route Group**
+
+**`(admin)/layout.tsx`**
+
+```tsx
+// app/(admin)/layout.tsx
+export default function AdminLayout({ children }: { children: React.ReactNode }) {
+  return (
+    <>
+      <header style={{ backgroundColor: "lightblue", padding: "1rem" }}>
+        <p>Header</p>
+      </header>
+      {children}
+      <footer style={{ backgroundColor: "ghostwhite", padding: "1rem" }}>
+        <p>Footer</p>
+      </footer>
+    </>
+  );
+}
+```
+
+**`(auth)/layout.tsx`**
+
+```tsx
+// app/(auth)/layout.tsx
+export default function AuthLayout({ children }: { children: React.ReactNode }) {
+  return (
+    <>
+      {children}
+      <footer style={{ backgroundColor: "ghostwhite", padding: "1rem" }}>
+        <p>Footer</p>
+      </footer>
+    </>
+  );
+}
+```
+
+---
+
+#### **Move Pages into Route Groups**
+
+* Move `login/` and `register/` into the `(auth)/` folder
+* Move `dashboard/`, `users/`, and the main `page.tsx` into the `(admin)/` folder
+
+> Every page now lives **inside a route group**, each with its **own root layout**.
+
+**What Happens Now?**
+
+Despite changing the folder structure...
+
+* `/login` and `/register` still work — now using the **auth layout** (minimal)
+* `/dashboard`, `/users`, and `/` now use the **admin layout** (with header & footer)
+* **URLs stay the same** — because route group names are not part of the path
+
+---
+
+## **4. Styling**
+
+* Goal: Apply consistent styling, extract reusable components, and lay the foundation for a beautiful, scalable UI.
+
+**We’ll cover:**
+
+- Project-level structure for styling
+- Global styles vs component styles
+- Tailwind best practices
+- Reusable UI components: `Card`, `Container`, `Button`
+- Organizing `components/` and `styles/`
+
+---
+
+### **Folder Setup**
+
+Let’s organize your project cleanly:
+
+```
+src/
+├── components/
+│   ├── ui/
+│   │   ├── Card.tsx
+│   │   ├── Container.tsx
+│   │   └── Button.tsx
+│   ├── blog/
+│   │   └── BlogPostPreview.tsx
+├── styles/
+│   └── globals.css
+
+```
+
+---
+
+### **Tailwind Setup Recap**
+
+**If you didn’t add Tailwind during setup, run:**
+
+```bash
+npm install tailwindcss @tailwindcss/postcss postcss
+```
+
+**And apply styles in `app/globals.css`:**
+
+```css
+@import "tailwindcss";
+```
+
+**Configure PostCSS Plugins**
+
+```mjs
+const config = {
+  plugins: {
+    "@tailwindcss/postcss": {},
+  },
+};
+export default config;
+```
+
+**page.tsx**
+
+```tsx
+export default function Home() {
+  return (
+    <h1 className="text-3xl font-bold underline">
+      Hello world!
+    </h1>
+  )
+}
+```
+
+**Make sure to import `globals.css` in your `layout.tsx`:**
+
+```tsx  
+import './globals.css';
+export default function RootLayout({ children }: { children: React.ReactNode }) {
+  return (
+    <html lang="en">
+      <body>{children}</body>
+    </html>
+  );
+}
+```
+
+---
+
+### **UI Component: `Container`**
+
+**`components/ui/Container.tsx`**
+
+```tsx
+type ContainerProps = {
+  children: React.ReactNode;
+  className?: string;
+};
+
+export default function Container({ children, className = '' }: ContainerProps) {
+  return (
+    <div className={`max-w-3xl mx-auto px-4 ${className}`}>
+      {children}
+    </div>
+  );
+}
+
+```
+
+Use it in `layout.tsx`:
+
+```tsx
+import Container from '@/components/ui/Container';
+
+<main>
+  <Container>{children}</Container>
+</main>
+
+```
+
+---
+
+### **UI Component: `Card`**
+
+**`components/ui/Card.tsx`**
+
+```tsx
+type CardProps = {
+  children: React.ReactNode;
+  className?: string;
+};
+
+export default function Card({ children, className = '' }: CardProps) {
+  return (
+    <div className={`border rounded-md p-4 shadow-sm bg-white ${className}`}>
+      {children}
+    </div>
+  );
+}
+
+```
+
+---
+
+### **Blog Component: `PostPreview`**
+
+Let’s clean up `/blog/page.tsx` with a blog post preview card.
+
+* [**`app/lib/posts.ts`**](#applibpoststs)
+* [**`components/blog/BlogPostPreview.tsx`**](#components/blog/blogpostpreview.tsx)
+* [**Use it in `app/blog/page.tsx`**](#use-it-in-app/blog/page.tsx)
+
+#### **`app/lib/posts.ts`**
+
+```tsx
+// lib/posts.ts
+export type Post = {
+  title: string;
+  slug: string;
+  content: string;
+};
+
+export const posts: Post[] = [
+  {
+    title: 'Getting Started with Next.js 15',
+    slug: 'getting-started',
+    content: 'Welcome to the world of Next.js 15 App Router!',
+  },
+  {
+    title: 'Understanding React Server Components',
+    slug: 'react-server-components',
+    content: 'RSCs let you build fast and dynamic apps without shipping JS!',
+  },
+];
+```
+
+> **Note:** This is a mock data file. In a real app, you’d fetch this from an API or database.
+
+#### **`components/blog/BlogPostPreview.tsx`**
+
+```tsx
+import Link from 'next/link';
+import Card from '@/components/ui/Card';
+import { Post } from '@/lib/posts';
+
+export default function BlogPostPreview({ post }: { post: Post }) {
+  return (
+    <Card>
+      <h2 className="text-xl font-bold text-gray-800">
+        <Link href={`/blog/${post.slug}`} className="hover:underline">
+          {post.title}
+        </Link>
+      </h2>
+      <p className="text-gray-600 mt-2">{post.content.slice(0, 80)}...</p>
+    </Card>
+  );
+}
+
+```
+
+---
+
+#### **Use it in `app/blog/page.tsx`**
+
+```tsx
+import { posts } from '@/lib/posts';
+import PostPreview from '@/components/blog/PostPreview';
+
+export default function BlogIndexPage() {
+  return (
+    <div className="space-y-6">
+      {posts.map((post) => (
+        <PostPreview key={post.slug} post={post} />
+      ))}
+    </div>
+  );
+}
+
+```
+
+---
+
+### **Final Result**
+
+You now have:
+
+- A styled list of blog posts
+- Clean layout and spacing
+- Reusable components you can scale with
+- Tailwind setup for responsive design
+
+---
+
+### **Bonus: Add a Custom Font**
+
+**In `layout.tsx`**
+
+- The `next/font` module automatically optimizes your fonts and removes external network requests for improved privacy and performance.
+
+- It includes built-in self-hosting for any font file. This means you can optimally load web fonts with no layout shift.
+
+- To start using `next/font`, import it from `next/font/local` or `next/font/google`, call it as a function with the appropriate options, and set the className of the element you want to apply the font to. For example:
+
+```tsx
+import { Inter } from 'next/font/google';
+const inter = Inter({ weight: '400' , subsets: ['latin'] });
+
+export default function RootLayout({ children }: { children: React.ReactNode }) {
+  return (
+    <html lang="en" className={inter.className}>
+      <body>{children}</body>
+    </html>
+  );
+}
+
+```
+
+> **Note**: Modify the `weight` and `subsets` options as per your requirements.
+
+**You’ve learned:**
+
+- How to use Tailwind CSS professionally
+- How to organize reusable UI and layout components
+- Component design practices that scale in a real app
+
+---
+
+## **5. Routing**
 
 Routing is one of the core features of **Next.js**, and it follows a **file-based routing** system. This means your app’s URL structure is directly mapped from how you organize folders and files within the `app` directory.
 
@@ -3711,695 +4401,6 @@ export default function Default() {
 ```
 
 ---
-
-## **4. Layouts**
-
-**Layouts** allow you to define **shared UI** that stays consistent across multiple routes — such as headers, footers, navigation menus, and more. Next.js makes working with layouts simple and powerful.
-
-* [**What Is a Layout?**](#what-is-a-layout?)
-* [**The Root Layout**](#the-root-layout)
-* [**Example Basic Layout**](#example-basic-layout)
-* [**How It Renders**](#how-it-renders)
-* [**Nested Layouts**](#nested-layouts)
-* [**Multiple Root Layouts**](#multiple-root-layouts)
-
----
-
-### **What Is a Layout?**
-
-A layout is a **React component** that wraps your route-specific page content using the `children` prop.
-
-**Common use cases:**
-
-* Headers and footers
-* Sidebars
-* Authentication wrappers
-* Global layout styles
-
----
-
-### 1. **`React.ReactNode`**
-
-- `React.ReactNode` is used to type the `children` prop. It represents any valid React content (e.g., JSX, strings, numbers, arrays, `null`, etc.).
-- This is essential for layouts because they often wrap and render page-specific content passed as `children`.
- 
-Example:
-
-```tsx
-export default function Layout({ children }: { children: React.ReactNode }) {
-  return <div>{children}</div>;
-}
-```
- 
-### 2. **`children` Prop**
-   
-- The `children` prop is a special prop in React that allows you to pass nested content into a component.
-- In layouts, `children` is used to render the content of the specific page within the layout structure.
- 
-Example: `/app/layout.tsx`
-
-```tsx
-export default function RootLayout({ children }: { children: React.ReactNode }) {
-  return (
-    <html lang="en">
-      <body>
-        {children}  {/* Page-specific content gets rendered here */}
-      </body>
-    </html>
-  );
-}
-```
- 
-### 3. **HTML Structure**
-   
-- Layouts often define the overall HTML structure of the application, such as `<html>`, `<head>`, and `<body>` tags.
-- In Next.js, layouts are used to wrap pages with consistent elements like headers, footers, or navigation bars.
- 
-Example:
-
-```tsx
-return (
-  <html lang="en">
-    <body>
-      <header>Header</header>
-      {children}
-      <footer>Footer</footer>
-    </body>
-  </html>
-);
-```
- 
-### 4. **Styling**
-   
-- Layouts often include global or shared styles, such as CSS for headers, footers, or sidebars.
-- Inline styles, CSS modules, or global CSS files can be used.
- 
-Example:
-   
-```tsx
-<header style={{ backgroundColor: "lightblue", padding: "1rem" }}>Header</header>
-```
- 
-### 5. **Context Providers**
-   
-- Layouts are a great place to include React Context Providers for managing global state, themes, or authentication.
- 
-Example:
-   
-```tsx
-import { ThemeProvider } from "./theme-context";
- 
-export default function RootLayout({ children }: { children: React.ReactNode }) {
-  return (
-    <ThemeProvider>
-      <html lang="en">
-        <body>{children}</body>
-      </html>
-    </ThemeProvider>
-  );
-}
-```
- 
-### 6. **Metadata and SEO**
-
-- In Next.js, layouts often include metadata for SEO, such as `<title>` and `<meta>` tags, using the `Head` component.
- 
-Example:
-
-```tsx
-import Head from "next/head";
- 
-export default function RootLayout({ children }: { children: React.ReactNode }) {
-  return (
-    <>
-      <Head>
-        <title>My App</title>
-        <meta name="description" content="My App Description" />
-      </Head>
-      <html lang="en">
-        <body>{children}</body>
-      </html>
-    </>
-  );
-}
-```
- 
-### 7. **Dynamic Layouts**
-   
-- Layouts can be dynamic, adapting based on props or context (e.g., different headers for authenticated vs. unauthenticated users).
- 
-Example:
-
-```tsx
-export default function RootLayout({ children, isLoggedIn }: { children: React.ReactNode; isLoggedIn: boolean }) {
-  return (
-    <html lang="en">
-      <body>
-        {isLoggedIn ? <header>Welcome Back</header> : <header>Please Log In</header>}
-        {children}
-      </body>
-    </html>
-  );
-}
-```
-
-### 8. **Nested Layouts**
-   
-- Next.js supports nested layouts, where a layout can wrap another layout. This is useful for creating layouts specific to certain sections of the app.
- 
-Example:
-
-```bash
-app/
-├── layout.tsx       // Root layout
-├── dashboard/
-│   ├── layout.tsx   // Dashboard-specific layout
-│   ├── page.tsx     // Dashboard page
-```
- 
-In `dashboard/layout.tsx`:
-
-```tsx
-export default function DashboardLayout({ children }: { children: React.ReactNode }) {
-  return (
-    <div>
-      <aside>Sidebar</aside>
-      <main>{children}</main>
-    </div>
-  );
-}
-``` 
-
----
-
-### **The Root Layout**
-
-Every Next.js project using the App Router **must** include a `layout.tsx` file in the root of the `app/` directory.
-
-```bash
-app/
-├── layout.tsx   ← Root layout (mandatory)
-├── page.tsx     ← Home page content
-```
-
-> If you delete `layout.tsx`, Next.js **automatically regenerates it**.
-
----
-
-### **Example Basic Layout**
-
-Here's a minimal `layout.tsx` file with shared layout content:
-
-```tsx
-// app/layout.tsx
-export default function RootLayout({ children }: { children: React.ReactNode }) {
-  return (
-    <html lang="en">
-      <body>
-        <header style={{ backgroundColor: "lightblue", padding: "1rem" }}>
-          <p>Header</p>
-        </header>
-
-        {children}  {/* Page-specific content gets rendered here */}
-
-        <footer style={{ backgroundColor: "ghostwhite", padding: "1rem" }}>
-          <p>Footer</p>
-        </footer>
-      </body>
-    </html>
-  );
-}
-```
-
-- The `children` prop dynamically renders the content of `page.tsx` for the current route.
-
----
-
-### **How It Renders**
-
-When you visit:
-
-* `/` → content from `app/page.tsx` is injected into `layout.tsx`
-* `/about` → content from `app/about/page.tsx` is injected
-* `/profile` → content from `app/profile/page.tsx` is injected
-
-But the **layout remains constant** — with the same header and footer.
-
-> This helps maintain consistent structure and styling across all pages.
-
----
-
-### **Nested Layouts**
-
-In addition to the required **root layout**, Next.js allows you to create **nested layouts** — layouts that apply to a specific route or group of routes. This gives you fine-grained control over the UI for different sections of your app.
-
-* [**Why Use Nested Layouts?**](#why-use-nested-layouts?)
-* [**Example Nested Layout for Blog Details**](#example-nested-layout-for-blog-details)
-* [**Nested Layout How It Renders**](#nested-layout-how-it-renders)
-
----
-
-#### **Why Use Nested Layouts?**
-
-You might want:
-
-* A custom layout for blog details pages
-* A cleaner layout for authentication routes
-* Unique sidebars or headers for specific sections
-
-Nested layouts make that possible.
-
----
-
-#### **Example Nested Layout for Blog Details**
-
-Let’s build a special layout for blog detail pages:
-
-* [**File structure**](#file-structure)
-* [**`blog/[blogId]/layout.tsx`**](#blog/[blogid]/layout.tsx)
-
-##### **File structure**
-
-```
-app/
-├── layout.tsx                   # Root layout (with header/footer)
-├── blog/
-│   ├── page.tsx                 # Blog list page
-│   └── [blogId]/
-│       ├── page.tsx            # Blog detail by ID
-│       └── layout.tsx          # Custom layout for blog details
-```
-
-##### **`blog/[blogId]/layout.tsx`**
-
-Create `layout.tsx` in `[blogId]` folder:
-
-```tsx
-// app/blog/[blogId]/layout.tsx
-export default function BlogDetailsLayout({ children }: { children: React.ReactNode }) {
-  return (
-    <>
-      <h2>Featured Blogs</h2>
-      {children}
-    </>
-  );
-}
-```
-
-This layout will **wrap around** the page at `blog/[blogId]/page.tsx`.
-
----
-
-#### **Nested Layout How It Renders**
-
-Let’s walk through what happens when you visit different routes:
-
-| URL           | Layouts Applied                               | Content Rendered                                   |
-| ------------- | --------------------------------------------- | -------------------------------------------------- |
-| `/`           | `app/layout.tsx`                              | Root layout → `app/page.tsx`                       |
-| `/blog`      | `app/layout.tsx`                              | Root layout → `blog/page.tsx`                      |
-| `/blog/1`    | `app/layout.tsx` → `blog/[blogId]/layout.tsx` | Root layout → BlogDetails layout → Blog page      |
-
-- The `blog/[blogId]/layout.tsx` file only applies to dynamic blog routes — it adds the `Featured Blogs` heading above the main page content.
-
----
-
-
-### **Multiple Root Layouts**
-
-By default, your Next.js app has **one root layout** (`layout.tsx` in the `app/` folder), which wraps every page in your application. But what if different parts of your app require **different layouts**?
-
-For example:
-
-* Admin pages (e.g., `/dashboard`, `/users`) need a **header and footer**
-* Authentication pages (e.g., `/login`, `/register`) should be **clean and minimal**
-
-This is where **multiple root layouts** — powered by **route groups** — come in.
-
-* [**Set Up Multiple Root Layouts**](#set-up-multiple-root-layouts)
-
----
-
-### **Set Up Multiple Root Layouts**
-
-We’ll organize our app using **route groups**, which let us apply layouts without affecting URLs.
-
-* [**Create Route Groups**](#create-route-groups)
-* [**Create Layouts for Each Route Group**](#create-layouts-for-each-route-group)
-* [**Move Pages into Route Groups**](#move-pages-into-route-groups)
-
-#### **Create Route Groups**
-
-In your `app/` folder:
-
-```
-app/
-├── (admin)/           ← Route group for admin pages
-│   ├── layout.tsx         ← Admin layout (with header & footer)
-│   ├── page.tsx           ← Home page
-│   ├── dashboard/
-│   └── users/
-├── (auth)/                ← Route group for auth pages
-│   ├── layout.tsx         ← Auth layout (footer only)
-│   ├── login/
-│   └── register/
-```
-
-> **Note:**
->
-> - Folders wrapped in `()` denote **route groups** — organizational only, ignored in the URL path.
->
-> - make sure to move the `page.tsx` from app to the `(admin)` folder.
->
-> - the `layout.tsx` file in the `(admin)` folder will be used for all pages inside that group.
->
-> - layout can be used to wrap the `page.tsx` file in the `(admin)` folder, and any other pages inside that group.
->
-> - make sure layout.tsx having full html structure, like `<html>`, `<head>`, and `<body>` tags.
-
----
-
-#### **Create Layouts for Each Route Group**
-
-**`(admin)/layout.tsx`**
-
-```tsx
-// app/(admin)/layout.tsx
-export default function AdminLayout({ children }: { children: React.ReactNode }) {
-  return (
-    <>
-      <header style={{ backgroundColor: "lightblue", padding: "1rem" }}>
-        <p>Header</p>
-      </header>
-      {children}
-      <footer style={{ backgroundColor: "ghostwhite", padding: "1rem" }}>
-        <p>Footer</p>
-      </footer>
-    </>
-  );
-}
-```
-
-**`(auth)/layout.tsx`**
-
-```tsx
-// app/(auth)/layout.tsx
-export default function AuthLayout({ children }: { children: React.ReactNode }) {
-  return (
-    <>
-      {children}
-      <footer style={{ backgroundColor: "ghostwhite", padding: "1rem" }}>
-        <p>Footer</p>
-      </footer>
-    </>
-  );
-}
-```
-
----
-
-#### **Move Pages into Route Groups**
-
-* Move `login/` and `register/` into the `(auth)/` folder
-* Move `dashboard/`, `users/`, and the main `page.tsx` into the `(admin)/` folder
-
-> Every page now lives **inside a route group**, each with its **own root layout**.
-
-**What Happens Now?**
-
-Despite changing the folder structure...
-
-* `/login` and `/register` still work — now using the **auth layout** (minimal)
-* `/dashboard`, `/users`, and `/` now use the **admin layout** (with header & footer)
-* **URLs stay the same** — because route group names are not part of the path
-
----
-
-## **5. Styling**
-
-* Goal: Apply consistent styling, extract reusable components, and lay the foundation for a beautiful, scalable UI.
-
-**We’ll cover:**
-
-- Project-level structure for styling
-- Global styles vs component styles
-- Tailwind best practices
-- Reusable UI components: `Card`, `Container`, `Button`
-- Organizing `components/` and `styles/`
-
----
-
-### **Folder Setup**
-
-Let’s organize your project cleanly:
-
-```
-src/
-├── components/
-│   ├── ui/
-│   │   ├── Card.tsx
-│   │   ├── Container.tsx
-│   │   └── Button.tsx
-│   ├── blog/
-│   │   └── BlogPostPreview.tsx
-├── styles/
-│   └── globals.css
-
-```
-
----
-
-### **Tailwind Setup Recap**
-
-**If you didn’t add Tailwind during setup, run:**
-
-```bash
-npm install tailwindcss @tailwindcss/postcss postcss
-```
-
-**And apply styles in `app/globals.css`:**
-
-```css
-@import "tailwindcss";
-```
-
-**Configure PostCSS Plugins**
-
-```mjs
-const config = {
-  plugins: {
-    "@tailwindcss/postcss": {},
-  },
-};
-export default config;
-```
-
-**page.tsx**
-
-```tsx
-export default function Home() {
-  return (
-    <h1 className="text-3xl font-bold underline">
-      Hello world!
-    </h1>
-  )
-}
-```
-
-**Make sure to import `globals.css` in your `layout.tsx`:**
-
-```tsx  
-import './globals.css';
-export default function RootLayout({ children }: { children: React.ReactNode }) {
-  return (
-    <html lang="en">
-      <body>{children}</body>
-    </html>
-  );
-}
-```
-
----
-
-### **UI Component: `Container`**
-
-**`components/ui/Container.tsx`**
-
-```tsx
-type ContainerProps = {
-  children: React.ReactNode;
-  className?: string;
-};
-
-export default function Container({ children, className = '' }: ContainerProps) {
-  return (
-    <div className={`max-w-3xl mx-auto px-4 ${className}`}>
-      {children}
-    </div>
-  );
-}
-
-```
-
-Use it in `layout.tsx`:
-
-```tsx
-import Container from '@/components/ui/Container';
-
-<main>
-  <Container>{children}</Container>
-</main>
-
-```
-
----
-
-### **UI Component: `Card`**
-
-**`components/ui/Card.tsx`**
-
-```tsx
-type CardProps = {
-  children: React.ReactNode;
-  className?: string;
-};
-
-export default function Card({ children, className = '' }: CardProps) {
-  return (
-    <div className={`border rounded-md p-4 shadow-sm bg-white ${className}`}>
-      {children}
-    </div>
-  );
-}
-
-```
-
----
-
-### **Blog Component: `PostPreview`**
-
-Let’s clean up `/blog/page.tsx` with a blog post preview card.
-
-* [**`app/lib/posts.ts`**](#applibpoststs)
-* [**`components/blog/BlogPostPreview.tsx`**](#components/blog/blogpostpreview.tsx)
-* [**Use it in `app/blog/page.tsx`**](#use-it-in-app/blog/page.tsx)
-
-#### **`app/lib/posts.ts`**
-
-```tsx
-// lib/posts.ts
-export type Post = {
-  title: string;
-  slug: string;
-  content: string;
-};
-
-export const posts: Post[] = [
-  {
-    title: 'Getting Started with Next.js 15',
-    slug: 'getting-started',
-    content: 'Welcome to the world of Next.js 15 App Router!',
-  },
-  {
-    title: 'Understanding React Server Components',
-    slug: 'react-server-components',
-    content: 'RSCs let you build fast and dynamic apps without shipping JS!',
-  },
-];
-```
-
-> **Note:** This is a mock data file. In a real app, you’d fetch this from an API or database.
-
-#### **`components/blog/BlogPostPreview.tsx`**
-
-```tsx
-import Link from 'next/link';
-import Card from '@/components/ui/Card';
-import { Post } from '@/lib/posts';
-
-export default function BlogPostPreview({ post }: { post: Post }) {
-  return (
-    <Card>
-      <h2 className="text-xl font-bold text-gray-800">
-        <Link href={`/blog/${post.slug}`} className="hover:underline">
-          {post.title}
-        </Link>
-      </h2>
-      <p className="text-gray-600 mt-2">{post.content.slice(0, 80)}...</p>
-    </Card>
-  );
-}
-
-```
-
----
-
-#### **Use it in `app/blog/page.tsx`**
-
-```tsx
-import { posts } from '@/lib/posts';
-import PostPreview from '@/components/blog/PostPreview';
-
-export default function BlogIndexPage() {
-  return (
-    <div className="space-y-6">
-      {posts.map((post) => (
-        <PostPreview key={post.slug} post={post} />
-      ))}
-    </div>
-  );
-}
-
-```
-
----
-
-### **Final Result**
-
-You now have:
-
-- A styled list of blog posts
-- Clean layout and spacing
-- Reusable components you can scale with
-- Tailwind setup for responsive design
-
----
-
-### **Bonus: Add a Custom Font (Optional)**
-
-**In `layout.tsx`**
-
-- The `next/font` module automatically optimizes your fonts and removes external network requests for improved privacy and performance.
-
-- It includes built-in self-hosting for any font file. This means you can optimally load web fonts with no layout shift.
-
-- To start using `next/font`, import it from `next/font/local` or `next/font/google`, call it as a function with the appropriate options, and set the className of the element you want to apply the font to. For example:
-
-```tsx
-import { Inter } from 'next/font/google';
-const inter = Inter({ weight: '400' , subsets: ['latin'] });
-
-export default function RootLayout({ children }: { children: React.ReactNode }) {
-  return (
-    <html lang="en" className={inter.className}>
-      <body>{children}</body>
-    </html>
-  );
-}
-
-```
-
-> **Note**: Modify the `weight` and `subsets` options as per your requirements.
-
-**You’ve learned:**
-
-- How to use Tailwind CSS professionally
-- How to organize reusable UI and layout components
-- Component design practices that scale in a real app
-
----
-
-
 
 ## **6. Data Fetching**
 
