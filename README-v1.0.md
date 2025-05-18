@@ -4319,22 +4319,106 @@ Store photos in `app/photo-feed/photos`.
 `wonders.ts`
 
 ```ts
-export const wonders = [
-  { id: '1', name: 'Great Wall', src: '/photos/1.jpg', photographer: 'Alice', location: 'China' },
-  // ...
-]
+// app/photo-feed/wonders.ts
+import { StaticImageData } from "next/image";
+import photo1 from "./photos/1.png";
+import photo2 from "./photos/1.png";
+import photo3 from "./photos/1.png";
+import photo4 from "./photos/1.png";
+import photo5 from "./photos/1.png";
+import photo6 from "./photos/1.png";
+import photo7 from "./photos/1.png";
+
+export type WonderImage = {
+  id: string;
+  name: string;
+  src: StaticImageData;
+  photographer: string;
+  location: string;
+};
+
+const wondersImages: WonderImage[] = [
+  {
+    id: "1",
+    name: "Great Wall of China",
+    src: photo1,
+    photographer: "Photo by Max van den Oetelaar on Unsplash",
+    location: "China",
+  },
+  {
+    id: "2",
+    name: "Petra",
+    src: photo2,
+    photographer: "Photo by Reiseuhu on Unsplash",
+    location: "Jordan",
+  },
+  {
+    id: "3",
+    name: "Christ the Redeemer",
+    src: photo3,
+    photographer: "Photo by Andrea Leopardi on Unsplash",
+    location: "Brazil",
+  },
+  {
+    id: "4",
+    name: "Machu Picchu",
+    src: photo4,
+    photographer: "Photo by Jared Schwitzke on Unsplash",
+    location: "Peru",
+  },
+  {
+    id: "5",
+    name: "Chichen Itza",
+    src: photo5,
+    photographer: "Photo by E Mens on Unsplash",
+    location: "Mexico",
+  },
+  {
+    id: "6",
+    name: "Roman Colosseum",
+    src: photo6,
+    photographer: "Photo by Andrea Cipriano on Unsplash",
+    location: "Italy",
+  },
+  {
+    id: "7",
+    name: "Taj Mahal",
+    src: photo7,
+    photographer: "Photo by Su San Lee on Unsplash",
+    location: "India",
+  },
+];
+
+export default wondersImages;
 ```
 
 ##### **Step 3 Create Photo Feed Page**
 
 ```tsx
 // app/photo-feed/page.tsx
-export default function PhotoFeed() {
-  return wonders.map((photo) => (
-    <Link href={`/photo-feed/${photo.id}`}>
-      <Image src={photo.src} alt={photo.name} />
-    </Link>
-  ))
+import Link from "next/link";
+import wonders from "./wonders";
+import Image from "next/image";
+
+export default function Home() {
+  return (
+    <main className="container mx-auto">
+      <h1 className="text-center text-3xl font-bold my-4">
+        New Wonders of the World
+      </h1>
+      <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
+        {wonders.map(({ id, src, name }) => (
+          <Link key={id} href={`/photo-feed/${id}`}>
+            <Image
+              alt={name}
+              src={src}
+              className="w-full object-cover aspect-square"
+            />
+          </Link>
+        ))}
+      </div>
+    </main>
+  );
 }
 ```
 
@@ -4342,37 +4426,85 @@ export default function PhotoFeed() {
 
 ```tsx
 // app/photo-feed/[id]/page.tsx
-export default function PhotoDetails({ params }) {
-  const photo = wonders.find(p => p.id === params.id)
-  return <div>{photo.name}</div>
+import Image from "next/image";
+import wondersImages, { WonderImage } from "../wonders";
+
+export default async function PhotoPage({
+  params,
+}: {
+  params: Promise<{ id: string }>;
+}) {
+  const { id } = await params;
+  const photo: WonderImage = wondersImages.find((p) => p.id === id)!;
+  return (
+    <div className="container mx-auto my-10">
+      <div className="w-1/2 mx-auto">
+        <div>
+          <h1 className="text-center text-3xl font-bold my-4">{photo.name}</h1>
+        </div>
+        <Image
+          alt={photo.name}
+          src={photo.src}
+          className="w-full object-cover aspect-square "
+        />
+
+        <div className="bg-white py-4">
+          <h3>{photo.photographer}</h3>
+          <h3>{photo.location}</h3>
+        </div>
+      </div>
+    </div>
+  );
 }
 ```
 
 ##### **Step 5 Create Modal Parallel Route**
 
 ```tsx
-// app/photo-feed/@modal/[id]/page.tsx
-export default function ModalPhotoDetails({ params }) {
-  const photo = wonders.find(p => p.id === params.id)
+// app/photo-feed/@modal/(.)[id]/page.tsx
+import Image from "next/image";
+import wondersImages, { WonderImage } from "@/app/photo-feed/wonders";
+import Modal from "@/components/modal";
+
+export default async function PhotoModal({
+  params,
+}: {
+  params: Promise<{ id: string }>;
+}) {
+  const { id } = await params;
+  const photo: WonderImage = wondersImages.find((p) => p.id === id)!;
+
   return (
-    <div className="modal">
-      <Image src={photo.src} alt={photo.name} />
-      <div>{photo.name}</div>
-    </div>
-  )
+    <Modal>
+      <Image
+        alt={photo.name}
+        src={photo.src}
+        className="w-full object-cover aspect-square"
+      />
+
+      <div className="bg-white p-4">
+        <h2 className="text-xl font-semibold">{photo.name}</h2>
+        <h3>{photo.photographer}</h3>
+        <h3>{photo.location}</h3>
+      </div>
+    </Modal>
+  );
 }
 ```
 
 In `photo-feed/layout.tsx`, receive parallel routes:
 
 ```tsx
-export default function Layout({ children, modal }) {
+export default function Layout(props: {
+  modal: React.ReactNode;
+  children: React.ReactNode;
+}) {
   return (
     <>
-      {children}
-      {modal}
+      {props.modal}
+      {props.children}
     </>
-  )
+  );
 }
 ```
 
@@ -4384,6 +4516,8 @@ export default function Default() {
   return null // Modal starts empty
 }
 ```
+
+go to `/photo-feed` and click on a photo. The modal opens with the photo details, and the URL updates to `/photo-feed/[id]`. Refreshing this URL shows the full photo page.
 
 ---
 
