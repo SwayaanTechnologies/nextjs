@@ -970,6 +970,22 @@ Routing is one of the core features of **Next.js**, and it follows a **file-base
 * [**File Colocation**](#file-colocation)
 * [**Private Folders**](#private-folders)
 * [**Route Groups**](#route-groups)
+* [**Linking Component Navigation**](#linking-component-navigation)
+* [**Active Links**](#active-links)
+* [**`params` and `searchParams`**](#params-and-searchparams)
+* [**Navigating Programmatically**](#navigating-programmatically)
+* [**Templates**](#templates)
+* [**Loading UI**](#loading-ui)
+* [**Error Handling**](#error-handling)
+* [**Recovering from Errors**](#recovering-from-errors)
+* [**Handling Errors in Nested Routes**](#handling-errors-in-nested-routes)
+* [**Handling Errors in Layouts**](#handling-errors-in-layouts)
+* [**Handling Global Errors**](#handling-global-errors)
+* [**Parallel Routes**](#parallel-routes)
+* [**Handling Unmatched Routes**](#handling-unmatched-routes)
+* [**Conditional Routes**](#conditional-routes)
+* [**Intercepting Routes**](#intercepting-routes)
+* [**Parallel Intercepting Routes**](#parallel-intercepting-routes)
 
 ---
 
@@ -1860,6 +1876,1839 @@ app/
 > URLs stay clean — just like before.
 >
 > Internally, code is now much better organized.
+
+---
+
+### **Linking Component Navigation**
+
+So far, we’ve tested our routes by typing URLs directly in the browser, but that's not how users interact with a website. In a real-world application, users navigate using links. Let’s explore how to enable smooth **client-side navigation** using the `Link` component provided by **Next.js**.
+
+---
+
+#### **Basic Navigation with the `Link` Component**
+
+The `Link` component is the primary way to navigate between routes in a Next.js app. It enhances the native anchor element (`<a>`) and supports **client-side transitions** without a full page reload.
+
+**Syntax:**
+
+```tsx
+import Link from 'next/link';
+
+<Link href="/about">About</Link>
+```
+
+---
+
+#### **Adding Links to the Home Page**
+
+Let’s add navigation links from the homepage:
+
+**File**: `app/page.tsx`
+
+```tsx
+import Link from 'next/link';
+
+export default function Home() {
+  return (
+    <>
+      <h1>Welcome</h1>
+      <Link href="/blog">Blog</Link>
+      <br />
+      <Link href="/profile">Profile</Link>
+    </>
+  );
+}
+```
+
+* Clicking **Blog** takes you to `/blog`
+* Clicking **Profile** takes you to `/profile`
+
+---
+
+#### **Adding a "Home" Link on Other Pages**
+
+In `app/products/page.tsx`, import the `Link` component and add a "Home" button:
+
+```tsx
+import Link from 'next/link';
+
+export default function ProductList() {
+  return (
+    <>
+      <h1>Product List</h1>
+      <Link href="/">Home</Link>
+    </>
+  );
+}
+```
+
+This provides users a way to return to the homepage.
+
+---
+
+#### **Dynamic Links for Products**
+
+Let’s turn each product heading into a link to its detail page.
+
+Assuming product routes follow this pattern: `/blog/1`, `/blog/2`, etc.
+
+```tsx
+<Link href={`/blog/${blog.id}`}>{blog.title}</Link>
+```
+
+Example hardcoded version:
+
+```tsx
+<h2>
+  <Link href="/blog/1">Blog 1</Link>
+</h2>
+<h2>
+  <Link href="/blog/2">Blog 2</Link>
+</h2>
+<h2>
+  <Link href="/blog/3">Blog 3</Link>
+</h2>
+```
+
+Or using a dynamic ID from a variable:
+
+```tsx
+const blogId = 100;
+
+<Link href={`/blog/${blogId}`}>Blog 100</Link>
+```
+
+---
+
+#### **Using the `replace` Prop**
+
+The `replace` prop controls how the browser's history is updated.
+
+```tsx
+<Link href="/blog/3" replace>Blog 3</Link>
+```
+
+* **Without `replace`**: Each navigation adds a new history entry.
+* **With `replace`**: Replaces the current entry instead of adding a new one.
+
+**Example:**
+
+1. Navigate to Blog List
+2. Click on Blog 3 (with `replace`)
+3. Press browser back button → goes **back to home**, **skipping** the blog list page
+
+---
+
+### **Active Links**
+
+Styling **active navigation links** improves UX by showing users where they are in the app. Let’s walk through how to highlight the **current route** using Tailwind CSS and the `usePathname()` hook.
+
+---
+
+#### **Example Setup**
+
+In our `/auth` route group, we have a `layout.tsx` file that renders a simple navigation bar:
+
+```tsx
+// File: app/auth/layout.tsx
+'use client';
+
+import Link from 'next/link';
+import { usePathname } from 'next/navigation';
+import './styles.css'; // Tailwind imports
+
+const navLinks = [
+  { name: 'Register', href: '/auth/register' },
+  { name: 'Login', href: '/auth/login' },
+  { name: 'Forgot Password', href: '/auth/forgot-password' },
+];
+
+export default function AuthLayout({ children }: { children: React.ReactNode }) {
+  const pathname = usePathname();
+
+  return (
+    <>
+      <nav className="mb-4">
+        {navLinks.map((link) => {
+          const isActive =
+            pathname === link.href ||
+            (pathname.startsWith(link.href) && link.href !== '/');
+
+          return (
+            <Link
+              key={link.name}
+              href={link.href}
+              className={isActive ? 'font-bold mr-4' : 'text-blue-500 mr-4'}
+            >
+              {link.name}
+            </Link>
+          );
+        })}
+      </nav>
+      {children}
+    </>
+  );
+}
+```
+
+---
+
+#### **Breakdown**
+
+| Concept          | Explanation                                                        |
+| ---------------- | ------------------------------------------------------------------ |
+| `usePathname()`  | Hook from `next/navigation` to get the current URL                 |
+| `use client`     | Needed because hooks are not allowed in server components          |
+| `isActive` logic | Compares `pathname` to the link's `href`                           |
+| Tailwind classes | `font-bold` (active), `text-blue-500` (inactive), `mr-4` (spacing) |
+
+---
+
+#### **Add Tailwind Styling**
+
+If you don’t already have global styles set up, create a local `styles.css` file:
+
+**File**: `app/auth/styles.css`
+
+```css
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+```
+
+Then import it into `layout.tsx`:
+
+```tsx
+import './styles.css';
+```
+
+> Alternatively, you can bring back your `globals.css` from the root `app` directory.
+
+---
+
+#### **Try It Out**
+
+1. Navigate to `/auth/register`
+2. You’ll see **Register** link is bold; others are blue
+3. Click **Login** → Login becomes bold
+4. Works dynamically without page reload
+
+---
+
+### **`params` and `searchParams`**
+
+In Next.js App Router, dynamic route parameters and query strings are handled through **`params`** and **`searchParams`** respectively. Let’s explore how to use them in both **server** and **client** components.
+
+* [**What Are `params` and `searchParams`?**](#what-are-params-and-searchparams?)
+* [**Example Multilingual News Article Page**](#example-multilingual-news-article-page)
+* [**Using `params` and `searchParams` in Client Components**](#using-params-and-searchparams-in-client-components)
+* [**Important Notes**](#important-notes)
+
+---
+
+#### **What Are `params` and `searchParams`?**
+
+| Feature        | Description                                               |
+| -------------- | --------------------------------------------------------- |
+| `params`       | Object that holds **dynamic segments** in the route URL   |
+| `searchParams` | Object for **query parameters** from the URL (`?lang=en`) |
+
+---
+
+#### **Example Multilingual News Article Page**
+
+* [**Step 1 Define Links**](#step-1-define-links)
+* [**Step 2 Create Dynamic Route**](#step-2-create-dynamic-route)
+* [**Step 3 Use `params` and `searchParams` in a Server Component**](#step-3-use-params-and-searchparams-in-a-server-component)
+
+
+##### **Step 1 Define Links**
+
+In your **home page**, add links with both dynamic and query parameters:
+
+```tsx
+import Link from 'next/link';
+
+export default function Home() {
+  return (
+    <>
+      <Link href="/articles/breaking-news-123?language=en">Read in English</Link>
+      <br />
+      <Link href="/articles/breaking-news-123?language=fr">Read in French</Link>
+    </>
+  );
+}
+```
+
+---
+
+##### **Step 2 Create Dynamic Route**
+
+Create the file structure:
+
+```
+app/
+└── articles/
+    └── [articleId]/
+        └── page.tsx
+```
+
+---
+
+##### **Step 3 Use `params` and `searchParams` in a Server Component**
+
+```tsx
+// File: app/articles/[articleId]/page.tsx
+import Link from 'next/link';
+
+export default async function NewsArticle({
+  params,
+  searchParams,
+}: {
+  params: { articleId: string };
+  searchParams: { language?: string };
+}) {
+  const { articleId } = params;
+  const language = searchParams.language || 'English';
+
+  return (
+    <>
+      <h1>News Article: {articleId}</h1>
+      <p>Reading in: {language}</p>
+
+      <div className="mt-4">
+        <Link href={`/articles/${articleId}?language=en`}>English</Link> |{' '}
+        <Link href={`/articles/${articleId}?language=es`}>Spanish</Link> |{' '}
+        <Link href={`/articles/${articleId}?language=fr`}>French</Link>
+      </div>
+    </>
+  );
+}
+```
+
+> Since this is a **server component**, `params` and `searchParams` can be **awaited directly**.
+
+---
+
+#### **Using `params` and `searchParams` in Client Components**
+
+1. **Server components** allow async/await on props.
+2. **Client components** must use the `useParams()` and `useSearchParams()` hooks from `next/navigation`.
+
+```tsx
+'use client';
+
+import { useParams, useSearchParams } from 'next/navigation';
+
+export default function NewsClient() {
+  const params = useParams();
+  const searchParams = useSearchParams();
+
+  const articleId = params.articleId;
+  const language = searchParams.get('language') || 'English';
+
+  return (
+    <>
+      <h1>News Article: {articleId}</h1>
+      <p>Reading in: {language}</p>
+    </>
+  );
+}
+```
+
+---
+
+#### **Important Notes**
+
+| Limitation                | Explanation                                                    |
+| ------------------------- | -------------------------------------------------------------- |
+| `searchParams` in layouts | Not supported—**only `params`** are accessible in `layout.tsx` |
+| Server components         | Can use async/await directly on props                          |
+| Client components         | Must use `useParams()` and `useSearchParams()` hooks           |
+
+---
+
+### **Navigating Programmatically**
+
+While links (`<Link>`) are great for typical navigation, sometimes you need to **navigate based on logic**—such as after a form submission or conditionally based on user input. That’s where **programmatic navigation** comes in.
+
+* [**Example Order Placement Redirect**](#example-order-placement-redirect)
+* [**Router Methods**](#router-methods)
+* [**Example Redirect in Server Component**](#example-redirect-in-server-component)
+
+---
+
+#### **Example Order Placement Redirect**
+
+We’ll simulate a product order flow: clicking a **“Place Order”** button takes the user to the homepage.
+
+* [**Step 1 Create the Route**](#step-1-create-the-route)
+* [**Step 2 Implement Client-Side Navigation**](#step-2-implement-client-side-navigation)
+
+---
+
+##### **Step 1 Create the Route**
+
+Create a folder and file for the new route:
+
+```
+app/
+└── order-product/
+    └── page.tsx
+```
+
+---
+
+##### **Step 2 Implement Client-Side Navigation**
+
+```tsx
+// File: app/order-product/page.tsx
+'use client';
+
+import { useRouter } from 'next/navigation';
+
+export default function OrderProduct() {
+  const router = useRouter();
+
+  const handleClick = () => {
+    console.log('Placing your order...');
+    router.push('/'); // Navigate to homepage
+  };
+
+  return (
+    <>
+      <h1>Order Product</h1>
+      <button onClick={handleClick}>Place Order</button>
+    </>
+  );
+}
+```
+
+> Don't forget the `'use client'` directive—`useRouter()` only works in **client components**.
+
+---
+
+#### **Router Methods**
+
+| Method             | Description                                                                |
+| ------------------ | -------------------------------------------------------------------------- |
+| `router.push()`    | Navigate to a new route (adds to browser history)                          |
+| `router.replace()` | Navigate and replace the current entry in browser history (no back button) |
+| `router.back()`    | Navigate to the **previous page**                                          |
+| `router.forward()` | Move forward in browser history                                            |
+
+---
+
+#### **Example Redirect in Server Component**
+
+Sometimes, you want to **redirect in server logic**. For example, redirect users with invalid IDs.
+
+```tsx
+// File: app/blog/[blogId]/comments/[commentId]/page.tsx
+import { redirect } from 'next/navigation';
+
+export default function BlogComment({
+  params,
+}: {
+  params: { blogId: string; commentId: string };
+}) {
+  const commentId = parseInt(params.commentId);
+
+  if (commentId > 100) {
+    // Instead of showing a not-found page, redirect to blog list
+    redirect('/blog');
+  }
+
+  return (
+    <>
+      <h1>Blog Comment</h1>
+      <p>Comment ID: {commentId}</p>
+    </>
+  );
+}
+```
+
+> This only works in **server components**—the `redirect()` function is not available in client code.
+
+---
+
+### **Templates**
+
+In the App Router, `layout.tsx` is commonly used to share UI across routes. But sometimes, you need the **UI to reset completely** between route changes. That’s where `template.tsx` comes in.
+
+* [**The Problem with Layout State Persistence**](#the-problem-with-layout-state-persistence)
+* [**When You Need State Reset**](#when-you-need-state-reset)
+* [**How to Use Templates**](#how-to-use-templates)
+* [**Template vs Layout**](#template-vs-layout)
+
+---
+
+#### **The Problem with Layout State Persistence**
+
+By design, layouts in Next.js **persist state** across route changes. Consider this structure:
+
+```
+app/
+└── (auth)/
+    ├── layout.tsx   ← Shared layout
+    ├── register/
+    ├── login/
+    └── forgot-password/
+```
+
+If you add an input in `layout.tsx` with a React state:
+
+```tsx
+'use client';
+import { useState } from 'react';
+
+export default function AuthLayout({ children }: { children: React.ReactNode }) {
+  const [input, setInput] = useState('');
+
+  return (
+    <>
+      <input value={input} onChange={(e) => setInput(e.target.value)} />
+      {children}
+    </>
+  );
+}
+```
+
+Typing in the input, then navigating from `/register` to `/login`, **retains the input value**. This is expected behavior—**shared layouts aren’t remounted**.
+
+---
+
+#### **When You Need State Reset**
+
+In some cases, you **want a fresh render** on every navigation—for example:
+
+* Resetting input fields
+* Triggering animations
+* Rerunning `useEffect` logic on route change
+
+This is where **`template.tsx`** files are useful.
+
+---
+
+#### **How to Use Templates**
+
+1. Rename `layout.tsx` → `template.tsx` inside your route group.
+
+```bash
+app/
+└── (auth)/
+    └── template.tsx
+```
+
+2. `template.tsx` works just like a layout but **remounts** on each route change.
+
+```tsx
+'use client';
+import { useState } from 'react';
+
+export default function AuthTemplate({ children }: { children: React.ReactNode }) {
+  const [input, setInput] = useState('');
+
+  return (
+    <>
+      <input value={input} onChange={(e) => setInput(e.target.value)} />
+      {children}
+    </>
+  );
+}
+```
+
+3. Navigate from `/register` → `/login` → `/forgot-password`, and the input field will **reset** each time.
+
+---
+
+#### **Template vs Layout**
+
+| Feature                      | `layout.tsx` | `template.tsx`           |
+| ---------------------------- | ------------ | ------------------------ |
+| Shared UI                    | ✅            | ✅                        |
+| State persists across routes | ✅            | ❌                        |
+| DOM elements reused          | ✅            | ❌                        |
+| `useEffect` re-runs on nav   | ❌            | ✅                        |
+| Good for animations / resets | ❌            | ✅                        |
+| Common default for shared UI | ✅            | ❌ (only use when needed) |
+
+> You can use both `layout.tsx` and `template.tsx` **together**. In this case, the layout wraps the page, and the template renders fresh content per route.
+
+---
+
+### **Loading UI**
+
+In the App Router, Next.js provides a special file called `loading.tsx` that helps show **instant feedback** when navigating between pages. This is useful for improving **user experience** during **data fetching delays**.
+
+* [**How It Works**](#how-it-works)
+* [**Basic Setup**](#basic-setup)
+* [**Simulate a Delay**](#simulate-a-delay)
+* [**Make It Beautiful**](#make-it-beautiful)
+* [**Benefits of `loading.tsx`**](#benefits-of-loading.tsx)
+
+---
+
+#### **How It Works**
+
+When you add a `loading.tsx` file inside a route segment, Next.js:
+
+* **Wraps your `page.tsx` and children in a `React.Suspense` boundary**
+* Automatically displays your `loading.tsx` component **while the page content is being fetched or rendered**
+
+---
+
+#### **Basic Setup**
+
+Let’s add a loading UI to the blog page.
+
+```bash
+app/
+└── blog/
+    ├── page.tsx
+    └── loading.tsx
+```
+
+**`loading.tsx`**:
+
+```tsx
+export default function Loading() {
+  return <h1>Loading...</h1>;
+}
+```
+
+If the `page.tsx` loads quickly, you might not even notice the loading state. Let’s simulate a delay.
+
+---
+
+#### **Simulate a Delay**
+
+**`page.tsx`** with an artificial delay:
+
+```tsx
+export default async function BlogPage() {
+  await new Promise((resolve) => setTimeout(resolve, 2000)); // 2 sec delay
+  return <h1>Blog Page Content</h1>;
+}
+```
+
+Now, reload the `/blog` route. You’ll see:
+
+1. `"Loading..."` for 2 seconds
+2. Then `"Blog Page Content"`
+
+---
+
+#### **Make It Beautiful**
+
+You’re not limited to text. Common UI patterns include:
+
+* Skeleton loaders
+* Spinners
+* Image previews
+* UI placeholders
+
+```tsx
+import { Skeleton } from "@/components/ui/skeleton";
+
+export default function Loading() {
+  return (
+    <div className="space-y-4">
+      <Skeleton className="h-6 w-1/2" />
+      <Skeleton className="h-4 w-full" />
+      <Skeleton className="h-4 w-full" />
+    </div>
+  );
+}
+```
+
+---
+
+#### **Benefits of `loading.tsx`**
+
+| Feature                 | Benefit                                                     |
+| ----------------------- | ----------------------------------------------------------- |
+| Instant feedback        | Lets users know their action triggered navigation           |
+| Smarter UX              | Keeps shared layouts (e.g., navigation/sidebar) interactive |
+| Suspense integration    | Simplifies async transitions and data fetching              |
+
+---
+
+### **Error Handling**
+
+In real-world apps, **errors are inevitable** — network issues, data unavailability, or unexpected edge cases. Thankfully, the **App Router** in Next.js makes it easy to **gracefully handle runtime errors** using the special file: `error.tsx`.
+
+* [**Simulating an Error**](#simulating-an-error)
+* [**Adding an `error.tsx` Component**](#adding-an-error.tsx-component)
+* [**Why Use `error.tsx`?**](#why-use-error.tsx?)
+* [**Component Hierarchy Recap**](#component-hierarchy-recap)
+
+---
+
+#### **Simulating an Error**
+
+Let’s simulate an error in our `comments/[commentId]/page.tsx` to see how it behaves:
+
+```tsx
+function getRandomInt(max: number) {
+  return Math.floor(Math.random() * max);
+}
+
+export default function CommentPage() {
+  const random = getRandomInt(2);
+  if (random === 1) {
+    throw new Error("Error loading comment");
+  }
+
+  return <h1>Comment Page</h1>;
+}
+```
+
+On refresh, you’ll **occasionally see an unhandled error** in development. In production (`npm run build` + `npm run start`), it shows:
+
+> "A server-side exception has occurred"
+
+That’s **not user-friendly**, and worse — **it breaks the entire application**.
+
+---
+
+#### **Adding an `error.tsx` Component**
+
+Let’s fix this by isolating the error using a route-specific error boundary.
+
+1. Create an `error.tsx` in the same folder as `page.tsx`:
+
+```bash
+app/
+└── blog/
+    └── [blogId]/
+        └── comments/
+            └── [commentId]/
+                ├── page.tsx
+                └── error.tsx
+```
+
+2. Create the component:
+
+**`error.tsx`**:
+
+```tsx
+"use client";
+
+type ErrorProps = {
+  error: Error;
+  reset: () => void;
+};
+
+export default function ErrorBoundary({ error, reset }: ErrorProps) {
+  return (
+    <div className="text-red-600 p-4">
+      <h2>Error loading comment:</h2>
+      <p>{error.message}</p>
+      <button onClick={reset} className="mt-2 text-blue-600 underline">
+        Try again
+      </button>
+    </div>
+  );
+}
+```
+
+> `error.tsx` **must** be a **Client Component** (`"use client"` is required)
+
+---
+
+#### **Why Use `error.tsx`?**
+
+| Feature              | Description                                                                     |
+| -------------------- | ------------------------------------------------------------------------------- |
+| Scoped boundaries    | Errors are **isolated to specific segments** — rest of the app still works      |
+| Recovery support     | Built-in `reset()` function allows users to retry                               |
+| Enhanced UX          | Display **helpful, user-friendly error messages** instead of blank or broken UI |
+| Integrated           | Automatically wraps the segment with a **React error boundary**                 |
+
+---
+
+#### **Component Hierarchy Recap**
+
+Here's how the App Router handles fallback and errors:
+
+```
+layout.tsx
+└── template.tsx (optional)
+    └── error.tsx (runtime errors)
+        └── loading.tsx (suspense fallback)
+            └── not-found.tsx (404 handling)
+                └── page.tsx (core content)
+```
+
+Each file provides **isolation and control** for a better user experience and developer ergonomics.
+
+---
+
+### **Recovering from Errors**
+
+In the previous section, we learned how to catch and display runtime errors using `error.tsx`. But not all errors are fatal — some might be **temporary** (like a failed fetch), and can be retried. Let’s improve our error handling with **error recovery**.
+
+* [**The `reset` Function**](#the-reset-function)
+* [**Problem Retry Keeps Failing**](#problem-retry-keeps-failing)
+* [**Solution Trigger Server-Side Recovery**](#solution-trigger-server-side-recovery)
+* [**Why Use `startTransition`?**](#why-use-starttransition?)
+
+---
+
+#### **The `reset` Function**
+
+The `error.tsx` component automatically receives a `reset` function in addition to the `error` object.
+
+**Basic Retry Example**
+
+```tsx
+// File: app/blog/[blogId]/comments/[commentId]/error.tsx
+"use client";
+
+type ErrorProps = {
+  error: Error;
+  reset: () => void;
+};
+
+export default function ErrorBoundary({ error, reset }: ErrorProps) {
+  return (
+    <div className="text-red-600 p-4">
+      <p>{error.message}</p>
+      <button onClick={reset} className="mt-2 text-blue-600 underline">
+        Try again
+      </button>
+    </div>
+  );
+}
+```
+
+This enables **client-side recovery**. However, this may not be enough when the data fetching logic resides on the server (like in Server Components).
+
+---
+
+#### **Problem Retry Keeps Failing**
+
+If you simulate an error that returns randomly, hitting the "Try Again" button repeatedly will still show the error most of the time. Why?
+
+> Because `reset()` only retries the rendering **on the client** — without re-fetching server data.
+
+---
+
+#### **Solution Trigger Server-Side Recovery**
+
+To re-fetch data on retry, we need to force a **server-side render** by refreshing the route.
+
+**Updated Error Component with Server Recovery**
+
+```tsx
+// File: app/blog/[blogId]/comments/[commentId]/error.tsx
+"use client";
+
+import { useRouter } from "next/navigation";
+import { startTransition } from "react";
+
+type ErrorProps = {
+  error: Error;
+  reset: () => void;
+};
+
+export default function ErrorBoundary({ error, reset }: ErrorProps) {
+  const router = useRouter();
+
+  const handleRetry = () => {
+    startTransition(() => {
+      router.refresh();
+      reset();
+    });
+  };
+
+  return (
+    <div className="text-red-600 p-4">
+      <p>{error.message}</p>
+      <button onClick={handleRetry} className="mt-2 text-blue-600 underline">
+        Try again
+      </button>
+    </div>
+  );
+}
+```
+
+---
+
+#### **Why Use `startTransition`?**
+
+* **`router.refresh()`** reloads the data for the current route segment (server-side).
+* **`startTransition()`** defers the refresh to the next render cycle to avoid blocking UI updates.
+* **`reset()`** re-attempts the error boundary rendering.
+
+This combination ensures a **complete retry cycle**, both server and client-side.
+
+**Testing It**
+
+1. Refresh the page until you see the simulated error.
+2. Click **Try Again**.
+3. If the random number check passes, the component will recover and render successfully.
+
+---
+
+### **Handling Errors in Nested Routes**
+
+Error handling in the App Router isn’t just about catching failures — it’s about **where** you catch them.
+
+The placement of the `error.tsx` file **directly impacts which parts of your app are affected** when an error occurs. Let’s understand how errors bubble in a nested route hierarchy.
+
+* [**Route Structure Example**](#route-structure-example)
+* [**Case 1 `error.tsx` in `blog/`**](#case-1-error.tsx-in-blog/)
+* [**Case 2 `error.tsx` in `commentId/`**](#case-2-error.tsx-in-commentid/)
+* [**Key Concept Error Bubbling**](#key-concept-error-bubbling)
+
+---
+
+#### **Route Structure Example**
+
+```
+/blog
+  ├─ layout.tsx
+  ├─ error.tsx         (affects all child segments)
+  └─ [blogId]
+       └─ [commentId]
+            └─ page.tsx (where error is simulated)
+```
+
+If an error occurs in the `commentId/page.tsx`, **Next.js will look up the directory tree** for the nearest `error.tsx` to handle it.
+
+---
+
+#### **Case 1 `error.tsx` in `blog/`**
+
+* Placing `error.tsx` in the `blog` folder handles **all errors** in:
+
+  * `[blogId]`
+  * `[commentId]`
+* An error in `commentId/page.tsx` will **replace the entire `/blog` layout** with the fallback UI.
+* This is a **broad** catch — useful for generic blog-level error handling.
+
+**Result**
+
+The **entire UI under `/blog`** is replaced on error.
+
+---
+
+#### **Case 2 `error.tsx` in `commentId/`**
+
+* By moving `error.tsx` into the `[commentId]` folder:
+
+  * Only **that route segment** is replaced on error.
+  * The **rest of the page (header, blog layout, etc.) remains intact**.
+* This gives users a more **granular** and **targeted error experience**.
+
+**Result**
+
+Only the **comment component** is replaced when it fails — the rest of the app still works.
+
+---
+
+#### **Key Concept Error Bubbling**
+
+> Errors bubble up the route hierarchy to the nearest available `error.tsx`.
+
+* You can **scope** your error boundaries by placing `error.tsx` at the right level.
+* Each boundary **isolates errors** to just its segment and prevents them from crashing the entire app.
+
+---
+
+### **Handling Errors in Layouts**
+
+After mastering error handling in nested routes, it’s time to look at a **tricky but important scenario**: handling **errors inside `layout.tsx`** files.
+
+* [**Behavior**](#behavior)
+* [**Example Scenario**](#example-scenario)
+* [**The Fix Move `error.tsx` to the Parent**](#the-fix-move-error.tsx-to-the-parent)
+* [**Visual Hierarchy**](#visual-hierarchy)
+
+---
+
+#### **Behavior**
+
+Unlike `page.tsx`, if an error occurs **inside a `layout.tsx` file**, the `error.tsx` file in the **same segment** **will not** catch it.
+
+This is due to the **component hierarchy**:
+
+> In the App Router, `layout.tsx` is rendered **above** `error.tsx`.
+> Therefore, errors thrown in a layout file bypass its own segment’s `error.tsx`.
+
+---
+
+#### **Example Scenario**
+
+Assume the following structure:
+
+```
+/blog
+  ├─ layout.tsx
+  ├─ error.tsx
+  └─ [blogId]
+       ├─ layout.tsx (throws an error)
+       ├─ error.tsx
+       └─ [commentId]
+            └─ page.tsx
+```
+
+If the `blogId/layout.tsx` throws an error — for instance:
+
+```tsx
+// Simulate random failure
+// File: app/blog/[blogId]/layout.tsx
+if (Math.random() < 0.5) {
+  throw new Error("Error loading blog");
+}
+```
+
+You might expect the `[blogId]/error.tsx` to catch it. But:
+
+> It won’t work — the error breaks the app because the layout renders **before** the error boundary.
+
+---
+
+#### **The Fix Move `error.tsx` to the Parent**
+
+To properly handle layout errors:
+
+* **Move `error.tsx` up to the parent segment** — in this case, to the `blog/` folder.
+* That way, the error in `blogId/layout.tsx` bubbles up and is caught by `blog/error.tsx`.
+
+---
+
+#### **Visual Hierarchy**
+
+```
+App Root
+ └── blog/layout.tsx
+      └── blog/error.tsx        Catches layout errors
+           └── [blogId]/layout.tsx    Bypasses [blogId]/error.tsx
+                └── [commentId]/error.tsx (only catches page/comment errors)
+```
+
+**Result**
+
+With the `error.tsx` file placed at the **`blog/` level**:
+
+* Errors in `[commentId]/layout.tsx` are **caught cleanly**.
+* The UI gracefully degrades — e.g., shows "Error loading comment" — while keeping the global layout (header/footer) intact.
+
+---
+
+### **Handling Global Errors**
+
+We’ve already explored error handling at the **segment** and **layout** level — but what happens when things go wrong at the **very top** of your application?
+
+This is where **global error boundaries** come in.
+
+* [**The Global `error.tsx` File**](#the-global-error.tsx-file)
+* [**Simulating a Root Layout Error**](#simulating-a-root-layout-error)
+* [**Important Notes Global Error**](#important-notes-global-error)
+* [**Testing the Global Error UI**](#testing-the-global-error-ui)
+
+---
+
+#### **The Global `error.tsx` File**
+
+* Next.js provides a special file: **`app/global-error.tsx`**
+* This is your **last line of defense** — it catches **uncaught runtime errors** in the **root layout** or anywhere else that doesn’t have an error boundary.
+
+---
+
+#### **Simulating a Root Layout Error**
+
+To test global error handling, let’s intentionally cause an error in the root layout:
+
+* [**Create an `ErrorWrapper` component**](#create-an-errorwrapper-component)
+* [**Wrap Root Layout in the `ErrorWrapper`**](#wrap-root-layout-in-the-errorwrapper)
+* [**Create `global-error.tsx`**](#create-global-error.tsx)
+
+#### **Create an `ErrorWrapper` component**
+
+`app/ErrorWrapper.tsx`
+
+```tsx
+// File: app/ErrorWrapper.tsx
+'use client';
+
+import { useState } from 'react';
+
+export default function ErrorWrapper({ children }: { children: React.ReactNode }) {
+  const [error, setError] = useState(false);
+
+  if (error) {
+    throw new Error("Simulated error in root layout");
+  }
+
+  return (
+    <div className="p-4 border">
+      <button onClick={() => setError(true)} className="bg-red-500 text-white px-3 py-1 mb-4">
+        Simulate Error
+      </button>
+      {children}
+    </div>
+  );
+}
+```
+
+---
+
+##### **Wrap Root Layout in the `ErrorWrapper`**
+
+In your `app/layout.tsx`, import and wrap the layout:
+
+```tsx
+// File: app/layout.tsx
+
+import './globals.css';
+import ErrorWrapper from './ErrorWrapper';
+
+export default function RootLayout({ children }: { children: React.ReactNode }) {
+  return (
+    <html lang="en">
+      <body>
+        <ErrorWrapper>
+          {children}
+        </ErrorWrapper>
+      </body>
+    </html>
+  );
+}
+```
+
+---
+
+##### **Create `global-error.tsx`**
+
+**`app/global-error.tsx`**
+
+```tsx
+// File: app/global-error.tsx
+
+'use client';
+
+export default function GlobalError({ error, reset }: { error: Error; reset: () => void }) {
+  return (
+    <html>
+      <body className="flex flex-col items-center justify-center min-h-screen p-6 text-center bg-red-50 text-red-800">
+        <h2 className="text-2xl font-bold mb-4">Something went wrong</h2>
+        <p className="mb-4">{error.message}</p>
+        <button
+          onClick={() => window.location.reload()}
+          className="bg-red-600 text-white px-4 py-2 rounded"
+        >
+          Refresh
+        </button>
+      </body>
+    </html>
+  );
+}
+```
+
+---
+
+#### **Important Notes Global Error**
+
+* The `global-error.tsx` **must include** its own `<html>` and `<body>` tags. It **replaces** your root layout entirely on failure.
+* It **only works in production mode**. In development (`npm run dev`), Next.js will show the standard red error overlay.
+* Keep the global error boundary **minimal** — don’t introduce more points of failure here.
+
+---
+
+#### **Testing the Global Error UI**
+
+```bash
+# Stop dev server
+Ctrl + C
+
+# Build the app
+npm run build
+
+# Start production server
+npm start
+```
+
+* Now simulate the error using the button from the `ErrorWrapper`.
+* You should see your **custom global error UI** with the message and a refresh button.
+
+---
+
+### **Parallel Routes**
+
+Parallel routes allow us to render multiple parts of a page simultaneously, improving modularity and user experience. They are especially useful for **complex dashboards**, **split view interfaces**, and **multi-pane layouts** where you need to manage multiple independent sections at once.
+
+* [**What Are Parallel Routes?**](#what-are-parallel-routes?)
+* [**Setting Up Parallel Routes**](#setting-up-parallel-routes)
+* [**Key Features of Parallel Routes**](#key-features-of-parallel-routes)
+
+#### **What Are Parallel Routes?**
+
+Parallel routes in Next.js are a way to render multiple UI sections (like a complex dashboard) simultaneously within the same layout. These sections are rendered independently and can have their own loading and error states. Let's walk through the process of setting up parallel routes in your Next.js application.
+
+---
+
+#### **Setting Up Parallel Routes**
+
+We will use the **slots** feature in Next.js to create parallel routes. Slots allow us to break down the content into independent, reusable pieces within the same layout.
+
+* [**Step 1 Create a Complex Dashboard Layout**](#step-1-create-a-complex-dashboard-layout)
+* [**Step 2 Create Individual Slots**](#step-2-create-individual-slots)
+* [**Step 3 Update Layout to Include Slots**](#step-3-update-layout-to-include-slots)
+* [**Step 4 Add a Card Component**](#step-4-add-a-card-component)
+* [**Step 5 View the Dashboard**](#step-5-view-the-dashboard)
+
+##### **Step 1 Create a Complex Dashboard Layout**
+
+In your `app` directory, create a new folder for the complex dashboard:
+
+```
+app/complex-dashboard/layout.tsx
+```
+
+Inside the `complex-dashboard` folder, define the layout that will display three sections: **User Analytics**, **Revenue Metrics**, and **Notifications**.
+
+##### **Step 2 Create Individual Slots**
+
+Inside the `complex-dashboard` folder, create separate subfolders for each of the sections:
+
+**1. User Analytics**:
+
+`app/complex-dashboard/@users/page.tsx`
+
+```tsx
+// File: app/complex-dashboard/@users/page.tsx
+
+export default function UserAnalytics() {
+  return <div>User Analytics</div>;
+}
+```
+
+**2. Revenue Metrics**:
+
+`app/complex-dashboard/@revenue/page.tsx`
+
+```tsx
+// File: app/complex-dashboard/@revenue/page.tsx
+
+export default function RevenueMetrics() {
+  return <div>Revenue Metrics</div>;
+}
+```
+
+**3. Notifications**:
+
+`app/complex-dashboard/@notifications/page.tsx`
+
+```tsx
+// File: app/complex-dashboard/@notifications/page.tsx
+
+export default function Notifications() {
+  return <div>Notifications</div>;
+}
+```
+
+##### **Step 3 Update Layout to Include Slots**
+
+Now, update the `layout.tsx` file for the **complex-dashboard** to make use of these slots. You’ll reference the slots by using the folder naming convention with the `@` symbol, and each slot will be passed as props automatically.
+
+**`app/complex-dashboard/layout.tsx`**
+
+```tsx
+// File: app/complex-dashboard/layout.tsx
+
+export default function ComplexDashboard({
+  users,
+  revenue,
+  notifications,
+}: {
+  users: React.ReactNode;
+  revenue: React.ReactNode;
+  notifications: React.ReactNode;
+}) {
+  return (
+    <div>
+      <h1>Complex Dashboard</h1>
+      <div style={{ display: 'flex', gap: '20px' }}>
+        <div>{users}</div>
+        <div>{revenue}</div>
+        <div>{notifications}</div>
+      </div>
+    </div>
+  );
+}
+```
+
+This layout will render the **User Analytics**, **Revenue Metrics**, and **Notifications** sections as separate components.
+
+##### **Step 4 Add a Card Component**
+
+To make the UI more appealing, create a reusable **Card component** to wrap each section.
+
+**`app/components/Card.tsx`**
+
+```tsx
+// File: app/components/Card.tsx
+
+export default function Card({ children }: { children: React.ReactNode }) {
+  return (
+    <div style={{ padding: '20px', border: '1px solid #ccc', borderRadius: '8px' }}>
+      {children}
+    </div>
+  );
+}
+```
+
+Now, wrap each slot in the `Card` component in the `layout.tsx`:
+
+```tsx
+// File: app/complex-dashboard/layout.tsx
+
+import Card from '../components/Card';
+
+export default function ComplexDashboard({
+  users,
+  revenue,
+  notifications,
+}: {
+  users: React.ReactNode;
+  revenue: React.ReactNode;
+  notifications: React.ReactNode;
+}) {
+  return (
+    <div>
+      <h1>Complex Dashboard</h1>
+      <div style={{ display: 'flex', gap: '20px' }}>
+        <Card>{users}</Card>
+        <Card>{revenue}</Card>
+        <Card>{notifications}</Card>
+      </div>
+    </div>
+  );
+}
+```
+
+##### **Step 5 View the Dashboard**
+
+When you visit `/complex-dashboard`, you will see your dashboard with three sections: **User Analytics**, **Revenue Metrics**, and **Notifications**.
+
+---
+
+#### **Key Features of Parallel Routes**
+
+**1. Independent Route Handling**:
+
+- Each section (slot) can have its own **loading state**, **error state**, and **content**. This is particularly helpful in cases where different sections of the page take varying times to load or face different errors.
+
+- Example: If **User Analytics** takes longer to load, the other sections like **Revenue Metrics** can remain interactive without showing a loading spinner.
+
+**2. Subnavigation**:
+
+- Parallel routes allow for **independent subnavigation** within each section. For example, users can filter data in **Revenue Metrics** while still being able to view notifications or user analytics. Each section can handle its own state and navigation without affecting others.
+
+- Example: In the **Notifications** section, users can switch between **default** and **archived** views, and the URL will update to reflect the change.
+
+---
+
+### **Handling Unmatched Routes**
+
+When using **parallel routes** with subnavigation, it's common to encounter scenarios where only some slots match the current URL. In such cases, **unmatched routes** must be handled properly to avoid rendering issues or 404 errors.
+
+Let's explore how to handle **unmatched slots** using `default.tsx` and ensure your application remains stable across navigation and reloads.
+
+* [**Subnavigation in Slots**](#subnavigation-in-slots)
+* [**What Are Unmatched Routes?**](#what-are-unmatched-routes?)
+* [**Fixing with `default.tsx`**](#fixing-with-default.tsx)
+* [**Add `default.tsx` for All Unmatched Slots**](#add-default.tsx-for-all-unmatched-slots)
+
+---
+
+#### **Subnavigation in Slots**
+
+One benefit of parallel routing is that each slot can have its **own navigation** and behave independently.
+
+**Add Subnavigation to Notifications**
+
+We’ll add subnavigation in the `@notifications` slot to switch between default and archived views.
+
+`app/complex-dashboard/@notifications/page.tsx`
+
+```tsx
+import Link from 'next/link';
+
+export default function Notifications() {
+  return (
+    <div>
+      <h2>Notifications</h2>
+      <Link href="/complex-dashboard/archived">Go to Archived</Link>
+    </div>
+  );
+}
+```
+
+Then create the **archived view**:
+
+`app/complex-dashboard/@notifications/archived/page.tsx`
+
+```tsx
+import Link from 'next/link';
+
+export default function ArchivedNotifications() {
+  return (
+    <div>
+      <h2>Archived Notifications</h2>
+      <Link href="/complex-dashboard">Back to Notifications</Link>
+    </div>
+  );
+}
+```
+
+Now visiting:
+
+* `/complex-dashboard` shows the **default notifications view**
+* `/complex-dashboard/archived` shows the **archived notifications view**
+
+The **rest of the dashboard** (users, revenue, etc.) remains unchanged during this navigation — a major strength of parallel routing.
+
+---
+
+#### **What Are Unmatched Routes?**
+
+When you navigate to a sub-path like `/complex-dashboard/archived`, only the `@notifications` slot matches the route.
+
+The other slots — `@users`, `@revenue`, and even `children` — do **not** match this new route.
+
+**What Happens on Navigation vs Reload?**
+
+* **When Navigating via Links**:
+
+  * Next.js **retains the previous content** of unmatched slots.
+  * Only the slot that matches the new URL is re-rendered (e.g., `@notifications`).
+
+* **When Reloading the Page**:
+
+  * Next.js attempts to load all slot content for the current URL.
+  * Slots without matching content result in a `404 - Not Found`.
+
+---
+
+#### **Fixing with `default.tsx`**
+
+To prevent 404 errors during reloads or deep links, we must define a `default.tsx` file in **every unmatched slot**.
+
+The `default.tsx` acts as a **fallback** component when a slot has no matching route segment in the URL.
+
+---
+
+#### **Add `default.tsx` for All Unmatched Slots**
+
+* [**Children Slot**](#children-slot)
+* [**Users Slot**](#users-slot)
+* [**Revenue Slot**](#revenue-slot)
+
+##### **Children Slot**
+
+`app/complex-dashboard/default.tsx`
+
+```tsx
+export default function DashboardDefault() {
+  return <h2>Complex Dashboard Default</h2>;
+}
+```
+
+##### **Users Slot**
+
+`app/complex-dashboard/@users/default.tsx`
+
+```tsx
+export default function UsersDefault() {
+  return <div>User Analytics Default Content</div>;
+}
+```
+
+##### **Revenue Slot**
+
+`app/complex-dashboard/@revenue/default.tsx`
+
+```tsx
+export default function RevenueDefault() {
+  return <div>Revenue Metrics</div>;
+}
+```
+
+Now, when visiting `/complex-dashboard/archived` directly or reloading it:
+
+* `@notifications` renders `archived/page.tsx`
+* Other slots render their respective `default.tsx`
+
+> This avoids any 404 errors and gives you full control over fallback content.
+
+---
+
+### **Conditional Routes**
+
+One of the most compelling use cases for **parallel routing** in Next.js is **conditional UI rendering** based on application state — like **authentication**.
+
+With **conditional routes**, you can render completely separate components under the **same URL** based on dynamic conditions, such as whether a user is logged in or not. This keeps your logic **clean** and **declarative**, without complex if/else rendering in your components.
+
+* [**Scenario Authenticated vs Unauthenticated Users**](#scenario-authenticated-vs-unauthenticated-users)
+* [**Step 1 Create a `@login` Slot**](#step-1-create-a-@login-slot)
+* [**Step 2 Update the Layout to Conditionally Render**](#step-2-update-the-layout-to-conditionally-render)
+* [**Benefits of Conditional Routes**](#benefits-of-conditional-routes)
+* [**Extendability**](#extendability)
+
+---
+
+#### **Scenario Authenticated vs Unauthenticated Users**
+
+We’ll implement a basic authentication check that determines whether to show:
+
+* A dashboard (for authenticated users), or
+* A login page (for unauthenticated users)
+  All at the **same route**: `/complex-dashboard`
+
+---
+
+#### **Step 1 Create a `@login` Slot**
+
+`app/complex-dashboard/@login/page.tsx`
+
+```tsx
+export default function Login() {
+  return (
+    <div className="card">
+      <h2>Please log in to continue</h2>
+    </div>
+  );
+}
+```
+
+> In a real app, this would include a form and login logic. For demo purposes, this static message is enough.
+
+---
+
+#### **Step 2 Update the Layout to Conditionally Render**
+
+`app/complex-dashboard/layout.tsx`
+
+Update the layout file to accept the `login` slot and conditionally render it based on a fake `isLoggedIn` flag.
+
+```tsx
+// File: app/complex-dashboard/layout.tsx
+
+type Props = {
+  children: React.ReactNode;
+  users: React.ReactNode;
+  revenue: React.ReactNode;
+  notifications: React.ReactNode;
+  login: React.ReactNode;
+};
+
+export default function ComplexDashboardLayout({
+  children,
+  users,
+  revenue,
+  notifications,
+  login,
+}: Props) {
+  const isLoggedIn = false; // simulate login check
+
+  if (!isLoggedIn) {
+    return <>{login}</>; // Show login slot
+  }
+
+  return (
+    <div className="dashboard">
+      <h1>Complex Dashboard</h1>
+      <div className="cards">
+        {children}
+        {users}
+        {revenue}
+        {notifications}
+      </div>
+    </div>
+  );
+}
+```
+
+- Now, when `isLoggedIn` is `false`, only the login page is rendered — at the same `/complex-dashboard` URL. 
+- If you switch `isLoggedIn` to `true`, your dashboard content (users, revenue, notifications, and main page) will render as expected.
+
+---
+
+#### **Benefits of Conditional Routes**
+
+| Feature                         | Description                                                                |
+| ------------------------------- | -------------------------------------------------------------------------- |
+| Seamless Switching              | Render different UIs under the same URL based on dynamic logic             |
+| Slot Isolation                  | Each view is fully isolated — no shared code required between slots        |
+| Fine-Grained Control            | Each slot still gets its own loading/error handling and subnavigation      |
+| Clean Separation of Concerns    | No spaghetti conditional rendering logic inside one giant layout component |
+
+---
+
+#### **Extendability**
+
+You could extend this pattern for:
+
+* Role-based dashboards (admin vs user views)
+* A/B testing different UI components
+* Conditional onboarding experiences
+* Multi-tenant interfaces
+
+---
+
+> **Pro Tip:** In a real-world app, use `getServerSession()` from **auth.js** or a custom auth hook to determine `isLoggedIn`.
+
+---
+
+### **Intercepting Routes**
+
+**Intercepting Routes** are an advanced feature of the App Router in Next.js that let you display content from another part of your app **within the current layout context**, while still updating the **URL**. This is perfect for features like **modals**, **previews**, or **lightboxes**, where you want users to stay in context.
+
+* [**Real-world Examples**](#real-world-examples)
+* [**How Intercepting Routes Work**](#how-intercepting-routes-work)
+* [**Examples**](#examples)
+* [**Intercepting Routes Cheat Sheet**](#intercepting-routes-cheat-sheet)
+* [**Why Use Intercepting Routes**](#why-use-intercepting-routes)
+
+---
+
+#### **Real-world Examples**
+
+* Clicking "Login" opens a **modal**, but the URL becomes `/login`. Refreshing this URL loads the **full login page**.
+* Clicking a photo in a gallery opens an **overlay with details**, but visiting the photo URL directly shows the **full photo page**.
+
+---
+
+#### **How Intercepting Routes Work**
+
+Intercepting Routes are based on **folder naming conventions** that tell Next.js to intercept navigation based on relative path **level differences**.
+
+**Folder Setup Basics**
+
+We’ll walk through four routing levels:
+
+| Convention    | Prefix Syntax                | When to Use                          |
+| ------------- | ---------------------------- | ------------------------------------ |
+| Same level    | `(.)`                        | Intercept sibling routes             |
+| One level up  | `(..)`                       | Intercept parent-level routes        |
+| Two levels up | `(../..)` (i.e., `(..)(..)`) | Intercept grandparent-level routes   |
+| From app root | `(...)`                      | Intercept any route relative to root |
+
+---
+
+#### **Examples**
+
+* [**Intercepting Same-Level Routes**](#intercepting-same-level-routes)
+* [**Intercepting One Level Up**](#intercepting-one-level-up)
+* [**Intercepting Two Levels Up**](#intercepting-two-levels-up)
+* [**Intercepting From Root**](#intercepting-from-root)
+
+---
+
+##### **Intercepting Same-Level Routes**
+
+**Goal Intercept `f1/f2` when navigating from `f1`**
+
+```
+app/
+  f1/
+    page.tsx
+    f2/            ← target route
+      page.tsx
+    (.)f2/         ← intercepting route
+      page.tsx
+```
+
+* Add a `Link` to `/f1/f2` inside `f1/page.tsx`.
+* Inside `(.)f2/page.tsx`, show an alternate layout: e.g. modal or lightbox.
+* Visiting `/f1/f2` via `Link` from `f1` → shows intercepted route.
+* Refreshing `/f1/f2` → shows original `f2` page.
+
+---
+
+##### **Intercepting One Level Up**
+
+**Goal: Intercept `/f3` when navigating from `/f1`**
+
+```
+app/
+  f1/
+    page.tsx
+    (..)/f3/        ← intercepting route
+      page.tsx
+  f3/
+    page.tsx        ← target
+```
+
+* Add a `Link` to `/f3` inside `f1/page.tsx`.
+* Inside `(..)/f3/page.tsx`, return alternate content.
+* Refreshing `/f3` still loads `f3/page.tsx`.
+
+---
+
+##### **Intercepting Two Levels Up**
+
+**Goal: Intercept `/f4` when navigating from `/f1/f2`**
+
+```
+app/
+  f1/
+    f2/
+      page.tsx
+      (..)(..)/f4/   ← intercepting route
+        page.tsx
+  f4/
+    page.tsx         ← target
+```
+
+* Add a `Link` to `/f4` in `f1/f2/page.tsx`.
+* `(..)(..)/f4/page.tsx` handles intercepted view.
+* URL updates, context stays, full page on refresh.
+
+---
+
+##### **Intercepting From Root**
+
+**Goal: Intercept `/f5` from `/f1/f2/inner-f2`**
+
+```
+app/
+  f1/
+    f2/
+      inner-f2/
+        page.tsx
+        (...)f5/     ← intercepting route
+          page.tsx
+  f5/
+    page.tsx         ← target
+```
+
+* Use `(...)` to intercept from anywhere in app back to root route.
+* Add a `Link` to `/f5` in `inner-f2/page.tsx`.
+* Shows intercepted view on click, real route on refresh.
+
+---
+
+#### **Intercepting Routes Cheat Sheet**
+
+| Use Case                 | Folder Prefix | Notes                     |
+| ------------------------ | ------------- | ------------------------- |
+| Intercept sibling routes | `(.)`         | Same folder level         |
+| Intercept parent folder  | `(..)`        | One level above           |
+| Intercept grandparent    | `(..)(..)`    | Two levels up             |
+| Intercept from app root  | `(...)`       | Any route from root level |
+
+---
+
+#### **Why Use Intercepting Routes**
+
+* Preserve user context (e.g., modal overlays)
+* URL remains shareable and refresh-safe
+* Clean UX for modals, previews, and nested views
+* Keeps layouts and route logic clean and modular
+
+---
+
+### **Parallel Intercepting Routes**
+
+Combine **parallel** and **intercepting** routes for modals with persistent layout.
+
+#### **Demo**
+
+At `/photo-feed`, you see a photo grid.
+
+Clicking a photo updates the URL to `/photo-feed/[id]` and opens a **modal** (instead of navigating away). The background (feed) remains visible.
+
+> **Benefits**: Shareable URLs, refresh support, browser back/forward works as expected.
+
+* [**Step 1 Add Images**](#step-1-add-images)
+* [**Step 2 Create Metadata**](#step-2-create-metadata)
+* [**Step 3 Create Photo Feed Page**](#step-3-create-photo-feed-page)
+* [**Step 4 Create Dynamic ID Page**](#step-4-create-dynamic-id-page)
+* [**Step 5 Create Modal Parallel Route**](#step-5-create-modal-parallel-route)
+* [**Step 6 Add Default for Modal**](#step-6-add-default-for-modal)
+
+---
+
+##### **Step 1 Add Images**
+
+Store photos in `app/photo-feed/photos`.
+
+##### **Step 2 Create Metadata**
+
+`wonders.ts`
+
+```ts
+export const wonders = [
+  { id: '1', name: 'Great Wall', src: '/photos/1.jpg', photographer: 'Alice', location: 'China' },
+  // ...
+]
+```
+
+##### **Step 3 Create Photo Feed Page**
+
+```tsx
+// app/photo-feed/page.tsx
+export default function PhotoFeed() {
+  return wonders.map((photo) => (
+    <Link href={`/photo-feed/${photo.id}`}>
+      <Image src={photo.src} alt={photo.name} />
+    </Link>
+  ))
+}
+```
+
+##### **Step 4 Create Dynamic ID Page**
+
+```tsx
+// app/photo-feed/[id]/page.tsx
+export default function PhotoDetails({ params }) {
+  const photo = wonders.find(p => p.id === params.id)
+  return <div>{photo.name}</div>
+}
+```
+
+##### **Step 5 Create Modal Parallel Route**
+
+```tsx
+// app/photo-feed/@modal/[id]/page.tsx
+export default function ModalPhotoDetails({ params }) {
+  const photo = wonders.find(p => p.id === params.id)
+  return (
+    <div className="modal">
+      <Image src={photo.src} alt={photo.name} />
+      <div>{photo.name}</div>
+    </div>
+  )
+}
+```
+
+In `photo-feed/layout.tsx`, receive parallel routes:
+
+```tsx
+export default function Layout({ children, modal }) {
+  return (
+    <>
+      {children}
+      {modal}
+    </>
+  )
+}
+```
+
+##### **Step 6 Add Default for Modal**
+
+```tsx
+// app/photo-feed/@modal/default.tsx
+export default function Default() {
+  return null // Modal starts empty
+}
+```
 
 ---
 
