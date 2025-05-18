@@ -9,15 +9,31 @@
 //     );
 //   }
 
-import { posts } from '@/lib/posts';
-import PostPreview from '@/components/blog/PostPreview';
 
-export default function BlogIndexPage() {
+
+// import { posts } from '@/lib/posts';
+// import PostPreview from '@/components/blog/PostPreview';
+
+// export default function BlogIndexPage() {
+//   return (
+//     <div className="space-y-6">
+//       {posts.map((post) => (
+//         <PostPreview key={post.slug} post={post} />
+//       ))}
+//     </div>
+//   );
+// }
+
+
+
+import Link from 'next/link';
+
+export default function BlogList() {
+
   return (
-    <div className="space-y-6">
-      {posts.map((post) => (
-        <PostPreview key={post.slug} post={post} />
-      ))}
-    </div>
+    <>
+      <h1>Blog List</h1>
+      <Link href="/">Home</Link>
+    </>
   );
 }
