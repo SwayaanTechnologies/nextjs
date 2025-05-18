@@ -15,7 +15,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <script src="https://unpkg.com/@tailwindcss/browser@4"></script>
     <link rel="icon" type="image/png" href="/favicon.ico" />
-    <title>Todo App</title>
+    <title>Blog App</title>
   </head>
   <body>
     <nav class="bg-green-700 border-b border-green-500">
@@ -23,9 +23,9 @@
         <div class="flex h-20 items-center justify-between">
           <!-- Logo -->
           <a class="flex items-center" href="index.html">
-            <img class="h-10 w-auto" src="images/logo.png" alt="Vue Todos" />
+            <img class="h-10 w-auto" src="images/logo.png" alt="Next Blogs" />
             <span class="hidden md:block text-white text-2xl font-bold ml-2">
-              Todo Application
+              Blog Application
             </span>
           </a>
     
@@ -41,14 +41,14 @@
             <a href="index.html" class="text-white hover:bg-green-900 rounded-md px-3 py-2">
               Home
             </a>
-            <a href="todos.html" class="text-white bg-green-900 hover:bg-gray-900 rounded-md px-3 py-2">
-              Todos
+            <a href="Blogs.html" class="text-white bg-green-900 hover:bg-gray-900 rounded-md px-3 py-2">
+              Blogs
             </a>
-            <a href="add-todo.html" class="text-white hover:bg-green-900 rounded-md px-3 py-2">
-              Add Todo
+            <a href="add-Blog.html" class="text-white hover:bg-green-900 rounded-md px-3 py-2">
+              Add Blog
             </a>
-            <a href="teams-todo.html" class="text-white hover:bg-green-900 rounded-md px-3 py-2">
-              Teams Todo
+            <a href="teams-Blog.html" class="text-white hover:bg-green-900 rounded-md px-3 py-2">
+              Teams Blog
             </a>
             <a href="login.html" class="text-white hover:bg-green-900 rounded-md px-3 py-2">
               Logout
@@ -59,9 +59,9 @@
         <!-- Mobile Menu -->
         <div id="mobile-menu" class="hidden md:hidden flex flex-col mt-2 space-y-2 bg-green-800 p-4 rounded-lg">
           <a href="index.html" class="text-white hover:bg-green-900 px-3 py-2 rounded-md">Home</a>
-          <a href="todos.html" class="text-white hover:bg-green-900 px-3 py-2 rounded-md">Todos</a>
-          <a href="add-todo.html" class="text-white hover:bg-green-900 px-3 py-2 rounded-md">Add Todo</a>
-          <a href="teams-todo.html" class="text-white hover:bg-green-900 px-3 py-2 rounded-md">Teams Todo</a>
+          <a href="Blogs.html" class="text-white hover:bg-green-900 px-3 py-2 rounded-md">Blogs</a>
+          <a href="add-Blog.html" class="text-white hover:bg-green-900 px-3 py-2 rounded-md">Add Blog</a>
+          <a href="teams-Blog.html" class="text-white hover:bg-green-900 px-3 py-2 rounded-md">Teams Blog</a>
           <a href="login.html" class="text-white hover:bg-green-900 px-3 py-2 rounded-md">Logout</a>
         </div>
       </div>
@@ -75,32 +75,32 @@
         });
       </script>
     </nav>
-    <!-- Filter Todos -->
+    <!-- Filter Blogs -->
     <section class="bg-green-50 py-4">
       <div class="container mx-auto px-4">
         <div class="relative">
           <input
             type="text"
             class="w-full p-3 border border-gray-300 rounded-lg focus:outline-none focus:border-green-500"
-            placeholder="Filter Todos..."
+            placeholder="Filter Blogs..."
           />
         </div>
       </div>
     </section>
 
-    <!-- All Todos -->
+    <!-- All Blogs -->
     <section class="bg-green-50 px-4 py-10">
       <div class="container-xl lg:container m-auto">
         <h2 class="text-3xl font-bold text-green-500 mb-6 text-center">
-          Browse Todos
+          Browse Blogs
         </h2>
         <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
-          <!-- Todo Item 1 -->
+          <!-- Blog Item 1 -->
           <div class="bg-white rounded-xl shadow-md relative">
             <div class="p-4">
               <div class="mb-6">
                 <div class="text-gray-600 my-2">Due: 2025-03-10</div>
-                <h3 class="text-xl font-bold">Learn HTML</h3>
+                <h3 class="text-xl font-bold">HTML</h3>
               </div>
               <div class="mb-5">
                 Master the basics of HTML, including elements, attributes, and page structuring.
@@ -110,7 +110,7 @@
                   <h3 class="text-green-500 mb-2">Status: In Progress</h3>
                 </div>
                 <a
-                  href="todo.html"
+                  href="Blog.html"
                   class="h-[36px] bg-green-500 hover:bg-green-600 text-white px-4 py-2 rounded-lg text-center text-sm"
                 >
                   Read More
@@ -119,22 +119,22 @@
             </div>
           </div>
         
-          <!-- Todo Item 2 -->
+          <!-- Blog Item 2 -->
           <div class="bg-white rounded-xl shadow-md relative">
             <div class="p-4">
               <div class="mb-6">
                 <div class="text-gray-600 my-2">Due: 2025-03-15</div>
-                <h3 class="text-xl font-bold">Learn Vue JS</h3>
+                <h3 class="text-xl font-bold">Next JS</h3>
               </div>
               <div class="mb-5">
-                Explore Vue.js fundamentals, including components, directives, and state management.
+                Explore Next.js fundamentals, including components, directives, and state management.
               </div>
               <div class="flex flex-col lg:flex-row justify-between mb-4">
                 <div class="text-orange-700 mb-3">
-                  <h3 class="text-green-500 mb-2">Status: Not Started</h3>
+                  <h3 class="text-green-500 mb-2">Status: Draft</h3>
                 </div>
                 <a
-                  href="todo.html"
+                  href="Blog.html"
                   class="h-[36px] bg-green-500 hover:bg-green-600 text-white px-4 py-2 rounded-lg text-center text-sm"
                 >
                   Read More
@@ -143,22 +143,22 @@
             </div>
           </div>
         
-          <!-- Todo Item 3 -->
+          <!-- Blog Item 3 -->
           <div class="bg-white rounded-xl shadow-md relative">
             <div class="p-4">
               <div class="mb-6">
                 <div class="text-gray-600 my-2">Due: 2025-03-20</div>
-                <h3 class="text-xl font-bold">Learn JavaScript</h3>
+                <h3 class="text-xl font-bold">JavaScript</h3>
               </div>
               <div class="mb-5">
                 Deep dive into JavaScript ES6+ features, asynchronous programming, and DOM manipulation.
               </div>
               <div class="flex flex-col lg:flex-row justify-between mb-4">
                 <div class="text-orange-700 mb-3">
-                  <h3 class="text-green-500 mb-2">Status: Completed</h3>
+                  <h3 class="text-green-500 mb-2">Status: Published</h3>
                 </div>
                 <a
-                  href="todo.html"
+                  href="Blog.html"
                   class="h-[36px] bg-green-500 hover:bg-green-600 text-white px-4 py-2 rounded-lg text-center text-sm"
                 >
                   Read More
@@ -166,12 +166,12 @@
               </div>
             </div>
             </div>
-          <!-- Todo Item 4 -->
+          <!-- Blog Item 4 -->
           <div class="bg-white rounded-xl shadow-md relative">
             <div class="p-4">
               <div class="mb-6">
                 <div class="text-gray-600 my-2">Due: 2025-03-25</div>
-                <h3 class="text-xl font-bold">Learn CSS</h3>
+                <h3 class="text-xl font-bold">CSS</h3>
               </div>
               <div class="mb-5">
                 Understand CSS fundamentals, including flexbox, grid, and responsive design.
@@ -181,7 +181,7 @@
                   <h3 class="text-green-500 mb-2">Status: In Progress</h3>
                 </div>
                 <a
-                  href="todo.html"
+                  href="Blog.html"
                   class="h-[36px] bg-green-500 hover:bg-green-600 text-white px-4 py-2 rounded-lg text-center text-sm"
                 >
                   Read More
@@ -190,22 +190,22 @@
             </div>
           </div>
 
-          <!-- Todo Item 5 -->
+          <!-- Blog Item 5 -->
           <div class="bg-white rounded-xl shadow-md relative">
             <div class="p-4">
               <div class="mb-6">
                 <div class="text-gray-600 my-2">Due: 2025-04-01</div>
-                <h3 class="text-xl font-bold">Learn Tailwind CSS</h3>
+                <h3 class="text-xl font-bold">Tailwind CSS</h3>
               </div>
               <div class="mb-5">
                 Dive into utility-first CSS framework, building modern and responsive designs quickly.
               </div>
               <div class="flex flex-col lg:flex-row justify-between mb-4">
                 <div class="text-orange-700 mb-3">
-                  <h3 class="text-green-500 mb-2">Status: Not Started</h3>
+                  <h3 class="text-green-500 mb-2">Status: Draft</h3>
                 </div>
                 <a
-                  href="todo.html"
+                  href="Blog.html"
                   class="h-[36px] bg-green-500 hover:bg-green-600 text-white px-4 py-2 rounded-lg text-center text-sm"
                 >
                   Read More
@@ -214,22 +214,22 @@
             </div>
           </div>
 
-          <!-- Todo Item 6 -->
+          <!-- Blog Item 6 -->
           <div class="bg-white rounded-xl shadow-md relative">
             <div class="p-4">
               <div class="mb-6">
                 <div class="text-gray-600 my-2">Due: 2025-04-10</div>
-                <h3 class="text-xl font-bold">Learn React</h3>
+                <h3 class="text-xl font-bold">React</h3>
               </div>
               <div class="mb-5">
                 Get familiar with React.js, components, hooks, and state management concepts.
               </div>
               <div class="flex flex-col lg:flex-row justify-between mb-4">
                 <div class="text-orange-700 mb-3">
-                  <h3 class="text-green-500 mb-2">Status: Not Started</h3>
+                  <h3 class="text-green-500 mb-2">Status: Draft</h3>
                 </div>
                 <a
-                  href="todo.html"
+                  href="Blog.html"
                   class="h-[36px] bg-green-500 hover:bg-green-600 text-white px-4 py-2 rounded-lg text-center text-sm"
                 >
                   Read More
