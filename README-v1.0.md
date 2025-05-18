@@ -2932,15 +2932,15 @@ export default function NewsClient() {
 
 While links (`<Link>`) are great for typical navigation, sometimes you need to **navigate based on logic**—such as after a form submission or conditionally based on user input. That’s where **programmatic navigation** comes in.
 
-* [**Example Order Placement Redirect**](#example-order-placement-redirect)
+* [**Example Navigate Programmatically**](#example-navigate-programmatically)
 * [**Router Methods**](#router-methods)
 * [**Example Redirect in Server Component**](#example-redirect-in-server-component)
 
 ---
 
-#### **Example Order Placement Redirect**
+#### **Example Navigate Programmatically**
 
-We’ll simulate a product order flow: clicking a **“Place Order”** button takes the user to the homepage.
+We’ll simulate a product order flow: clicking a **“Navigate Programmatically”** button takes the user to the homepage.
 
 * [**Step 1 Create the Route**](#step-1-create-the-route)
 * [**Step 2 Implement Client-Side Navigation**](#step-2-implement-client-side-navigation)
@@ -3006,12 +3006,13 @@ Sometimes, you want to **redirect in server logic**. For example, redirect users
 // File: app/blog/[blogId]/comments/[commentId]/page.tsx
 import { redirect } from 'next/navigation';
 
-export default function BlogComment({
+export default async function BlogComment({
   params,
 }: {
-  params: { blogId: string; commentId: string };
+   params: { blogId: string; commentId: string };
 }) {
-  const commentId = parseInt(params.commentId);
+  const awaitedParams = await params;
+  const commentId = parseInt(awaitedParams.commentId);
 
   if (commentId > 100) {
     // Instead of showing a not-found page, redirect to blog list
@@ -3195,31 +3196,6 @@ Now, reload the `/blog` route. You’ll see:
 
 1. `"Loading..."` for 2 seconds
 2. Then `"Blog Page Content"`
-
----
-
-#### **Make It Beautiful**
-
-You’re not limited to text. Common UI patterns include:
-
-* Skeleton loaders
-* Spinners
-* Image previews
-* UI placeholders
-
-```tsx
-import { Skeleton } from "@/components/ui/skeleton";
-
-export default function Loading() {
-  return (
-    <div className="space-y-4">
-      <Skeleton className="h-6 w-1/2" />
-      <Skeleton className="h-4 w-full" />
-      <Skeleton className="h-4 w-full" />
-    </div>
-  );
-}
-```
 
 ---
 
