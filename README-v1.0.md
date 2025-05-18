@@ -2617,15 +2617,15 @@ export default function Home() {
 
 #### **Adding a "Home" Link on Other Pages**
 
-In `app/products/page.tsx`, import the `Link` component and add a "Home" button:
+In `app/blog/page.tsx`, import the `Link` component and add a "Home" button:
 
 ```tsx
 import Link from 'next/link';
 
-export default function ProductList() {
+export default function BlogList() {
   return (
     <>
-      <h1>Product List</h1>
+      <h1>Blog List</h1>
       <Link href="/">Home</Link>
     </>
   );
@@ -2648,7 +2648,20 @@ Assuming product routes follow this pattern: `/blog/1`, `/blog/2`, etc.
 
 Example hardcoded version:
 
+update `app/blog/[blogId]/page.tsx`:
+
 ```tsx
+export default async function BlogDetails({ params } : { params : { blogId: string } }) {
+  const { blogId } = await params;
+  return <h1>Details about Blog {blogId}</h1>;
+}
+```
+
+And in `app/page.tsx`, add links to each blog post:
+
+```tsx
+// File: app/page.tsx
+
 <h2>
   <Link href="/blog/1">Blog 1</Link>
 </h2>
@@ -2663,6 +2676,7 @@ Example hardcoded version:
 Or using a dynamic ID from a variable:
 
 ```tsx
+// File: app/page.tsx
 const blogId = 100;
 
 <Link href={`/blog/${blogId}`}>Blog 100</Link>
@@ -2697,20 +2711,19 @@ Styling **active navigation links** improves UX by showing users where they are 
 
 #### **Example Setup**
 
-In our `/auth` route group, we have a `layout.tsx` file that renders a simple navigation bar:
+In our `(auth)` route group, we have a `layout.tsx` file that renders a simple navigation bar:
 
 ```tsx
-// File: app/auth/layout.tsx
+// File: app/(auth)/layout.tsx
 'use client';
 
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
-import './styles.css'; // Tailwind imports
 
 const navLinks = [
-  { name: 'Register', href: '/auth/register' },
-  { name: 'Login', href: '/auth/login' },
-  { name: 'Forgot Password', href: '/auth/forgot-password' },
+  { name: 'Register', href: '/register' },
+  { name: 'Login', href: '/login' },
+  { name: 'Forgot Password', href: '/forgot-password' },
 ];
 
 export default function AuthLayout({ children }: { children: React.ReactNode }) {
@@ -2758,27 +2771,23 @@ export default function AuthLayout({ children }: { children: React.ReactNode }) 
 
 If you don’t already have global styles set up, create a local `styles.css` file:
 
-**File**: `app/auth/styles.css`
+**File**: `app/global.css`
 
 ```css
-@tailwind base;
-@tailwind components;
-@tailwind utilities;
+@import "tailwindcss";
 ```
 
-Then import it into `layout.tsx`:
+Then import it into `layout.tsx` of root `app` directory:
 
 ```tsx
 import './styles.css';
 ```
 
-> Alternatively, you can bring back your `globals.css` from the root `app` directory.
-
 ---
 
 #### **Try It Out**
 
-1. Navigate to `/auth/register`
+1. Navigate to `/register`
 2. You’ll see **Register** link is bold; others are blue
 3. Click **Login** → Login becomes bold
 4. Works dynamically without page reload
@@ -2858,8 +2867,8 @@ export default async function NewsArticle({
   params: { articleId: string };
   searchParams: { language?: string };
 }) {
-  const { articleId } = params;
-  const language = searchParams.language || 'English';
+  const { articleId } = await params;
+  const language = (await searchParams)?.language || 'English';
 
   return (
     <>
@@ -2886,6 +2895,7 @@ export default async function NewsArticle({
 2. **Client components** must use the `useParams()` and `useSearchParams()` hooks from `next/navigation`.
 
 ```tsx
+// File: app/articles/[articleId]/page.tsx
 'use client';
 
 import { useParams, useSearchParams } from 'next/navigation';
@@ -2943,7 +2953,7 @@ Create a folder and file for the new route:
 
 ```
 app/
-└── order-product/
+└── navigating-programmatically/
     └── page.tsx
 ```
 
@@ -2952,23 +2962,22 @@ app/
 ##### **Step 2 Implement Client-Side Navigation**
 
 ```tsx
-// File: app/order-product/page.tsx
+// File: app/navigating-programmatically/page.tsx
 'use client';
 
 import { useRouter } from 'next/navigation';
 
-export default function OrderProduct() {
+export default function NavigateProgrammatically() {
   const router = useRouter();
 
   const handleClick = () => {
-    console.log('Placing your order...');
+    console.log('Navigating...');
     router.push('/'); // Navigate to homepage
   };
 
   return (
     <>
-      <h1>Order Product</h1>
-      <button onClick={handleClick}>Place Order</button>
+      <button onClick={handleClick}>Navigate Programmatically</button>
     </>
   );
 }
