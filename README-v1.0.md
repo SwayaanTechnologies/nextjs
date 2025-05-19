@@ -3670,11 +3670,11 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
 **`app/global-error.tsx`**
 
 ```tsx
-// File: app/global-error.tsx
+/// File: app/global-error.tsx
 
 'use client';
 
-export default function GlobalError({ error, reset }: { error: Error; reset: () => void }) {
+export default function GlobalError({ error }: { error: Error }) {
   return (
     <html>
       <body className="flex flex-col items-center justify-center min-h-screen p-6 text-center bg-red-50 text-red-800">
@@ -6167,6 +6167,7 @@ Let's modify the **about component** to demonstrate dynamic rendering by utilizi
 1. First, **import the cookies function** at the top of your component:
 
    ```js
+   // app/about/page.tsx
    import { cookies } from 'next/headers';
    ```
 
@@ -6176,7 +6177,8 @@ Let's modify the **about component** to demonstrate dynamic rendering by utilizi
    export default async function AboutPage() {
      const cookieStore = await cookies();
      const theme = cookieStore.get('theme');
-     console.log(theme); // Log the theme to verify the cookie's value
+     console.log(theme);
+    return <h1>About Me</h1>; // Log the theme to verify the cookie's value
    }
    ```
 
@@ -6213,7 +6215,7 @@ To see dynamic rendering in action:
 
 2. Open the browser and visit **/about**. Perform a **hard reload** (Ctrl + Shift + R).
 
-   * On each refresh, you’ll notice the **HTML is generated on demand**, and the logged **cookie value** will appear (e.g., `theme: light`).
+   * On each refresh, you’ll notice the **HTML is generated on demand**, and the logged **cookie value** will appear (e.g., `theme: dark`).
    * In the network tab of the browser's DevTools, you’ll see the **response** containing the HTML each time you refresh.
 
 Since we’re generating the page dynamically for each request, **no HTML file** is stored in the server output folder (`next/server/app/`).
@@ -6247,7 +6249,6 @@ This will ensure that Next.js renders the page dynamically, even if no dynamic f
 * [**Practical Example Blog Listing and Comments Page**](#practical-example-blog-listing-and-comments-page)
 * [**Inspecting the Build Output**](#inspecting-the-build-output)
 * [**Pre-rendering Product Details Pages with `generateStaticParams`**](#pre-rendering-product-details-pages-with-generatestaticparams)
-* [**Handling Multiple Dynamic Segments**](#handling-multiple-dynamic-segments)
 
 ---
 
@@ -6265,14 +6266,16 @@ To understand how `generateStaticParams` works, let's walk through a practical e
 
    ```tsx
    // app/blog/page.tsx
+   import Link from 'next/link';
+   
    export default function BlogPage() {
      return (
        <div>
          <h1>Featured Blog Posts</h1>
          <ul>
-           <li><a href="/blog/1">Blog Post 1</a></li>
-           <li><a href="/blog/2">Blog Post 2</a></li>
-           <li><a href="/blog/3">Blog Post 3</a></li>
+           <li><Link href="/blog/1">Blog Post 1</Link></li>
+           <li><Link href="/blog/2">Blog Post 2</Link></li>
+           <li><Link href="/blog/3">Blog Post 3</Link></li>
          </ul>
        </div>
      );
@@ -6319,10 +6322,16 @@ Now, let’s improve this by pre-rendering the individual blog post details page
        { blogId: '3' },
      ];
    }
-
-   export default async function BlogPostPage({ params }) {
-     const { blogId } = params;
-     return <h1>Blog Post {blogId} Details</h1>;
+   
+   export default async function BlogPostPage({ 
+     params,
+    }: { 
+     params: Promise<{ blogId: string }>; 
+   }) {
+     const { blogId } = await params;
+     return (
+        <h1>Blog {blogId} details at {new Date().toLocaleTimeString()}</h1>
+     );
    }
    ```
 
@@ -6334,32 +6343,6 @@ Now, let’s improve this by pre-rendering the individual blog post details page
    * **New Build Output**: The build folder (`next/server/app/blog/[blogId]`) will contain `1.html`, `2.html`, and `3.html`.
 
 3. Start the application with `npm run start` and visit `/blog/1`. Notice how the **timestamp stays the same** upon refreshing because the page is now served as a **pre-rendered static page**.
-
----
-
-#### **Handling Multiple Dynamic Segments**
-
-What if we have a **route with multiple dynamic segments**? For instance, a blog catalog where each blog post belongs to a category (e.g., `/blog/[category]/[post]`).
-
-In this case, you can use `generateStaticParams` to pre-render routes for both dynamic segments. For example:
-
-```tsx
-// app/blog/[category]/[post]/page.tsx
-export async function generateStaticParams() {
-  return [
-    { category: 'technology', post: 'ai-advancements' },
-    { category: 'technology', post: 'web-development' },
-    { category: 'lifestyle', post: 'healthy-living' },
-  ];
-}
-
-export default async function BlogPostPage({ params }) {
-  const { category, post } = params;
-  return <h1>{category} - {post}</h1>;
-}
-```
-
-In this case, `generateStaticParams` will pre-render routes for each **category-post** combination.
 
 ---
 
@@ -6453,50 +6436,67 @@ Streaming allows you to break down work into smaller chunks and send them progre
 
 Let's walk through an example. We’ll create a page that renders a product and its reviews, with intentional delays to simulate fetching data.
 
-1. **Setting Up Delayed Components**: We have two components:
+**1.** **Setting Up Delayed Components**: We have two components:
 
-   * `BlogComponent` (with a 2-second delay)
-   * `CommentComponent` (with a 4-second delay)
+* `BlogComponent` (with a 2-second delay)
+* `CommentComponent` (with a 4-second delay)
 
-2. **The Problem**: Initially, if we visit the `/blog-post` route, the entire page will take a while to render because everything waits for the data to be fetched before being sent to the client. In the network tab, we can see the server response time is 6 seconds (sum of both delays).
+**2.** **The Problem**: Initially, if we visit the `/blog` route, the entire page will take a while to render because everything waits for the data to be fetched before being sent to the client. In the network tab, we can see the server response time is 6 seconds (sum of both delays).
 
-3. **Improving with Streaming**: To improve this, we can use **Suspense**. By wrapping our slower components (`BlogComponent` and `CommentComponent`) with a `Suspense` boundary, we allow Next.js to stream the page progressively.
+**3.** **Improving with Streaming**: To improve this, we can use **Suspense**. By wrapping our slower components (`BlogComponent` and `CommentComponent`) with a `Suspense` boundary, we allow Next.js to stream the page progressively.
 
-   Here’s how to set it up:
+`src/components/BlogComponent.tsx`
 
-   ```tsx
-    // app/blog-post/page.tsx
+```tsx
+export const BlogComponent = async () => {
+  await new Promise((resolve) => setTimeout(resolve, 2000)); // Simulate a 2-second delay
+  return <p>Blog post details...</p>;
+}
+```
 
-   import { Suspense } from 'react';
-   import BlogComponent from './components/BlogComponent';
-   import CommentComponent from './components/CommentComponent';
+`src/components/CommentComponent.tsx`
 
-   export default function BlogPostPage() {
-     return (
-       <div>
-         <h1>Blog Post</h1>
-         <Suspense fallback={<p>Loading blog post...</p>}>
-           <BlogComponent />
-         </Suspense>
-         <Suspense fallback={<p>Loading comments...</p>}>
-           <CommentComponent />
-         </Suspense>
-       </div>
-     );
-   }
-   ```
+```tsx
+export const CommentComponent = async () => {
+  await new Promise((resolve) => setTimeout(resolve, 4000)); // Simulate a 4-second delay
+  return <p>Comments...</p>;
+}
+```
 
-   * The `Suspense` component wraps each of the slower components.
-   * The `fallback` prop specifies what to show while each component is loading (e.g., `"Loading blog post..."`).
+`app/blog/page.tsx`
 
-4. **Result**:
+```tsx
+// app/blog/page.tsx
+import { Suspense } from 'react';
+import { BlogComponent } from '@/components/BlogComponent';
+import { CommentComponent } from '@/components/CommentComponent';
 
-   * The heading (`<h1>Blog Post</h1>`) appears instantly.
-   * After 2 seconds, the blog post details are rendered.
-   * After 4 seconds, the comments are rendered.
-   * During the loading phases, we see the fallback text: `"Loading blog post..."` and `"Loading comments..."`.
+export default function BlogPage() {
+  return (
+    <div>
+      <h1>Blog Post</h1>
+      <Suspense fallback={<p>Loading blog post...</p>}>
+        <BlogComponent />
+      </Suspense>
+      <Suspense fallback={<p>Loading comments...</p>}>
+        <CommentComponent />
+      </Suspense>
+    </div>
+  );
+}
+```
 
-   This is **Progressive Rendering in action**, where parts of the UI load as soon as they're available, significantly improving the **user experience**.
+* The `Suspense` component wraps each of the slower components.
+* The `fallback` prop specifies what to show while each component is loading (e.g., `"Loading blog post..."`).
+
+**4.** **Result**:
+
+* The heading (`<h1>Blog Post</h1>`) appears instantly.
+* After 2 seconds, the blog post details are rendered.
+* After 4 seconds, the comments are rendered.
+* During the loading phases, we see the fallback text: `"Loading blog post..."` and `"Loading comments..."`.
+
+This is **Progressive Rendering in action**, where parts of the UI load as soon as they're available, significantly improving the **user experience**.
 
 ---
 
@@ -7228,8 +7228,8 @@ app/
     page.tsx         # LandingPage
 components/
   Navbar.tsx         # Contains NavLinks & NavSearch
-  NavLinks.tsx       # Static links
-  NavSearch.tsx      # Search input (uses state)
+  nav-links.tsx       # Static links
+  nav-search.tsx      # Search input (uses state)
 ```
 
 ---
@@ -7238,31 +7238,91 @@ components/
 
 If we add state in `Navbar`:
 
+Add component `NavLinks` and `NavSearch`:
+
 ```tsx
-// components/Navbar.tsx
-'use client';
-
-import { useState } from 'react';
-import NavLinks from './NavLinks';
-import NavSearch from './NavSearch';
-
-export default function Navbar() {
-  const [search, setSearch] = useState('');
-
-  return (
-    <nav>
-      <NavLinks />
-      <NavSearch />
-    </nav>
-  );
+// /src/components/nav-search.tsx
+export const NavLinks = () => {
+    console.log('NavLinks rendered');
+    return (
+        <div>
+            List of Nav Search
+        </div>
+    );
 }
 ```
 
-Now:
+```tsx
+// /src/components/nav-search.tsx
+"use client";
 
-* `Navbar`, `NavLinks`, and `NavSearch` all run on the **client**
-* Even static components like `NavLinks` are forced into client-side rendering
-* Unnecessary JavaScript is sent to the browser
+export const NavSearch = () => {
+    console.log('NavSearch rendered');
+    return (
+        <div>
+            Nav Search Input
+        </div>
+    );
+}
+```
+
+
+```tsx
+// /src/components/Navbar.tsx
+"use client";
+
+import { useState } from "react";
+import { NavLinks } from "./nav-links"; 
+import { NavSearch } from "./nav-search";
+
+export const Navbar = () => {
+    console.log('Navbar rendered');
+
+    const [search, setSearch] = useState("");
+
+    return (
+        <nav>
+            <NavLinks />
+            <NavSearch />
+        </nav>
+    );
+};
+
+```
+
+Add page `app/landing-page/page.tsx`:
+
+```tsx
+import { Navbar } from "@/components/Navbar";
+
+export default function LandingPage() {
+return (
+    <div>
+    <Navbar />
+    <main>
+        <h1>Page Heading</h1>
+    </main>
+    </div>
+);
+}
+```
+
+Result:
+* When you visit `/landing-page`, you’ll see:
+* **Console logs** for `Navbar`, `NavLinks`, and `NavSearch`
+* **All components** are rendered on the client
+
+```bash
+Navbar rendered
+NavLinks rendered
+NavSearch rendered
+```
+
+This is **not ideal** because:
+
+* `NavLinks` is a **static component** that doesn’t need to run on the client
+* `NavSearch` is the only component needing interactivity
+* The entire `Navbar` component is forced into client-side rendering
 
 ---
 
@@ -7271,23 +7331,39 @@ Now:
 Move the state logic and `'use client'` **into the `NavSearch` component**, which is the only part needing interactivity:
 
 ```tsx
-// components/NavSearch.tsx
-'use client';
+// src/components/nav-search.tsx
+"use client";
 
-import { useState } from 'react';
+import { useState } from "react";
 
-export default function NavSearch() {
-  const [search, setSearch] = useState('');
-
-  return (
-    <input
-      type="text"
-      value={search}
-      onChange={(e) => setSearch(e.target.value)}
-      placeholder="Search..."
-    />
-  );
+export const NavSearch = () => {
+    console.log('NavSearch rendered');
+     const [search, setSearch] = useState("");
+    return (
+        <div>
+            Nav Search Input
+        </div>
+    );
 }
+```
+
+Remove `'use client'` from `Navbar`:
+
+```tsx
+// src/components/Navbar.tsx
+import { NavLinks } from "./nav-links"; 
+import { NavSearch } from "./nav-search";
+
+export const Navbar = () => {
+    console.log('Navbar rendered');
+
+    return (
+        <nav>
+            <NavLinks />
+            <NavSearch />
+        </nav>
+    );
+};
 ```
 
 Now:
