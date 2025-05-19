@@ -5483,11 +5483,12 @@ Some examples where dynamic rendering is beneficial include:
 
 In Next.js, **dynamic rendering is enabled automatically** when the framework detects certain dynamic functions or APIs being used. These include:
 
-* **Cookies**
-* **Headers**
-* **Connection drafts**
-* **Search parameters**
-* **Props**
+* **Cookies()**
+* **Headers()**
+* **Connection()**
+* **draftMode()**
+* **searchParams prop**
+* **after**
 
 When Next.js encounters any of these dynamic functions, it automatically switches to **dynamic rendering**, which means the route will be **server-rendered on demand** for each request.
 
