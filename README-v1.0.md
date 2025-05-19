@@ -3616,26 +3616,45 @@ To test global error handling, let’s intentionally cause an error in the root 
 
 ```tsx
 // File: app/ErrorWrapper.tsx
-'use client';
+"use client";
+import "./globals.css";
 
-import { useState } from 'react';
+import { useState } from "react";
 
-export default function ErrorWrapper({ children }: { children: React.ReactNode }) {
+interface WrapperProps {
+  children: React.ReactNode;
+}
+
+const ErrorSimulator = ({
+  message = "An error occurred",
+}: {
+  message?: string;
+}) => {
   const [error, setError] = useState(false);
 
-  if (error) {
-    throw new Error("Simulated error in root layout");
-  }
+  if (error) throw new Error(message);
 
   return (
-    <div className="p-4 border">
-      <button onClick={() => setError(true)} className="bg-red-500 text-white px-3 py-1 mb-4">
-        Simulate Error
-      </button>
+    <button
+      title="Simulate an error"
+      className="bg-red-950 text-red-500 rounded p-1 leading-none font-semibold text-sm hover:bg-red-900 transition"
+      onClick={() => setError(true)}
+    >
+      Simulate Error
+    </button>
+  );
+};
+
+export const ErrorWrapper = ({ children }: WrapperProps) => {
+  return (
+    <div className="flex flex-col rounded-lg mt-8 relative p-4 border border-gray-300">
+      <div className="absolute top-0 left-4 -translate-y-1/2">
+        <ErrorSimulator message="Simulated error in root layout" />
+      </div>
       {children}
     </div>
   );
-}
+};
 ```
 
 ---
@@ -3648,7 +3667,7 @@ In your `app/layout.tsx`, import and wrap the layout:
 // File: app/layout.tsx
 
 import './globals.css';
-import ErrorWrapper from './ErrorWrapper';
+import { ErrorWrapper }  from './ErrorWrapper';
 
 export default function RootLayout({ children }: { children: React.ReactNode }) {
   return (
@@ -3672,20 +3691,26 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
 ```tsx
 /// File: app/global-error.tsx
 
-'use client';
+"use client"; // Error boundaries must be Client Components
 
-export default function GlobalError({ error }: { error: Error }) {
+import "./globals.css";
+
+export default function GlobalError() {
   return (
-    <html>
-      <body className="flex flex-col items-center justify-center min-h-screen p-6 text-center bg-red-50 text-red-800">
-        <h2 className="text-2xl font-bold mb-4">Something went wrong</h2>
-        <p className="mb-4">{error.message}</p>
-        <button
-          onClick={() => window.location.reload()}
-          className="bg-red-600 text-white px-4 py-2 rounded"
-        >
-          Refresh
-        </button>
+    <html lang="en">
+      <body>
+        <div className="flex flex-col items-center justify-center min-h-screen">
+          <h2 className="text-2xl font-bold mb-4">Something went wrong!</h2>
+          <button
+            onClick={() => {
+              // refresh the page
+              window.location.reload();
+            }}
+            className="bg-blue-500 hover:bg-blue-700 text-white font-bold py-2 px-4 rounded"
+          >
+            Refresh
+          </button>
+        </div>
       </body>
     </html>
   );
@@ -7341,7 +7366,12 @@ export const NavSearch = () => {
      const [search, setSearch] = useState("");
     return (
         <div>
-            Nav Search Input
+            <input
+                type="text"
+                value={search}
+                onChange={(e) => setSearch(e.target.value)}
+                placeholder="Nav Search Input"
+            />
         </div>
     );
 }
