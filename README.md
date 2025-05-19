@@ -6021,124 +6021,207 @@ This is exactly what we want — to **prevent accidental inclusion of server-sid
 
 ## **Working with Third-Party Packages**
 
-As the React ecosystem transitions to the **React Server Components (RSC)** model, not all third-party packages have caught up. Some still rely entirely on client-side features but don't yet include the `use client` directive in their code. This can cause issues when used in **server components**.
+React Server Components have introduced exciting performance and architectural advantages. But not all third-party packages are compatible yet — especially those that rely on browser-only APIs.
 
-**The Problem**
+Let’s walk through this with a real-world example using [`react-slick`](https://www.npmjs.com/package/react-slick), a popular carousel package.
 
-Many NPM packages:
-
-* Assume execution in the browser.
-* Use browser-specific features like `window`, `document`, or lifecycle hooks (`useEffect`, etc.).
-* Do **not** include the `use client` directive, making them incompatible with server components by default.
-
-Using such packages directly in a server component can lead to **runtime errors** or **unexpected behavior**.
+* [**Step 1 Install `react-slick`**](#step-1-install-react-slick)
+* [**Client-Side Carousel**](#client-side-carousel)
+* [**Server Component Carousel**](#server-component-carousel)
 
 ---
 
-### **The Solution Encapsulate Third-Party Packages in Your Own Client Components**
+### **Step 1 Install `react-slick`**
 
-Instead of importing a third-party component directly in a server component, you can:
-
-1. Create a **wrapper component** that includes the `use client` directive.
-2. Use this wrapper within your server component.
-
----
-
-### **Real Example Using `react-slick` Carousel**
-
-Let’s walk through using [`react-slick`](https://www.npmjs.com/package/react-slick), a popular image carousel, in a Next.js App Router project.
-
----
-
-### **Step-by-Step Setup Working with Third-Party Packages**
-
-* [**Install Dependencies**](#install-dependencies)
-* [**Create a Client Component Wrapper**](#create-a-client-component-wrapper)
-* [**Use It Inside a Server Component**](#use-it-inside-a-server-component)
-
-#### **Install Dependencies**
+Run the following command in your terminal:
 
 ```bash
-npm install react-slick slick-carousel @types/react-slick --force
+npm install react-slick slick-carousel @types/react-slick --force 
 ```
 
-> The `--force` flag is used to bypass peer dependency warnings if you're using React 19 or a newer version.
+> The --force flag is used to bypass peer dependency warnings if you're using React 19 or a newer version.
+
+Add the necessary CSS from `slick-carousel` to your global stylesheet: **`app/globals.css`**:
+
+```css
+.image-slider-container {
+  margin: 0 auto;
+  width: 400px;
+}
+
+.image-slider-container .slick-prev:before,
+.image-slider-container .slick-next:before {
+  color: white;
+}
+```
 
 ---
 
-#### **Create a Client Component Wrapper**
+### **Client-Side Carousel**
 
-Create `src/components/ImageSlider.tsx`:
+Let’s first create a **client component** where everything works as expected.
+
+**File**: `app/client-route/page.tsx`
 
 ```tsx
-'use client';
+"use client";
 
-import Slider from 'react-slick';
-import 'slick-carousel/slick/slick.css';
-import 'slick-carousel/slick/slick-theme.css';
+import React from "react";
+import Slider from "react-slick";
+import "slick-carousel/slick/slick.css";
+import "slick-carousel/slick/slick-theme.css";
 
-export function ImageSlider() {
+export default function ClientRoutePage() {
   const settings = {
     dots: true,
-    infinite: true,
-    speed: 500,
-    slidesToShow: 1,
-    slidesToScroll: 1,
   };
-
   return (
-    <Slider {...settings}>
-      <div><img src="https://picsum.photos/800/400?random=1" alt="Slide 1" /></div>
-      <div><img src="https://picsum.photos/800/400?random=2" alt="Slide 2" /></div>
-      <div><img src="https://picsum.photos/800/400?random=3" alt="Slide 3" /></div>
-    </Slider>
+    <div className="image-slider-container">
+      <Slider {...settings}>
+        <div>
+          <img src="https://picsum.photos/400/200" />
+        </div>
+        <div>
+          <img src="https://picsum.photos/400/200" />
+        </div>
+        <div>
+          <img src="https://picsum.photos/400/200" />
+        </div>
+        <div>
+          <img src="https://picsum.photos/400/200" />
+        </div>
+      </Slider>
+    </div>
+  );
+}
+```
+
+> Go to `/client-route` — you’ll see the working carousel.
+
+---
+
+### **Server Component Carousel**
+
+Let’s try to use the **same carousel** in a **server component**.
+
+**File**: `app/server-route/page.tsx`
+
+```tsx
+// This is a SERVER component — no "use client"
+import { serverSideFunction } from '@/utils/server-utils';
+import React from "react";
+import Slider from "react-slick";
+import "slick-carousel/slick/slick.css";
+import "slick-carousel/slick/slick-theme.css";
+
+export default function ServerRoutePage() {
+  const result = serverSideFunction();
+  const settings = {
+    dots: true,
+  };
+  return (
+    <div className="image-slider-container">
+    <h1>Server Route {result}</h1>
+      <Slider {...settings}>
+        <div>
+          <img src="https://picsum.photos/400/200" />
+        </div>
+        <div>
+          <img src="https://picsum.photos/400/200" />
+        </div>
+        <div>
+          <img src="https://picsum.photos/400/200" />
+        </div>
+        <div>
+          <img src="https://picsum.photos/400/200" />
+        </div>
+      </Slider>
+    </div>
+  );
+}
+```
+
+- Go to `/server-route` — you’ll get an error like:
+
+> `window is not defined` or `react-slick must be used in a client component`
+
+---
+
+#### **Fixing the Error: Encapsulate in a Client Component**
+
+We’ll move the carousel logic into a client component and **import it into our server route**.
+
+---
+
+##### **Step 1: Create a Client Wrapper Component**
+
+**File**: `components/ImageSlider.tsx`
+
+```tsx
+"use client";
+
+import React from "react";
+import Slider from "react-slick";
+import "slick-carousel/slick/slick.css";
+import "slick-carousel/slick/slick-theme.css";
+
+export default function ServerRoutePage() {
+  const settings = {
+    dots: true,
+  };
+  return (
+    <div className="image-slider-container">
+      <Slider {...settings}>
+        <div>
+          <img src="https://picsum.photos/400/200" />
+        </div>
+        <div>
+          <img src="https://picsum.photos/400/200" />
+        </div>
+        <div>
+          <img src="https://picsum.photos/400/200" />
+        </div>
+        <div>
+          <img src="https://picsum.photos/400/200" />
+        </div>
+      </Slider>
+    </div>
   );
 }
 ```
 
 ---
 
-#### **Use It Inside a Server Component**
+##### **Step 2: Use It in the Server Component**
 
-Edit `app/server-route/page.tsx`:
+**Update file**: `app/server-route/page.tsx`
 
 ```tsx
-// app/server-route/page.tsx
-import { ImageSlider } from '@/components/ImageSlider';
-import { serverSideFunction } from '@/utils/server-utils';
+import ImageSlider from "@/components/ImageSlider";
+import { serverSideFunction } from "@/utils/server-utils";
 
 export default function ServerRoutePage() {
   const result = serverSideFunction();
-
   return (
     <>
-      <h1>Server Route</h1>
-      <p>Server Result: {result}</p>
+      <h1>Server Route {result}</h1>
       <ImageSlider />
     </>
   );
 }
 ```
 
-This pattern allows you to keep the **server component benefits** like secure logic and data fetching, while still **embedding client-only UI elements**.
+- Go back to `/server-route` — now the carousel works perfectly!
 
 ---
 
-### **What *Not* to Do**
+##### **Why This Works**
 
-**Don't** import third-party client-side packages directly into server components:
-
-```tsx
-// This will cause errors or unexpected behavior
-import Slider from 'react-slick'; 
-```
-
-**Don't** make your entire route file a client component just to accommodate one client-side element:
-
-```tsx
-// Avoid this — it forces the whole component to the client
-'use client';
-```
+| Technique                     | Explanation                                                                          |
+| ----------------------------- | ------------------------------------------------------------------------------------ |
+| `use client` in `ImageSlider` | Forces that component and its dependencies (like `react-slick`) to run on the client |
+| Server page stays server      | Keeps access to server-side features like DB, secrets, etc.                          |
+| Clean separation              | Client-side dependencies don’t pollute server-rendered logic                         |
 
 ---
 
