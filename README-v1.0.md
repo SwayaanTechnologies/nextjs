@@ -5242,14 +5242,14 @@ Install the [Postman](https://marketplace.visualstudio.com/items?itemName=Postma
 Create a folder for storing comments:
 
 ```bash
-mkdir app/comments
-touch app/comments/data.ts
+mkdir api/comments
+touch api/comments/data.ts
 ```
 
 Add some sample data in `data.ts`:
 
 ```ts
-// app/comments/data.ts
+// api/comments/data.ts
 export const comments = [
   { id: 1, text: "First comment" },
   { id: 2, text: "Second comment" },
@@ -5462,7 +5462,7 @@ export async function GET(
   _request: Request,
   context: { params: { id: string } }
 ) {
-  const { id } = context.params;
+  const { id } = await context.params;
 
   const comment = comments.find(c => c.id === parseInt(id));
 
@@ -5541,7 +5541,7 @@ export async function PATCH(
   request: Request,
   context: { params: { id: string } }
 ) {
-  const { id } = context.params;
+  const { id } = await context.params;
   const body = await request.json();
   const { text } = body;
 
@@ -5623,7 +5623,7 @@ export async function DELETE(
   request: Request,
   context: { params: { id: string } }
 ) {
-  const { id } = context.params;
+  const { id } = await context.params;
 
   const index = comments.findIndex(c => c.id === parseInt(id));
 
