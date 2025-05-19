@@ -13,30 +13,42 @@
 
 // Navigating to blog and profile pages
 
+// import Link from 'next/link';
+
+// export default function Admin() {
+//   const blogId = 100;
+//   return (
+
+//     <>
+//       <h1>
+//       Admin Page xyz
+//     </h1>
+//       <Link href="/blog">Blog</Link>
+//       <br />
+//       <Link href="/profile">Profile</Link>
+//       <br />
+//       <h2>
+//       <Link href="/blog/1">Blog 1</Link>
+//       </h2>
+//       <h2>
+//       <Link href="/blog/2">Blog 2</Link>
+//       </h2>
+//       <h2>
+//         <Link href="/blog/3" replace>Blog 3</Link>
+//       </h2>
+//       <Link href={`/blog/${blogId}`}>Blog {blogId}</Link>
+//     </>
+//   );
+// }
+
 import Link from 'next/link';
 
-export default function Home() {
-  const blogId = 100;
+export default function Admin() {
   return (
-
     <>
-      <h1>
-      Admin Page xyz
-    </h1>
-      <Link href="/blog">Blog</Link>
+      <Link href="/articles/breaking-news-123?language=en">Read in English</Link>
       <br />
-      <Link href="/profile">Profile</Link>
-      <br />
-      <h2>
-      <Link href="/blog/1">Blog 1</Link>
-      </h2>
-      <h2>
-      <Link href="/blog/2">Blog 2</Link>
-      </h2>
-      <h2>
-        <Link href="/blog/3" replace>Blog 3</Link>
-      </h2>
-      <Link href={`/blog/${blogId}`}>Blog {blogId}</Link>
+      <Link href="/articles/breaking-news-123?language=fr">Read in French</Link>
     </>
   );
 }

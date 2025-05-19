@@ -26,14 +26,22 @@
 
 
 
-import Link from 'next/link';
+// import Link from 'next/link';
 
-export default function BlogList() {
+// export default function BlogList() {
 
-  return (
-    <>
-      <h1>Blog List</h1>
-      <Link href="/">Home</Link>
-    </>
-  );
+//   return (
+//     <>
+//       <h1>Blog List</h1>
+//       <Link href="/">Home</Link>
+//     </>
+//   );
+// }
+
+
+
+
+export default async function BlogPage() {
+  await new Promise((resolve) => setTimeout(resolve, 2000)); // 2 sec delay
+  return <h1>Blog Page Content</h1>;
 }
