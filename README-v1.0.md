@@ -8089,7 +8089,6 @@ Parallel data fetching is the process of initiating multiple requests simultaneo
 * [**Component for User Profile**](#component-for-user-profile)
 * [**Adding a Loading State**](#adding-a-loading-state)
 * [**Creating a Loading Spinner**](#creating-a-loading-spinner)
-* [**Wrapping with Suspense**](#wrapping-with-suspense)
 
 ---
 
@@ -8168,8 +8167,6 @@ Now, let’s create the component that will fetch both posts and albums in paral
 
 ```tsx
 // app/user-parallel/[id]/page.tsx
-import { Suspense } from 'react';
-
 export default async function UserProfile({ params }: { params: { id: string } }) {
   const userId = parseInt(params.id, 10); // Get user ID from route params
 
@@ -8236,25 +8233,6 @@ export default function Loading() {
     <div className="flex justify-center items-center p-10">
       <div className="spinner-border animate-spin border-4 border-t-4 border-gray-600 rounded-full w-12 h-12"></div>
     </div>
-  );
-}
-```
-
----
-
-#### **Wrapping with Suspense**
-
-Wrap the `UserProfile` component with a `Suspense` boundary to show the loading spinner during data fetching:
-
-```tsx
-import { Suspense } from 'react';
-import Loading from './loading';
-
-export default function UserProfilePage({ params }: { params: { id: string } }) {
-  return (
-    <Suspense fallback={<Loading />}>
-      <UserProfile params={params} />
-    </Suspense>
   );
 }
 ```
