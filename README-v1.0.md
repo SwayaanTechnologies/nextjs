@@ -1915,9 +1915,9 @@ Manually creating a folder for every blog ID (like `/blog/1`, `/blog/2`, etc.) i
 // app/blog/[blogId]/page.tsx
 
 type Params = {
-  params: {
+  params: Promise<{
     blogId: string;
-  };
+  }>;
 };
 
 export default async function BlogDetails({ params }: Params) {
@@ -2035,10 +2035,10 @@ export default async function Comments() {
 // app/blog/[blogId]/comments/[commentId]/page.tsx
 
 type Params = {
-  params: {
+  params: Promise<{
     blogId: string;
     commentId: string;
-  };
+  }>;
 };
 
 export default async function CommentDetails({ params }: Params) {
@@ -2142,24 +2142,25 @@ Here’s a simple example of how to access and display the segments:
 // app/docs/[...slug]/page.tsx
 
 type Params = {
-  params: {
-    slug?: string[];
+    params: Promise<{
+      slug?: string[];
+    }>;
   };
-};
+  
+  export default async function DocsPage({ params }: Params) {
+    const resolvedParams = await params;
+    const slug = resolvedParams.slug ?? [];
 
-export default async function DocsPage({ params }: Params) {
-  const slug = params.slug ?? [];
-
-  if (slug.length === 2) {
-    return <h1>Viewing docs for feature "{slug[0]}" and concept "{slug[1]}"</h1>;
+    if (slug.length === 2) {
+      return <h1>Viewing docs for feature { slug[0] } and concept { slug[1]}</h1>;
+    }
+  
+    if (slug.length === 1) {
+      return <h1>Viewing docs for feature { slug[0]}</h1>;
+    }
+  
+    return <h1>Docs homepage</h1>;
   }
-
-  if (slug.length === 1) {
-    return <h1>Viewing docs for feature "{slug[0]}"</h1>;
-  }
-
-  return <h1>Docs homepage</h1>;
-}
 ```
 
 Now try visiting these routes:
@@ -2263,8 +2264,9 @@ Sometimes you want to manually show a 404 page from within a page. For example, 
 // app/blog/[blogId]/comments/[commentId]/page.tsx
 import { notFound } from 'next/navigation';
 
-export default function BlogComment({ params }: { params: { commentId: string } }) {
-  const commentId = parseInt(params.commentId);
+export default async function BlogComment({ params }: { params: Promise<{ commentId: string }> }) {
+  const awaitedParams = await params;
+  const commentId = parseInt(awaitedParams.commentId);
 
   if (commentId > 1000) {
     notFound();
@@ -2657,7 +2659,7 @@ Example hardcoded version:
 update `app/blog/[blogId]/page.tsx`:
 
 ```tsx
-export default async function BlogDetails({ params } : { params : { blogId: string } }) {
+export default async function BlogDetails({ params } : { params : Promise<{ blogId: string }>} ) {
   const { blogId } = await params;
   return <h1>Details about Blog {blogId}</h1>;
 }
@@ -3015,7 +3017,7 @@ import { redirect } from 'next/navigation';
 export default async function BlogComment({
   params,
 }: {
-   params: { blogId: string; commentId: string };
+   params: Promise< { blogId: string; commentId: string }>;
 }) {
   const awaitedParams = await params;
   const commentId = parseInt(awaitedParams.commentId);
@@ -4895,7 +4897,7 @@ import { comments } from "../data";
 
 export async function GET(
   _request: Request,
-  context: { params: { id: string } }
+  context: { params: Promise<{ id: string }> }
 ) {
   const { id } = await context.params;
 
@@ -4974,7 +4976,7 @@ import { comments } from "../data";
 
 export async function PATCH(
   request: Request,
-  context: { params: { id: string } }
+  context: { params: Promise<{ id: string }> }
 ) {
   const { id } = await context.params;
   const body = await request.json();
@@ -5056,7 +5058,7 @@ import { comments } from "../data";
 
 export async function DELETE(
   request: Request,
-  context: { params: { id: string } }
+  context: { params: Promise<{ id: string }> }
 ) {
   const { id } = await context.params;
 
@@ -6024,10 +6026,30 @@ Next.js also displays a **static route indicator** during development to help yo
 
 1. First, **stop the dev server** and clean up the generated Next.js files.
 
-2. In the `pages` directory, let's add a link to the **about page** in the root page (`index.tsx`).
+2. In the `app/page.tsx`, let's add a link to the **about page** in the root page (`index.tsx`).
 
     * Duplicate the dashboard link, change the `href`, and update the text accordingly.
     * Render the current time on the about page to demonstrate how content is static at build time (e.g., `new Date().toLocaleTimeString()`).
+
+    ```tsx
+    // app/page.tsx
+    "use client";
+
+    import Link from 'next/link';
+    import { useState } from 'react';
+
+    export default function HomePage() {
+        const [time] = useState(new Date().toLocaleTimeString());
+        return (
+            <div>
+                <h1>Home Page</h1>
+                <Link href="/dashboard">Go to Dashboard</Link>
+                <Link href="/about">Go to About</Link>
+                <p>Current Time: {time}</p>
+            </div>
+        );
+    }
+    ```
 
 3. In the terminal, run:
 
