@@ -9,11 +9,17 @@
 * [**3. Layouts**](#3.-layouts)
 * [**4. Styling**](#4.-styling)
 * [**5. Routing**](#5.-routing)
-* [**6. Data Fetching**](#6.-data-fetching)
-* [**7. Route Handlers**](#7.-route-handlers)
-* [**8. Using TypeScript in Next.js 15**](#8.-using-typescript-in-next.js-15)
+* [**6. Route Handlers**](#6.-route-handlers)
+* [**7. Using TypeScript in Next.js 15**](#7.-using-typescript-in-next.js-15)
 
 **Day 2**
+
+* [**8. Middleware**](#8.-middleware)
+* [**9. Rendering**](#9.-rendering)
+* [**10. Rendering Strategies**](#10.-rendering-strategies)
+* [**Data Fetching**](#data-fetching)
+* [**11. Component Composition Patterns and Code Boundaries**](#11.-component-composition-patterns-and-code-boundaries)
+* [**12. Data Fetching**](#12.-data-fetching)
 
 ## **1. Introduction**
 
@@ -4521,578 +4527,7 @@ go to `/photo-feed` and click on a photo. The modal opens with the photo details
 
 ---
 
-## **6. Data Fetching**
-
-💡 *Goal: Fetch blog posts dynamically and understand SSR, SSG, ISR, and caching strategies.*
-
-* [**1. Server Components vs Client Components**](#1.-server-components-vs-client-components)
-* [**2. Fetching Data in a Server Component (`fetch()`)**](#2.-fetching-data-in-a-server-component)
-* [**3. Static vs Dynamic Data Fetching**](#3.-static-vs-dynamic-data-fetching)
-* [**4. Applying Static and Dynamic Fetching**](#4.-applying-static-and-dynamic-fetching)
-* [**5. Fetching a Single Blog Post**](#5.-fetching-a-single-blog-post)
-* [**6. Generate Static Params for SSG**](#6.-generate-static-params-for-ssg)
-* [**Final Result When to Use What?**](#final-result-when-to-use-what?)
-* [**Sequential Data Fetching**](#sequential-data-fetching)
-* [**Parallel Data Fetching**](#parallel-data-fetching)
-
----
-
-### **1. Server Components vs Client Components**
-
-**What’s the Difference?**
-
-In **Next.js 15**, components are **server-first** by default.
-
-| Feature | Server Components | Client Components |
-| --- | --- | --- |
-| Runs on | The server (before page loads) | The browser (after page loads) |
-| Can access DB/APIs | ✅ Yes (direct fetch) | ❌ No (must use API routes) |
-| Can use React state (`useState`) | ❌ No | ✅ Yes |
-| Bundle size impact | 🚀 Smaller (no JS sent to client) | 📦 Larger (more JS sent) |
-
-> Rule of thumb:
-> 
-> - **Use Server Components for data fetching & rendering**
->
-> - **Use Client Components when user interaction is needed (`useState`, `useEffect`)**
-
----
-
-### **2. Fetching Data in a Server Component**
-
-Next.js **automatically optimizes** `fetch()` by default.
-
-```tsx
-// app/blog/page.tsx (Fetching all posts)
-import Link from 'next/link';
-
-async function getPosts() {
-  const res = await fetch('https://jsonplaceholder.typicode.com/posts');
-  return res.json();
-}
-
-export default async function BlogPage() {
-  const posts = await getPosts();
-
-  return (
-    <div className="space-y-6">
-      {posts.slice(0, 5).map((post) => (
-        <div key={post.id}>
-          <h2 className="text-xl font-bold">
-            <Link href={`/blog/${post.id}`} className="hover:underline">
-              {post.title}
-            </Link>
-          </h2>
-          <p className="text-gray-600">{post.body.slice(0, 80)}...</p>
-        </div>
-      ))}
-    </div>
-  );
-}
-
-```
-
-> 🔹 Why does this work?
-> 
-> - Runs **server-side** before the page loads.
-> - No API calls happen **in the browser**.
-> - **SEO-friendly** since HTML is generated before it reaches the client.
-
----
-
-### **3. Static vs Dynamic Data Fetching**
-
-By default, Next.js **caches** every `fetch()` request.
-
-**How do we control when it updates?**
-
-Next.js gives us **three main cache options:**
-
-| Fetch Option | Behavior | Use Case |
-| --- | --- | --- |
-| `{ cache: 'force-cache' }` *(default)* | Static (cached at build time) | Blog posts, product pages |
-| `{ cache: 'no-store' }` | Fetches fresh data every request | User data, real-time data |
-| `{ next: { revalidate: 60 } }` | Static, but updates every X seconds | News, price listings |
-
----
-
-### **4. Applying Static and Dynamic Fetching**
-
-* [**Static Rendering Cache Forever**](#static-rendering-cache-forever)
-* [**Dynamic Rendering Fresh Data on Every Request**](#dynamic-rendering-fresh-data-on-every-request)
-* [**ISR Hybrid Mode**](#isr-hybrid-mode)
-
-#### **Static Rendering Cache Forever**
-
-Fetch posts **once at build time** (Fastest method).
-
-```tsx
-async function getStaticPosts() {
-  return fetch('https://jsonplaceholder.typicode.com/posts', {
-    cache: 'force-cache', // Default
-  }).then((res) => res.json());
-}
-
-```
-
----
-
-#### **Dynamic Rendering Fresh Data on Every Request**
-
-Use this when data **changes frequently**.
-
-```tsx
-async function getSSRPosts() {
-  return fetch('https://jsonplaceholder.typicode.com/posts', {
-    cache: 'no-store', // Never cache
-  }).then((res) => res.json());
-}
-
-```
-
----
-
-#### **ISR Hybrid Mode**
-
-Fetches **once**, **caches** it, but **updates** every 60 seconds.
-
-```tsx
-async function getISRPosts() {
-  return fetch('https://jsonplaceholder.typicode.com/posts', {
-    next: { revalidate: 60 }, // Updates every 60s
-  }).then((res) => res.json());
-}
-
-```
-
----
-
-### **5. Fetching a Single Blog Post**
-
-Let's apply what we learned to **fetch a single blog post**.
-
-**`app/blog/[id]/page.tsx`**
-
-```tsx
-async function getPost(id: string) {
-  return fetch(`https://jsonplaceholder.typicode.com/posts/${id}`, {
-    next: { revalidate: 60 }, // ISR: Updates every 60s
-  }).then((res) => res.json());
-}
-
-export default async function BlogPostPage({ params }: { params: { id: string } }) {
-  const post = await getPost(params.id);
-
-  if (!post) return <p>Post not found.</p>;
-
-  return (
-    <article className="prose">
-      <h1>{post.title}</h1>
-      <p>{post.body}</p>
-    </article>
-  );
-}
-
-```
-
----
-
-### **6. Generate Static Params for SSG**
-
-> ✅ For static pages (SSG), we pre-build them at deploy time.
-> 
-
-**`generateStaticParams()`**
-
-```tsx
-export async function generateStaticParams() {
-  const posts = await fetch('https://jsonplaceholder.typicode.com/posts').then((res) => res.json());
-
-  return posts.slice(0, 5).map((post) => ({
-    id: post.id.toString(),
-  }));
-}
-
-```
-
-> 🔹 Next.js builds only the first 5 blog posts at deploy time.
-> 
-> 
-> 🔹 Other posts are **generated dynamically when visited (ISR fallback).**
-> 
-
----
-
-### **Final Result When to Use What?**
-
-| Use Case | Solution | Cache Setting |
-| --- | --- | --- |
-| Blog posts that rarely change | **SSG** | `{ cache: 'force-cache' }` |
-| User profiles, live comments | **SSR** | `{ cache: 'no-store' }` |
-| News articles, price listings | **ISR** | `{ next: { revalidate: 60 } }` |
-
----
-
-### **Sequential Data Fetching**
-
-In some scenarios, fetching data in **sequential** order is necessary when one request depends on the result of another. This can lead to longer loading times, but it's a common pattern for certain use cases, such as fetching posts and then fetching their authors.
-
-* [**Example Blog Page with Posts and Authors**](#example-blog-page-with-posts-and-authors)
-* [**Setup Folder for Sequential Data Fetching**](#setup-folder-for-sequential-data-fetching)
-* [**Typescript Type for Posts**](#typescript-type-for-posts)
-* [**Fetching Posts Sequentially**](#fetching-posts-sequentially)
-* [**Fetching the Author for Each Post**](#fetching-the-author-for-each-post)
-* [**Integrating Author Component**](#integrating-author-component)
-* [**Adding Suspense for Streaming**](#adding-suspense-for-streaming)
-
----
-
-#### **Example Blog Page with Posts and Authors**
-
-We’ll create a simple blog-like page by using the **Json Placeholder** API, fetching posts and their associated authors sequentially.
-
----
-
-#### **Setup Folder for Sequential Data Fetching**
-
-1. Inside your **`app`** folder, create a new folder:
-
-   ```
-   /app/posts-sequential
-   ```
-
-2. Add a `page.tsx` file inside this folder.
-
----
-
-#### **Typescript Type for Posts**
-
-Let’s start by defining the type for our posts:
-
-```ts
-type Post = {
-  userId: number;
-  id: number;
-  title: string;
-  body: string;
-};
-```
-
----
-
-#### **Fetching Posts Sequentially**
-
-We will first fetch all the posts and then display each one. For each post, we'll later fetch the author based on the `userId` in the post.
-
-```tsx
-// app/posts-sequential/page.tsx
-export default async function PostsSequential() {
-  const response = await fetch('https://jsonplaceholder.typicode.com/posts');
-  const posts: Post[] = await response.json();
-  
-  // Filter to include only posts with an ID divisible by 10
-  const filteredPosts = posts.filter(post => post.id % 10 === 0);
-
-  return (
-    <div>
-      {filteredPosts.map((post) => (
-        <div key={post.id} className="p-4 border-b border-gray-200">
-          <h2 className="font-semibold">{post.title}</h2>
-          <p>{post.body}</p>
-          <div>Author: <span>Loading...</span></div> {/* Author will be rendered later */}
-        </div>
-      ))}
-    </div>
-  );
-}
-```
-
----
-
-#### **Fetching the Author for Each Post**
-
-Next, we will create a new **`author.tsx`** component to fetch the author of each post:
-
-```tsx
-// app/posts-sequential/author.tsx
-type AuthorProps = {
-  userId: number;
-};
-
-type Author = {
-  id: number;
-  name: string;
-};
-
-export default async function Author({ userId }: AuthorProps) {
-  const response = await fetch(`https://jsonplaceholder.typicode.com/users/${userId}`);
-  const author: Author = await response.json();
-
-  return <span>{author.name}</span>;
-}
-```
-
----
-
-#### **Integrating Author Component**
-
-In `page.tsx`, import the `Author` component and replace the placeholder "Loading..." text with the `Author` component.
-
-```tsx
-import Author from './author';
-
-export default async function PostsSequential() {
-  const response = await fetch('https://jsonplaceholder.typicode.com/posts');
-  const posts: Post[] = await response.json();
-
-  const filteredPosts = posts.filter(post => post.id % 10 === 0);
-
-  return (
-    <div>
-      {filteredPosts.map((post) => (
-        <div key={post.id} className="p-4 border-b border-gray-200">
-          <h2 className="font-semibold">{post.title}</h2>
-          <p>{post.body}</p>
-          <div>
-            Author: <Author userId={post.userId} />
-          </div>
-        </div>
-      ))}
-    </div>
-  );
-}
-```
-
----
-
-#### **Adding Suspense for Streaming**
-
-Instead of blocking the UI while fetching the author, we can use **React Suspense** to show the post first and then stream in the author name in the background.
-
-1. Wrap the `Author` component in a `<Suspense>` boundary:
-
-```tsx
-import { Suspense } from 'react';
-import Author from './author';
-
-export default async function PostsSequential() {
-  const response = await fetch('https://jsonplaceholder.typicode.com/posts');
-  const posts: Post[] = await response.json();
-  const filteredPosts = posts.filter(post => post.id % 10 === 0);
-
-  return (
-    <div>
-      {filteredPosts.map((post) => (
-        <div key={post.id} className="p-4 border-b border-gray-200">
-          <h2 className="font-semibold">{post.title}</h2>
-          <p>{post.body}</p>
-          <div>
-            Author: 
-            <Suspense fallback={<span>Loading author...</span>}>
-              <Author userId={post.userId} />
-            </Suspense>
-          </div>
-        </div>
-      ))}
-    </div>
-  );
-}
-```
-
-2. Add a 1-second artificial delay in the `Author` component to demonstrate Suspense:
-
-```tsx
-await new Promise(resolve => setTimeout(resolve, 1000));  // 1 second delay
-```
-
-Now, when you reload the page, the post content will show first, and after a short delay, the author name will appear.
-
----
-
-### **Parallel Data Fetching**
-
-Parallel data fetching is the process of initiating multiple requests simultaneously, reducing the total loading time when the requests don’t depend on each other. This pattern is useful when you need to fetch independent pieces of data and display them together.
-
-* [**Example User Profile Page with Posts and Albums**](#example-user-profile-page-with-posts-and-albums)
-* [**Setup Folder for Parallel Data Fetching**](#setup-folder-for-parallel-data-fetching)
-* [**Typescript Types for Posts and Albums**](#typescript-types-for-posts-and-albums)
-* [**Fetching Posts and Albums**](#fetching-posts-and-albums)
-* [**Component for User Profile**](#component-for-user-profile)
-* [**Adding a Loading State**](#adding-a-loading-state)
-* [**Creating a Loading Spinner**](#creating-a-loading-spinner)
-* [**Wrapping with Suspense**](#wrapping-with-suspense)
-
----
-
-#### **Example User Profile Page with Posts and Albums**
-
-In this example, we'll create a **user profile page** by fetching both the user's posts and albums concurrently using **Json Placeholder API**.
-
----
-
-#### **Setup Folder for Parallel Data Fetching**
-
-1. Inside your **`app`** folder, create a new folder:
-
-   ```
-   /app/user-parallel
-   ```
-
-2. Inside **`user-parallel`**, create a dynamic route folder:
-
-   ```
-   /app/user-parallel/[id]
-   ```
-
-3. Inside this folder, add a `page.tsx` file.
-
----
-
-#### **Typescript Types for Posts and Albums**
-
-We’ll define the types for the posts and albums. The `userId` is common across both types:
-
-```ts
-type Post = {
-  userId: number;
-  id: number;
-  title: string;
-  body: string;
-};
-
-type Album = {
-  userId: number;
-  id: number;
-  title: string;
-};
-```
-
----
-
-#### **Fetching Posts and Albums**
-
-We will create two functions to fetch the user's posts and albums. These functions will be defined outside the component to keep things clean.
-
-1. **Fetching Posts**:
-
-```ts
-async function getUserPosts(userId: number) {
-  const res = await fetch(`https://jsonplaceholder.typicode.com/posts?userId=${userId}`);
-  return res.json();
-}
-```
-
-2. **Fetching Albums**:
-
-```ts
-async function getUserAlbums(userId: number) {
-  const res = await fetch(`https://jsonplaceholder.typicode.com/albums?userId=${userId}`);
-  return res.json();
-}
-```
-
----
-
-#### **Component for User Profile**
-
-Now, let’s create the component that will fetch both posts and albums in parallel using `Promise.all`:
-
-```tsx
-// app/user-parallel/[id]/page.tsx
-import { Suspense } from 'react';
-
-export default async function UserProfile({ params }: { params: { id: string } }) {
-  const userId = parseInt(params.id, 10); // Get user ID from route params
-
-  // Fetch both posts and albums in parallel
-  const [posts, albums] = await Promise.all([
-    getUserPosts(userId),
-    getUserAlbums(userId)
-  ]);
-
-  return (
-    <div className="flex">
-      <div className="w-1/2 p-4">
-        <h2 className="font-semibold">Posts</h2>
-        {posts.map((post: Post) => (
-          <div key={post.id} className="mb-4">
-            <h3>{post.title}</h3>
-            <p>{post.body}</p>
-          </div>
-        ))}
-      </div>
-      <div className="w-1/2 p-4">
-        <h2 className="font-semibold">Albums</h2>
-        {albums.map((album: Album) => (
-          <div key={album.id} className="mb-4">
-            <h3>{album.title}</h3>
-          </div>
-        ))}
-      </div>
-    </div>
-  );
-}
-```
-
----
-
-#### **Adding a Loading State**
-
-To simulate a loading state and show how both posts and albums are fetched simultaneously, let’s add a delay to the fetching functions:
-
-```ts
-async function getUserPosts(userId: number) {
-  await new Promise(resolve => setTimeout(resolve, 1000)); // 1-second delay
-  const res = await fetch(`https://jsonplaceholder.typicode.com/posts?userId=${userId}`);
-  return res.json();
-}
-
-async function getUserAlbums(userId: number) {
-  await new Promise(resolve => setTimeout(resolve, 1000)); // 1-second delay
-  const res = await fetch(`https://jsonplaceholder.typicode.com/albums?userId=${userId}`);
-  return res.json();
-}
-```
-
----
-
-#### **Creating a Loading Spinner**
-
-Create a new `loading.tsx` file in the same folder to show a loading spinner. This will be used while the data is being fetched:
-
-```tsx
-// app/user-parallel/[id]/loading.tsx
-export default function Loading() {
-  return (
-    <div className="flex justify-center items-center p-10">
-      <div className="spinner-border animate-spin border-4 border-t-4 border-gray-600 rounded-full w-12 h-12"></div>
-    </div>
-  );
-}
-```
-
----
-
-#### **Wrapping with Suspense**
-
-Wrap the `UserProfile` component with a `Suspense` boundary to show the loading spinner during data fetching:
-
-```tsx
-import { Suspense } from 'react';
-import Loading from './loading';
-
-export default function UserProfilePage({ params }: { params: { id: string } }) {
-  return (
-    <Suspense fallback={<Loading />}>
-      <UserProfile params={params} />
-    </Suspense>
-  );
-}
-```
-
----
-
-## **7. Route Handlers**
+## **6. Route Handlers**
 
 Next.js Route Handlers let you build **custom RESTful API endpoints** directly inside your app—no need for Express or a separate server. They are a powerful alternative to `pages/api` in the old Pages Router and work seamlessly within the App Router structure.
 
@@ -5665,7 +5100,7 @@ export async function DELETE(
 
 ---
 
-## **8. Using TypeScript in Next.js 15**
+## **7. Using TypeScript in Next.js 15**
 
 💡 *Goal: Achieve full type-safety across pages, API routes, server components, and client components.*
 
@@ -5859,5 +5294,2672 @@ Make sure your `tsconfig.json` includes:
 | Server-side data helpers | Use `Post` model |
 | Client-side event handlers | `ChangeEvent`, `FormEvent` |
 | Path Aliasing | `@/lib`, `@/components` |
+
+---
+
+## **8. Middleware**
+
+**Middleware** in Next.js allows you to **intercept and control** incoming requests **before they reach the route handler or page**. This is powerful for:
+
+* Authentication and authorization
+* URL rewrites and redirects
+* Cookie and header manipulation
+* Localization and personalization
+
+---
+
+### **Creating Middleware**
+
+Create a `middleware.ts` file in the root of your project (at the same level as `app/`):
+
+```bash
+project-root/
+├── app/
+├── public/
+├── middleware.ts
+```
+
+---
+
+### **Basic Redirect Using Matcher**
+
+**Redirect `/profile` to `/`** (the homepage):
+
+```ts
+// middleware.ts
+
+import { NextRequest, NextResponse } from "next/server";
+
+export function middleware(request: NextRequest) {
+  return NextResponse.redirect(new URL("/", request.url));
+}
+
+export const config = {
+  matcher: "/profile", // Only apply middleware to this route
+};
+```
+
+* On visiting `/profile`, the browser will redirect to `/`.
+
+---
+
+### **Conditional Logic Without Matcher**
+
+You can also apply logic programmatically instead of using `matcher`:
+
+```ts
+// middleware.ts
+
+import { NextRequest, NextResponse } from "next/server";
+
+export function middleware(request: NextRequest) {
+  const pathname = request.nextUrl.pathname;
+
+  if (pathname === "/profile") {
+    return NextResponse.redirect(new URL("/hello", request.url));
+  }
+
+  return NextResponse.next(); // Proceed as normal for other routes
+}
+```
+
+* Navigating to `/profile` will **redirect to `/hello`**.
+* This approach gives you **more flexibility**.
+
+---
+
+### **URL Rewrites**
+
+Instead of changing the visible URL, you can **serve different content** while **keeping the original URL**.
+
+```ts
+if (request.nextUrl.pathname === "/profile") {
+  return NextResponse.rewrite(new URL("/hello", request.url));
+}
+```
+
+* You see `/hello` content at `/profile`, **without the URL changing**.
+* Useful for **legacy URLs or SEO optimizations**.
+
+---
+
+### **Handling Cookies in Middleware**
+
+You can set or read cookies easily:
+
+```ts
+export function middleware(request: NextRequest) {
+  const response = NextResponse.next();
+
+  const theme = request.cookies.get("theme");
+
+  if (!theme) {
+    response.cookies.set("theme", "dark");
+  }
+
+  return response;
+}
+```
+
+* If the `theme` cookie doesn’t exist, it will be set to `"dark"`.
+* Cookies can persist across requests and personalize user experiences.
+
+---
+
+### **Adding Custom Headers**
+
+```ts
+export function middleware(request: NextRequest) {
+  const response = NextResponse.next();
+
+  response.headers.set("x-custom-header", "custom-value");
+
+  return response;
+}
+```
+
+* View it under **Network → Response Headers** in browser DevTools.
+
+---
+
+### **Testing Middleware**
+
+Run your dev server:
+
+```bash
+npm run dev
+```
+
+And test the routes like `/profile` or `/hello`. You can:
+
+* Check redirection or rewrites in the **browser address bar**
+* View **cookies in Application tab**
+* Inspect **custom headers in Network tab**
+
+---
+
+## **9. Rendering**
+
+* [**Introduction to Rendering**](#introduction-to-rendering)
+* [**Client-side Rendering**](#client-side-rendering)
+* [**Server-side Rendering**](#server-side-rendering)
+* [**Suspense SSR**](#suspense-ssr)
+* [**React Server Components**](#react-server-components)
+* [**Server and Client Components**](#server-and-client-components)
+* [**Rendering Lifecycle in React Server Components**](#rendering-lifecycle-in-react-server-components)
+
+### **Introduction to Rendering**
+
+After exploring the ins and outs of Next.js routing in the previous section, we are now ready to tackle something equally important: **Rendering**.
+
+Rendering might sound complex, but it is actually pretty straightforward. At its core, rendering is the process of transforming the component code you write into user interfaces that users can see and interact with.
+
+---
+
+#### **The Challenge of Rendering**
+
+While rendering itself is simple, building a performant application requires understanding **when** and **where** this transformation should happen. You may have come across terms like:
+
+* **CSR** (Client-Side Rendering)
+* **SSR** (Server-Side Rendering)
+* **SSG** (Static Site Generation)
+
+These terms can often be confusing at first, but they each refer to different rendering strategies that you can choose based on your application's needs.
+
+---
+
+### **Client-side Rendering**
+
+To fully understand how rendering works in Next.js, it's important to first see how React's rendering strategies have evolved over the past decade.
+
+React initially rose to popularity through its use in **Single Page Applications (SPAs)**. In this model, when a client visits the site, the server sends back a single HTML file. This HTML file is typically minimal—usually just a `<div>` element and a reference to a JavaScript file.
+
+For example, using tools like **Create React App**, you would receive an HTML file with:
+
+* An empty `<div>` tag as the root
+* A reference to `bundle.js`, which contains:
+
+  * The React library
+  * Your application’s logic
+  * Everything required to render your app
+
+Once the browser downloads the JavaScript file, it begins generating the UI directly in the browser—injecting HTML into the DOM under that root div. Only at this point does the user interface become visible.
+
+---
+
+#### **Verifying CSR Behavior**
+
+You can confirm this behavior using browser tools:
+
+* In the **DOM inspector**, you will see the rendered elements like `<header>`, `<h1>`, and `<p>`.
+* But if you **view the page source**, you'll only see the initial, barebones HTML from the server.
+
+This process of transforming React components into UI within the browser is known as **Client-side Rendering (CSR)**.
+
+---
+
+#### **Advantages and Limitations of CSR**
+
+While CSR was revolutionary for building interactive SPAs, it has notable limitations:
+
+**SEO Challenges**
+
+Search engines primarily index HTML content. But with CSR, the server delivers mostly an empty HTML shell. If meaningful content is rendered via JavaScript, search engines might miss it—especially if the content loads slowly due to API calls or nested components.
+
+**Performance and User Experience**
+
+With CSR, the browser must:
+
+* Fetch all JavaScript
+* Execute the application logic
+* Fetch data
+* Render the UI
+* Attach interactivity
+
+This workload can lead to blank screens or loading spinners during page load. As the JavaScript bundle grows with new features, so does the load time—especially noticeable for users on slow connections.
+
+---
+
+### **Server-side Rendering**
+
+Having just covered **Client-side Rendering (CSR)** and its drawbacks, such as SEO and user experience issues, we now turn our attention to **Server-side Rendering (SSR)** as a solution to these problems.
+
+---
+
+#### **How SSR Improves Content Delivery**
+
+In traditional CSR, the server delivers a minimal HTML file that requires JavaScript to render the content on the client-side. In contrast, SSR involves the server rendering the full HTML content before sending it to the browser. This fully-formed HTML document allows the browser to quickly parse and display the content, improving initial page load times.
+
+SSR tackles both the SEO and user experience issues:
+
+* **SEO Improvement**: Since the content is already rendered on the server, search engines can easily index the content, solving the SEO issue.
+* **User Experience**: Users see meaningful HTML content right away, rather than staring at a blank screen or loading spinner.
+
+However, there are some complexities introduced by SSR, especially when it comes to interactivity.
+
+---
+
+#### **Hydration Making Pages Interactive**
+
+The initial page served by the server is static HTML. For the page to become fully interactive, the browser needs to download and execute the JavaScript bundle, which includes both React and your application's code. This phase is called **hydration**. During hydration, React takes over the static HTML and turns it into a fully interactive page.
+
+Hydration involves:
+
+* **Mapping out interactive elements**: React reconstructs the component tree in memory, using the server-rendered HTML as a blueprint.
+* **Initializing interactivity**: React sets up application state, event handlers, and dynamic features needed for a complete user experience.
+
+Understanding hydration is key to understanding how SSR operates in real-world applications.
+
+---
+
+#### **Static Site Generation (SSG) vs. SSR**
+
+There are two main server-side strategies in rendering:
+
+1. **Static Site Generation (SSG)**: This happens at build time, meaning the pages are pre-rendered and ready to serve when deployed. SSG works best for content that remains relatively stable, such as blog posts.
+2. **Server-side Rendering (SSR)**: With SSR, the page is rendered on-demand, based on the specific request. SSR is ideal for dynamic content that changes frequently, like social media feeds or personalized data.
+
+Although SSG and SSR are both categorized as server-side solutions, they differ in when and how the content is generated.
+
+---
+
+#### **Challenges with SSR**
+
+While SSR improves SEO and performance over CSR, it introduces several challenges:
+
+1. **Data Fetching**: If a component requires data from an API or database, this data must be fetched before the server can render the page. This could delay the server's response time since all necessary data must be collected before any HTML is sent to the client.
+
+2. **Hydration Matching**: For successful hydration, the component tree in the browser must exactly match the server-rendered HTML. This means that the entire JavaScript bundle for the page must be loaded on the client before hydration can begin.
+
+3. **Waterfall Problem**: React hydrates the component tree in a single pass, meaning it must complete the entire hydration process before any part of the page becomes interactive. This leads to an all-or-nothing process where the entire page has to load, and the JavaScript must be executed, before any interaction can happen.
+
+These challenges can lead to inefficient performance, especially when parts of the app are slower than others, which is common in real-world applications. This led the React team to develop an improved SSR architecture, which we will explore next.
+
+---
+
+### **Suspense SSR**
+
+In our exploration of **Server-side Rendering (SSR)**, we identified several performance challenges:
+
+1. We can't start rendering HTML until all data is fetched on the server.
+2. We need to wait for all JavaScript to load before hydration can begin.
+3. Every component needs to be hydrated before any of them become interactive.
+
+These issues created an **All or Nothing** waterfall effect, which is inefficient, particularly when some parts of your application are slower than others. To address these performance drawbacks, React 18 introduced the **Suspense SSR** architecture. This new architecture unlocks two game-changing features:
+
+* **HTML Streaming on the Server**
+* **Selective Hydration on the Client**
+
+---
+
+#### **HTML Streaming with Suspense**
+
+Traditionally, SSR involved rendering the entire HTML on the server and sending it to the client all at once. React 18 improves this by allowing HTML streaming. When you wrap your main content area in a **Suspense** component, you're telling React to **stream** the content. React will display a loading spinner for that section while it continues working on the rest of the page.
+
+This feature allows users to see content even before React has finished loading the necessary JavaScript, which solves our first problem — you don't need to fetch everything before you can show anything. If a particular section is slow to load, it can be integrated into the stream once it's ready, without holding up the rest of the page.
+
+---
+
+#### **Selective Hydration**
+
+While HTML streaming improves the delivery of content, we still face a challenge: we can't start hydration until all the JavaScript for the main section has been loaded. To address this, React 18 introduces **Selective Hydration**.
+
+With selective hydration, you can hydrate parts of the page independently, even before the rest of the HTML and JavaScript has fully loaded. React will prioritize hydration based on which components the user is trying to interact with. For example, if a user clicks on the main content area while the side navigation is still waiting to be hydrated, React will immediately switch gears to hydrate the clicked component, making it interactive right away. The side navigation can then be hydrated later.
+
+This approach solves the **All or Nothing** hydration problem, enabling users to interact with other parts of the page — like the header or navigation — even before the main content is fully interactive.
+
+---
+
+#### **Benefits of Suspense SSR**
+
+The introduction of **Suspense SSR** addresses the three major drawbacks of traditional SSR:
+
+* **Faster initial HTML delivery**: Content can be streamed in parts, allowing faster page loads.
+* **Selective hydration**: Parts of the page can be made interactive as soon as they are ready, without waiting for the entire page to load.
+* **Prioritized hydration**: React handles hydration intelligently, focusing on the parts of the page that users are interacting with first.
+
+---
+
+#### **Remaining Challenges**
+
+Despite these improvements, there are still a few challenges to consider:
+
+1. **JavaScript Bundle Size**: As more features are added, the JavaScript bundle grows, leading to longer download times. This raises the question: **Do users need to download so much data?**
+2. **Hydrating Unnecessary Components**: React hydrates every component, even those that don't require interactivity. This can slow down load times and time to interactivity. **Should all components be hydrated?**
+3. **Client-Side Workload**: While servers handle the heavy lifting, client devices still bear the bulk of the JavaScript work, which can slow down performance, especially on less powerful devices. **Should we offload more work to the server?**
+
+These challenges point to the need for smarter ways to build fast applications, going beyond traditional rendering approaches. We will explore solutions to these issues in the next section.
+
+---
+
+### **React Server Components**
+
+We’ve evolved from **Client-Side Rendering (CSR)** to **Server-Side Rendering (SSR)**, and then to **Suspense for SSR**. While each step brought improvements, they also introduced new challenges, such as large bundle sizes, unnecessary hydration, and heavy client-side processing. To tackle these challenges, React introduced **React Server Components (RSC)**, a new architecture designed to optimize efficiency, load times, and interactivity.
+
+React Server Components (RSC) represent a **dual component model** that distinguishes between **client components** and **server components**. This distinction is based on the **execution environment** and the specific systems each component interacts with.
+
+---
+
+#### **Client Components**
+
+Client components are the familiar React components that we've been using in previous rendering techniques. They are typically rendered on the client side but can also be rendered to HTML once on the server for an initial fast page load.
+
+**Client components**:
+
+* Operate on the client and can access **browser-exclusive APIs** like **geolocation**, **local storage**, and manage **state** and **event listeners**.
+* They can be rendered server-side for optimization, but they still function mainly on the client side.
+* These components handle interactive parts like click events and form inputs, just as we've done traditionally.
+
+---
+
+#### **Server Components**
+
+Server components represent a new type of React component that **runs exclusively on the server**. The key difference is that the **code for server components never leaves the server**, meaning they are never downloaded to the client.
+
+**Benefits of Server Components**:
+
+1. **Smaller Bundle Sizes**: Since server components don’t require JavaScript to be sent to the client, the client downloads much less code. This is ideal for users on slower connections or with less powerful devices, leading to **faster load times** and **better performance**.
+
+2. **Direct Access to Server Resources**: Server components can directly interact with databases, file systems, and other server-side resources, making data fetching more efficient.
+
+3. **Improved Security**: Since server components never leave the server, sensitive data like API keys and tokens stay secure and don't get exposed to the client.
+
+4. **Smarter Data Fetching**: Server components handle data fetching on the server, which reduces the time and number of requests needed to retrieve data from the client. This improves performance and decreases load times.
+
+5. **Caching**: The server can cache the rendered content, reducing the need to re-render and refetch data for every user. This leads to **better performance** and **lower server costs**.
+
+6. **Faster Initial Page Load**: By generating HTML on the server, users see content **immediately** without waiting for JavaScript to download and execute. This results in **better first contentful paint (FCP)**.
+
+7. **Improved SEO**: Search engine bots can easily read the server-rendered HTML, making it more likely for pages to be indexed and improving your **SEO**.
+
+8. **Streaming**: Server components can split the rendering process into chunks, which stream to the client as they become ready. This means users can start seeing content faster instead of waiting for the entire page to render on the server.
+
+---
+
+#### **How It Works The Dual Component Model**
+
+* **Server Components**: Handle **data fetching** and **static rendering** on the server. They never get sent to the client, leading to reduced bundle sizes and improved load times.
+* **Client Components**: Manage **interactivity** on the client-side (e.g., click events, typing). They handle dynamic UI elements and interactivity but can get an **initial render** from the server for faster page loads.
+
+This architecture provides the best of both worlds by combining the efficiency of server-side rendering with the interactivity of client-side rendering, all while minimizing the drawbacks of each approach.
+
+---
+
+### **Server and Client Components**
+
+In the React Server Components (RSC) architecture, we learned about the distinction between **server components** and **client components**. In this section, we’ll put that knowledge into practice by creating both types of components in a **Next.js** application.
+
+* [**Setting Up the Project**](#setting-up-the-project)
+* [**Understanding the Default Server Component**](#understanding-the-default-server-component)
+* [**Creating a Client Component**](#creating-a-client-component)
+
+---
+
+#### **Setting Up the Project**
+
+To begin, we create a new Next.js project using the following command:
+
+```bash
+npx create-next-app@latest rendering-demo
+```
+
+Once the command is run, you will have a basic Next.js project structure.
+
+---
+
+#### **Understanding the Default Server Component**
+
+In Next.js, every component defaults to being a **server component**. This includes the built-in root layout and root page that come with every new Next.js project.
+
+* [**Creating a Server Component**](#creating-a-server-component)
+* [**Server Component Limitations**](#server-component-limitations)
+
+---
+
+##### **Creating a Server Component**
+
+Let’s create a simple **server component** by adding an **About page** to the app:
+
+1. Inside the `app` folder, create a new folder called **about**.
+2. In the **about** folder, create a file called `page.tsx`.
+
+Add the following code:
+
+```tsx
+export default function AboutPage() {
+    return <h1>About Page</h1>;
+}
+```
+
+To verify this is a **server component**, add the following:
+
+```tsx
+console.log("About Server Component");
+```
+
+Now, when you navigate to the `about` page in the browser, you will see the console log message labeled with a **server tag** in both the browser and the terminal. This confirms the component is running as a server component.
+
+---
+
+##### **Server Component Limitations**
+
+Server components have several advantages such as **zero bundle size**, **direct access to server resources**, **improved security**, and **better SEO**. However, they have some **limitations**:
+
+* They cannot interact with **browser APIs** like `localStorage` or `geolocation`.
+* They cannot maintain **state** using React hooks like `useState`.
+
+For example, if we try to use `useState` in the **About page**:
+
+```tsx
+import { useState } from 'react';
+
+const [name, setName] = useState('');
+```
+
+We will get an error because `useState` requires a **client-side environment**.
+
+---
+
+#### **Creating a Client Component**
+
+Next, let’s create a **client component**. We'll create a **Dashboard page** in the `app` folder that uses **state** to manage user input:
+
+1. Inside the `app` folder, create a new file called `dashboard.tsx`.
+
+Add the following code:
+
+```tsx
+import { useState } from 'react';
+
+export default function DashboardPage() {
+    const [name, setName] = useState('');
+
+    return (
+        <div>
+            <h1>Dashboard</h1>
+            <input 
+                type="text" 
+                value={name} 
+                onChange={(e) => setName(e.target.value)} 
+            />
+            <p>Hello, {name}</p>
+        </div>
+    );
+}
+```
+
+---
+
+##### **Using the `use client` Directive**
+
+To make this a **client component**, we need to add the following directive at the top of the file:
+
+```tsx
+'use client';
+```
+
+This tells **Next.js** that this component, along with any imported components, should be executed on the client side. As a result, this component can handle **state** and **interactivity** using browser APIs.
+
+---
+
+##### **Navigating to the Client Component**
+
+In the **Root Page**, add a link to the **Dashboard** page:
+
+```tsx
+import Link from 'next/link';
+
+export default function HomePage() {
+    return (
+        <div>
+            <h1>Home Page</h1>
+            <Link href="/dashboard">Go to Dashboard</Link>
+        </div>
+    );
+}
+```
+
+Now, when you visit the homepage and click on the **Dashboard** link, the **Dashboard page** will appear, and the state will function as expected, displaying "Hello" followed by the name entered.
+
+---
+
+##### **Observing the Client Component's Rendering Behavior**
+
+To see the **client component’s rendering behavior**, add a console log to the **Dashboard page**:
+
+```tsx
+console.log("Dashboard Client Component");
+```
+
+1. When you click the **Dashboard** link, the log appears in the browser console, but without the **server tag**.
+2. When you **reload the page**, the **Dashboard page** is rendered **on the server** initially to provide an immediate HTML response, and then again on the **client** during hydration.
+
+The term **client component** can be confusing, but this behavior is part of the RSC architecture. In development mode, the log appears twice due to **Strict Mode**. This doesn’t happen in production.
+
+---
+
+### **Rendering Lifecycle in React Server Components**
+
+Now that we've covered **Server** and **Client Components** in **Next.js**, let’s dive deeper into the **rendering lifecycle** of these components. Understanding this process isn’t mandatory for building Next.js apps, but it provides valuable insights into how the framework works under the hood, much like knowing the kitchen process before your food arrives at the table.
+
+* [**Key Players in the Rendering Lifecycle**](#key-players-in-the-rendering-lifecycle)
+* [**Initial Loading Sequence**](#initial-loading-sequence)
+* [**Update Sequence-Refreshing UI**](#update-sequence-refreshing-ui)
+* [**Rendering in Next.js Static, Dynamic, and Streaming**](#rendering-in-next.js-static,-dynamic,-and-streaming)
+
+---
+
+#### **Key Players in the Rendering Lifecycle**
+
+There are three main components involved in the RSC rendering lifecycle:
+
+1. **Your Browser** (the client)
+2. **Next.js** (the framework)
+3. **React** (the library)
+
+Let’s break down the **initial loading** and **update sequences** step by step.
+
+---
+
+#### **Initial Loading Sequence**
+
+1. **Browser Requests a Page**: When your browser makes a request for a page, **Next.js** matches the requested URL to the appropriate **server component**.
+
+2. **React Renders Server Components**: **Next.js** tells **React** to render the corresponding **server component** and its child components (which are also server components). These components are rendered into a special JSON format known as the **RSC Payload**.
+
+    * You can inspect this payload in the **Network Tab** of your browser's Developer Tools when navigating to a route.
+
+3. **Suspense Handling**: If any **server component** is wrapped in **Suspense** (to handle asynchronous rendering), **React** will pause rendering that specific part of the tree and send a **placeholder value** instead.
+
+4. **Preparing Client Components**: While the server components are being rendered, **React** also prepares instructions for **client components** that will be needed later in the process.
+
+5. **Next.js Generates HTML**: **Next.js** takes the **RSC Payload** and the **client component instructions**, and then generates **HTML** on the server. This HTML is streamed to the browser right away, providing a quick, non-interactive preview of the route.
+
+6. **Streaming the RSC Payload**: As **React** renders each UI element, **Next.js** streams the **RSC Payload** to the browser in chunks. This allows the content to be progressively loaded.
+
+7. **Final Rendering**: Once the browser receives the HTML and the **RSC Payload**, **Next.js** processes everything. **React** uses this information to progressively render the UI.
+
+8. **Hydration**: After the UI has been rendered, the **client components** undergo **hydration**, transforming the application from a static display into an interactive experience.
+
+---
+
+#### **Update Sequence-Refreshing UI**
+
+When the user refreshes or triggers a UI update:
+
+1. **Browser Requests UI Update**: The browser requests a refetch of a specific UI, such as a full route or a part of the page.
+
+2. **Next.js Matches Request to Server Component**: **Next.js** processes the request and matches it to the corresponding **server component**.
+
+3. **React Renders the Updated Component Tree**: **React** re-renders the component tree just like it did during the initial loading, but **no new HTML** is generated during this update phase.
+
+4. **Progressive Streaming**: Instead of generating new HTML, **Next.js** streams the response data directly to the client. This response contains only the updated content, making the update process more efficient.
+
+5. **React Reconciliation**: Once the updated content is received, **React** reconciles the new output with the existing UI. This means that **React** merges the updated component tree with the existing one, ensuring that important UI states (like user input or clicks) remain intact.
+
+    * This is possible because **React** uses a special **JSON format** instead of raw HTML, allowing it to intelligently update only the parts of the UI that have changed, while preserving the state.
+
+---
+
+#### **Rendering in Next.js Static, Dynamic, and Streaming**
+
+In **Next.js**, there are three different types of rendering strategies that can be applied to server components:
+
+1. **Static Rendering** – The content is pre-rendered at build time.
+2. **Dynamic Rendering** – The content is rendered on each request.
+3. **Streaming Rendering** – The content is progressively streamed to the client.
+
+Each rendering strategy has its use cases and trade-offs, and understanding how they fit into your app can help you make the best performance optimizations.
+
+---
+
+## **10. Rendering Strategies**
+
+* [**Static Rendering**](#static-rendering)
+* [**Dynamic Rendering**](#dynamic-rendering)
+* [**`generateStaticParams`**](#generateStaticParams)
+* [**`dynamicParams`**](#dynamicParams)
+* [**Streaming**](#streaming)
+
+### **Static Rendering**
+
+* [**What is Static Rendering**](#what-is-static-rendering)
+* [**How to Use Static Rendering**](#how-to-use-static-rendering)
+* [**Building and Inspecting the Output**](#building-and-inspecting-the-output)
+* [**Understanding the Build Output**](#understanding-the-build-output)
+* [**Route Indicators**](#route-indicators)
+* [**Exploring the `next` Folder**](#exploring-the-next-folder)
+* [**Serving the Application**](#serving-the-application)
+* [**Prefetching and Instant Navigation**](#prefetching-and-instant-navigation)
+* [**Key Points About Static Rendering**](#key-points-about-static-rendering)
+
+---
+
+#### **What is Static Rendering**
+
+Static rendering is a server-side rendering strategy where **HTML pages are generated at build time**. Think of it as preparing all the content in advance before any user visits your site. Once built, these pages can be cached by a **CDN** and served instantly to users.
+
+The great thing about this approach is that the same pre-rendered page can be shared among different users, giving your app a significant performance boost. This makes static rendering perfect for content that doesn’t change often, such as:
+
+* Blog posts
+* E-commerce product listings
+* Documentation
+* Marketing pages
+
+---
+
+#### **How to Use Static Rendering**
+
+Static rendering is **Next.js’s default behavior** for all routes. This means, out-of-the-box, every route is pre-rendered during the build process without any special setup required.
+
+However, you might be wondering how this works during **development** since we haven't built the application yet. Let's explore the difference between **development** and **production** servers:
+
+* **Production**: In production, Next.js creates one **optimized build** and deploys it. The pages are **pre-rendered once** during the build.
+* **Development**: During development, we need flexibility. To reflect changes immediately in the browser without rebuilding, Next.js pre-renders pages **on every request**.
+
+Next.js also displays a **static route indicator** during development to help you identify static routes. While it's useful to understand static rendering, the most important aspect is how it works when you build your app for **production**.
+
+---
+
+#### **Building and Inspecting the Output**
+
+1. First, **stop the dev server** and clean up the generated Next.js files.
+
+2. In the `pages` directory, let's add a link to the **about page** in the root page (`index.tsx`).
+
+    * Duplicate the dashboard link, change the `href`, and update the text accordingly.
+    * Render the current time on the about page to demonstrate how content is static at build time (e.g., `new Date().toLocaleTimeString()`).
+
+3. In the terminal, run:
+
+   ```bash
+   npm run build
+   ```
+
+   This command creates an **optimized production build**. The output will be in the `next` folder, and it will differ significantly from the development setup.
+
+---
+
+#### **Understanding the Build Output**
+
+Once the build is complete, check the terminal output. You'll see three columns:
+
+1. **Route** – The specific page (e.g., `/about`, `/dashboard`).
+2. **Size** – The amount of data to download when navigating to the route.
+3. **First Load JS** – The JavaScript size needed to render the page for the first time.
+
+For example:
+
+* **Root page (`index.tsx`)**: 8.4 KB
+* **Dashboard page**: 370 bytes
+
+---
+
+#### **Route Indicators**
+
+In the terminal or build output, Next.js will show icons and a **legend** to indicate the rendering strategy for each route. A **hollow circle** indicates **static rendering**, meaning the page is pre-rendered during build time.
+
+---
+
+#### **Exploring the `next` Folder**
+
+Within the `next` folder, the build output contains two important folders:
+
+1. **Server Folder**: Contains HTML files for each route (`index.html`, `about.html`, etc.).
+2. **Static Folder**: Contains JavaScript chunks necessary for client-side navigation and hydration (e.g., `dashboard.js`).
+
+---
+
+#### **Serving the Application**
+
+Once you have the build, run:
+
+```bash
+npm run start
+```
+
+This starts the production server. Open your browser to **localhost:3000**, and with **Dev Tools open**, do a **hard reload**.
+
+1. **HTML Files**: The browser will receive pre-rendered HTML, such as `index.html`, `about.html`, and `dashboard.html`.
+2. **RSC Payloads**: Along with the HTML, **React Server Component** (RSC) payloads (in `.json` format) are sent. These contain the rendered result for server components and references for client components.
+
+---
+
+#### **Prefetching and Instant Navigation**
+
+* **Prefetching**: Next.js **automatically prefetches routes** in the background as links appear in the viewport. This ensures that by the time you click a link (e.g., to navigate to `/about`), the page content is already preloaded, offering **instant navigation**.
+
+* **Client-Side Navigation**: Once the initial load is complete, navigating between static routes will happen entirely on the client side, **without additional server requests**.
+
+---
+
+#### **Key Points About Static Rendering**
+
+* **Pre-rendering at build time**: HTML pages, RSC payloads, and JavaScript chunks are created ahead of time.
+* **Instant Navigation**: Client-side navigation between statically generated pages doesn’t require a round trip to the server, as everything needed is already in the browser.
+* **Optimized Performance**: Static rendering is perfect for performance, especially for content that doesn’t change frequently, such as blogs, marketing pages, and documentation.
+
+---
+
+### **Dynamic Rendering**
+
+* [**What is Dynamic Rendering**](#what-is-dynamic-rendering)
+* [**How Does Dynamic Rendering Work**](#how-does-dynamic-rendering-work)
+* [**Implementing Dynamic Rendering**](#implementing-dynamic-rendering)
+* [**Dynamic Rendering Building and Inspecting the Output**](#dynamic-rendering-building-and-inspecting-the-output)
+* [**Testing Dynamic Rendering**](#testing-dynamic-rendering)
+* [**Key Points About Dynamic Rendering**](#key-points-about-dynamic-rendering)
+* [**Forcing Dynamic Rendering**](#forcing-dynamic-rendering)
+
+---
+
+#### **What is Dynamic Rendering**
+
+Dynamic rendering is a server-side rendering strategy where **routes are rendered uniquely for each user** when they make a request. This is particularly useful for showing **personalized data** or information that is only available at request time, such as cookies or URL search parameters.
+
+Some examples where dynamic rendering is beneficial include:
+
+* Personalized shopping pages
+* News websites
+* Social media feeds
+
+---
+
+#### **How Does Dynamic Rendering Work**
+
+In Next.js, **dynamic rendering is enabled automatically** when the framework detects certain dynamic functions or APIs being used. These include:
+
+* **Cookies**
+* **Headers**
+* **Connection drafts**
+* **Search parameters**
+* **Props**
+
+When Next.js encounters any of these dynamic functions, it automatically switches to **dynamic rendering**, which means the route will be **server-rendered on demand** for each request.
+
+---
+
+#### **Implementing Dynamic Rendering**
+
+Let's modify the **about component** to demonstrate dynamic rendering by utilizing the **cookies API**.
+
+1. First, **import the cookies function** at the top of your component:
+
+   ```js
+   import { cookies } from 'next/headers';
+   ```
+
+2. Convert the component to an **async function**:
+
+   ```js
+   export default async function AboutPage() {
+     const cookieStore = await cookies();
+     const theme = cookieStore.get('theme');
+     console.log(theme); // Log the theme to verify the cookie's value
+   }
+   ```
+
+   In this code, we use the `cookies` function to retrieve a cookie (in this case, the "theme" cookie), which triggers dynamic rendering for this route. We will log the cookie value to the console to confirm it's working.
+
+---
+
+#### **Dynamic Rendering Building and Inspecting the Output**
+
+1. **Clear the `next` folder** (if previously generated).
+2. Run the build command:
+
+   ```bash
+   npm run build
+   ```
+
+   After the build process is complete, check the terminal output for the routes generated. You’ll notice the **about route** has an **F** symbol next to it. This **F** stands for **Dynamic rendering** (server-rendered on demand).
+
+**Build Output**
+
+In the build process, **dynamic rendering** differs from static rendering in that there will be **no HTML file** generated for dynamically rendered pages. For example, after building the app, you will find HTML files for routes like `index.html`, `dashboard.html`, and `notfound.html`, but **no HTML file** for `about.html`.
+
+---
+
+#### **Testing Dynamic Rendering**
+
+To see dynamic rendering in action:
+
+1. Run the production server:
+
+   ```bash
+   npm run start
+   ```
+
+2. Open the browser and visit **/about**. Perform a **hard reload** (Ctrl + Shift + R).
+
+   * On each refresh, you’ll notice the **HTML is generated on demand**, and the logged **cookie value** will appear (e.g., `theme: light`).
+   * In the network tab of the browser's DevTools, you’ll see the **response** containing the HTML each time you refresh.
+
+Since we’re generating the page dynamically for each request, **no HTML file** is stored in the server output folder (`next/server/app/`).
+
+---
+
+#### **Key Points About Dynamic Rendering**
+
+* **On-demand HTML generation**: HTML is generated dynamically when a request is made.
+* **No HTML files stored**: Since the page is rendered on each request, there's no need to store pre-generated HTML files.
+* **Automatic switching**: Next.js automatically enables dynamic rendering when it detects dynamic functions (like cookies or headers).
+* **Personalized Content**: This rendering strategy is ideal for personalized content like user feeds, news sites, and shopping carts.
+
+---
+
+#### **Forcing Dynamic Rendering**
+
+If you want to **force dynamic rendering** on a route, you can explicitly set the following at the top of the page:
+
+```js
+export const dynamic = 'force-dynamic';
+```
+
+This will ensure that Next.js renders the page dynamically, even if no dynamic functions are detected.
+
+---
+
+### **`generateStaticParams`**
+
+* [**What is `generateStaticParams`**](#what-is-generatestaticparams)
+* [**Practical Example Blog Listing and Comments Page**](#practical-example-blog-listing-and-comments-page)
+* [**Inspecting the Build Output**](#inspecting-the-build-output)
+* [**Pre-rendering Product Details Pages with `generateStaticParams`**](#pre-rendering-product-details-pages-with-generatestaticparams)
+* [**Handling Multiple Dynamic Segments**](#handling-multiple-dynamic-segments)
+
+---
+
+#### **What is `generateStaticParams`**
+
+`generateStaticParams` is a powerful function in **Next.js** that works alongside **dynamic route segments** to generate **static routes** at **build time** instead of generating them on demand at **request time**. This feature significantly boosts the performance of the application by pre-rendering frequently accessed pages, making them available instantly when requested.
+
+---
+
+#### **Practical Example Blog Listing and Comments Page**
+
+To understand how `generateStaticParams` works, let's walk through a practical example by building a **blog listing** and **blog post details page**.
+
+1. First, create a new `blog` folder in the `app` directory. Inside, create a `page.tsx` file for displaying the featured blog posts:
+
+   ```tsx
+   // app/blog/page.tsx
+   export default function BlogPage() {
+     return (
+       <div>
+         <h1>Featured Blog Posts</h1>
+         <ul>
+           <li><a href="/blog/1">Blog Post 1</a></li>
+           <li><a href="/blog/2">Blog Post 2</a></li>
+           <li><a href="/blog/3">Blog Post 3</a></li>
+         </ul>
+       </div>
+     );
+   }
+   ```
+
+2. Next, create a **dynamic route** for individual blog post details by creating a folder `blog/[blogId]` and adding a `page.tsx` file:
+
+   ```tsx
+   // app/blog/[blogId]/page.tsx
+   export default async function BlogPostPage({ params }) {
+     const { blogId } = params;
+     return <h1>Blog Post {blogId} Details</h1>;
+   }
+   ```
+
+3. Now, if you build the app using `npm run build`, you’ll notice that **Next.js** handles the **Blog List** page as **static rendering**, while the **Blog Post Details** page is **dynamic**. This makes sense since Next.js cannot pre-render the blog post details page until it knows the specific blog post ID requested.
+
+   * **Static Rendering**: The `BlogPage` will be pre-rendered.
+   * **Dynamic Rendering**: The individual blog post pages will be rendered on demand when a specific blog post ID is requested.
+
+---
+
+#### **Inspecting the Build Output**
+
+If you check the build folder (`next/server/app`), you will find the **static HTML file** for `blog.html`, but no HTML files for the individual blog post details pages (like `blog-1.html`, etc.).
+
+When you start the app with `npm run start` and visit `/blog/1`, you will notice that the page is rendered **on demand** each time you refresh, as indicated by a **changing timestamp**.
+
+---
+
+#### **Pre-rendering Blog Post Details Pages with `generateStaticParams`**
+
+Now, let’s improve this by pre-rendering the individual blog post details pages (`blog-1`, `blog-2`, `blog-3`) using `generateStaticParams`.
+
+1. Modify the blog post details page (`app/blog/[blogId]/page.tsx`) to include the `generateStaticParams` function:
+
+   ```tsx
+   // app/blog/[blogId]/page.tsx
+   export async function generateStaticParams() {
+     return [
+       { blogId: '1' },
+       { blogId: '2' },
+       { blogId: '3' },
+     ];
+   }
+
+   export default async function BlogPostPage({ params }) {
+     const { blogId } = params;
+     return <h1>Blog Post {blogId} Details</h1>;
+   }
+   ```
+
+2. Now, when you rebuild the app with `npm run build`, Next.js will pre-render the blog post details pages for **blog post 1**, **blog post 2**, and **blog post 3** during build time. The output will indicate that these pages have been pre-rendered as **Static Site Generation (SSG)**.
+
+   You’ll see the following in the terminal:
+
+   * **Pre-rendered Routes**: Blog post details pages (`/blog/1`, `/blog/2`, `/blog/3`) are generated as static HTML.
+   * **New Build Output**: The build folder (`next/server/app/blog/[blogId]`) will contain `1.html`, `2.html`, and `3.html`.
+
+3. Start the application with `npm run start` and visit `/blog/1`. Notice how the **timestamp stays the same** upon refreshing because the page is now served as a **pre-rendered static page**.
+
+---
+
+#### **Handling Multiple Dynamic Segments**
+
+What if we have a **route with multiple dynamic segments**? For instance, a blog catalog where each blog post belongs to a category (e.g., `/blog/[category]/[post]`).
+
+In this case, you can use `generateStaticParams` to pre-render routes for both dynamic segments. For example:
+
+```tsx
+// app/blog/[category]/[post]/page.tsx
+export async function generateStaticParams() {
+  return [
+    { category: 'technology', post: 'ai-advancements' },
+    { category: 'technology', post: 'web-development' },
+    { category: 'lifestyle', post: 'healthy-living' },
+  ];
+}
+
+export default async function BlogPostPage({ params }) {
+  const { category, post } = params;
+  return <h1>{category} - {post}</h1>;
+}
+```
+
+In this case, `generateStaticParams` will pre-render routes for each **category-post** combination.
+
+---
+
+### **`dynamicParams`**
+
+* [**What is `dynamicParams`**](#what-is-dynamicparams)
+* [**How `dynamicParams` Works**](#how-dynamicparams-works)
+* [**Example Handling Dynamic Blog Post Pages**](#example-handling-dynamic-blog-post-pages)
+* [**When to Use `dynamicParams true` vs `false`**](#when-to-use-dynamicparams-true-vs-false)
+
+---
+
+#### **What is `dynamicParams`**
+
+In Next.js, the `dynamicParams` setting controls how **dynamic segments** (such as blog post IDs or categories) are handled when they are not included in the list returned by `generateStaticParams`. This gives you fine-grained control over whether to statically render these pages at runtime or return a **404 error** if the dynamic segment does not match any of the pre-rendered routes.
+
+---
+
+#### **How `dynamicParams` Works**
+
+1. **Default Behavior**: By default, `dynamicParams` is set to **`true`**. This means Next.js will **statically render** pages at runtime for any dynamic segments not included in the `generateStaticParams` function.
+
+   * For example, if you have pre-rendered blog post detail pages for posts with IDs `1`, `2`, and `3`, and someone visits `/blog/4`, Next.js will still serve the page, but it will generate the HTML at runtime. This is beneficial when you want to allow for dynamic content but still get the benefits of static rendering for your most popular pages.
+
+2. **Rendering at Runtime**: If someone accesses a blog post page with an ID that’s not listed in the `generateStaticParams` (e.g., `/blog/4`), Next.js will generate the corresponding HTML at runtime and store it for future requests. The build folder will reflect this by adding a new file like `4.html` for that blog post.
+
+3. **Changing the Behavior**: You can control this behavior by setting `dynamicParams` to **`false`**. When set to `false`, Next.js will return a **404 error** for any dynamic segments that aren't included in the `generateStaticParams` list.
+
+   * For example, if you set `dynamicParams: false`, and someone tries to visit `/blog/4`, they will get a 404 error instead of seeing the page generated on demand.
+
+---
+
+#### **Example Handling Dynamic Blog Post Pages**
+
+Let’s see this in action using the blog post pages example.
+
+1. **With `dynamicParams` set to `true` (default)**:
+
+   * You’ve pre-rendered blog post pages for IDs `1`, `2`, and `3` using `generateStaticParams`.
+   * When you visit `/blog/4`, Next.js will generate the HTML at runtime for that page and serve it to the user.
+   * If you inspect the build folder, you will see the HTML files for `1.html`, `2.html`, and `3.html`, and `4.html` will be generated when visited.
+
+2. **With `dynamicParams` set to `false`**:
+
+   * You’ve pre-rendered blog post pages for IDs `1`, `2`, and `3` using `generateStaticParams`.
+   * If someone tries to visit `/blog/4`, Next.js will return a **404 error** since `4` was not included in the pre-rendered list.
+
+---
+
+#### **When to Use `dynamicParams true` vs `false`**
+
+* **Use `dynamicParams: true`** when:
+
+  * You have a larger number of dynamic pages, such as an **e-commerce website**, where you want to pre-render popular product pages for better performance but still allow access to less common ones. These will be rendered on demand.
+  * You don't want to restrict access to dynamic content even if it hasn't been pre-rendered.
+
+* **Use `dynamicParams: false`** when:
+
+  * You have a **fixed set of pages**, such as a **blog** or a specific catalog, where you want to pre-render every page at build time. This will ensure that any dynamic route that’s not included in `generateStaticParams` results in a clean **404 error** instead of waiting for the page to be generated.
+
+---
+
+### **Streaming**
+
+* [**What is Streaming**](#what-is-streaming)
+* [**How Does Streaming Work**](#how-does-streaming-work)
+* [**Example Implementing Streaming with Suspense**](#example-implementing-streaming-with-suspense)
+* [**Benefits of Streaming**](#benefits-of-streaming)
+
+---
+
+#### **What is Streaming**
+
+**Streaming** is a server rendering strategy that enables **progressive UI rendering**. This means that the server sends parts of the page to the client as soon as they are ready, instead of waiting for everything to load at once. As a result, users can see and interact with parts of the page right away, significantly improving the **initial page load time**.
+
+This strategy is especially useful for rendering UI elements that depend on slower data fetches, which would normally block the entire route from rendering.
+
+---
+
+#### **How Does Streaming Work**
+
+Streaming allows you to break down work into smaller chunks and send them progressively to the client. Here's how it works in Next.js with the **App Router**:
+
+1. **Component-Level Suspense Boundaries**: You can wrap parts of your page in **Suspense** boundaries, which tell React to **wait for data** or **fetching** of certain components before they render.
+
+2. **Progressive Rendering**: When components are wrapped in Suspense, Next.js will **render the static parts first**, and then stream the dynamic parts (like components fetching data) as they are ready.
+
+---
+
+#### **Example Implementing Streaming with Suspense**
+
+Let's walk through an example. We’ll create a page that renders a product and its reviews, with intentional delays to simulate fetching data.
+
+1. **Setting Up Delayed Components**: We have two components:
+
+   * `BlogComponent` (with a 2-second delay)
+   * `CommentComponent` (with a 4-second delay)
+
+2. **The Problem**: Initially, if we visit the `/blog-post` route, the entire page will take a while to render because everything waits for the data to be fetched before being sent to the client. In the network tab, we can see the server response time is 6 seconds (sum of both delays).
+
+3. **Improving with Streaming**: To improve this, we can use **Suspense**. By wrapping our slower components (`BlogComponent` and `CommentComponent`) with a `Suspense` boundary, we allow Next.js to stream the page progressively.
+
+   Here’s how to set it up:
+
+   ```tsx
+    // app/blog-post/page.tsx
+
+   import { Suspense } from 'react';
+   import BlogComponent from './components/BlogComponent';
+   import CommentComponent from './components/CommentComponent';
+
+   export default function BlogPostPage() {
+     return (
+       <div>
+         <h1>Blog Post</h1>
+         <Suspense fallback={<p>Loading blog post...</p>}>
+           <BlogComponent />
+         </Suspense>
+         <Suspense fallback={<p>Loading comments...</p>}>
+           <CommentComponent />
+         </Suspense>
+       </div>
+     );
+   }
+   ```
+
+   * The `Suspense` component wraps each of the slower components.
+   * The `fallback` prop specifies what to show while each component is loading (e.g., `"Loading blog post..."`).
+
+4. **Result**:
+
+   * The heading (`<h1>Blog Post</h1>`) appears instantly.
+   * After 2 seconds, the blog post details are rendered.
+   * After 4 seconds, the comments are rendered.
+   * During the loading phases, we see the fallback text: `"Loading blog post..."` and `"Loading comments..."`.
+
+   This is **Progressive Rendering in action**, where parts of the UI load as soon as they're available, significantly improving the **user experience**.
+
+---
+
+#### **Benefits of Streaming**
+
+* **Faster Initial Load**: The page feels faster because users can see parts of the content immediately, without waiting for everything to load.
+* **Better UX for Slow Data Fetches**: If parts of your page depend on slow data fetches (e.g., from an external API), you can improve the page's responsiveness by streaming data instead of blocking the entire page.
+* **Built-in Support in Next.js**: Streaming is integrated with the **App Router**, which makes it easy to implement and doesn't require complex setup.
+
+---
+
+## **11. Component Composition Patterns and Code Boundaries**
+
+* [**Server and Client Composition Patterns**](#server-and-client-composition-patterns)
+* [**Server-only Code**](#server-only-code)
+* [**Working with Third-Party Packages**](#working-with-third-party-packages)
+* [**Working with Context Providers**](#working-with-context-providers)
+* [**Client-only Code**](#client-only-code)
+* [**Client Component Placement**](#client-component-placement)
+* [**Interleaving Server and Client Components**](#interleaving-server-and-client-components)
+
+### **Server and Client Composition Patterns**
+
+* [**Foundation RSC and the Dual Component Model**](#foundation-rsc-and-the-dual-component-model)
+* [**Server Components**](#server-components-1)
+* [**Client Components**](#client-components)
+* [**Composition Patterns Mixing Server and Client Components**](#composition-patterns-mixing-server-and-client-components)
+* [**Best Practices for Server and Client Composition**](#best-practices-for-server-and-client-composition)
+
+---
+
+#### **Foundation RSC and the Dual Component Model**
+
+In Next.js, **React Server Components (RSC)** allow you to compose your UI by deciding whether a component should be rendered on the server or the client. This dual component model is a key part of Next.js' performance and flexibility. By leveraging server and client components effectively, you can optimize your application for both performance and interactivity.
+
+---
+
+#### **Server Components**
+
+**Server components** are the preferred choice for tasks that can be done on the server side, such as:
+
+* **Fetching Data**: Server components can directly fetch data without involving client-side JavaScript, improving performance by avoiding unnecessary API calls on the client.
+* **Accessing Server-Side Resources**: Server components can access server-side resources, like databases, without exposing sensitive information to the client.
+* **Handling Large Dependencies**: Large packages or libraries that don’t need to be run on the client can be imported and run server-side, reducing the JavaScript bundle size sent to users.
+* **Security**: Sensitive data can be securely handled server-side in server components, ensuring that it is not exposed to the client.
+
+Server components are ideal for improving performance because they minimize the JavaScript load on the client side and leverage server-side rendering for tasks that don’t require interactivity.
+
+---
+
+#### **Client Components**
+
+**Client components** are used when you need to add interactivity or perform tasks that rely on the browser's environment. These components are executed on the client-side and are useful for:
+
+* **Interactivity**: Handling event listeners, managing UI updates based on user actions (e.g., clicks, form submissions), and updating the DOM in response to changes.
+* **State Management**: Client components are responsible for managing local state using React’s `useState`, `useReducer`, or other state management hooks.
+* **Lifecycle Effects**: Managing lifecycle events like `useEffect` for side-effects or `useLayoutEffect` for DOM updates specific to the client environment.
+* **Browser-Specific APIs**: Interacting with browser APIs like `localStorage`, `sessionStorage`, or manipulating the DOM directly.
+* **React Class Components**: Although function components are more commonly used, React class components can still be used on the client-side if needed.
+
+---
+
+#### **Composition Patterns Mixing Server and Client Components**
+
+One of the powerful aspects of Next.js is how it enables mixing server and client components together in a seamless way. Here are a few strategies to compose server and client components effectively:
+
+1. **Server-Side for Heavy Lifting**: Use server components to handle heavy tasks such as data fetching, processing, and preparing the UI. This will offload work from the client and ensure only the necessary components are hydrated on the client.
+
+2. **Client-Side for Interactivity**: Any part of your app that requires user interaction, real-time updates, or relies on the browser’s environment should be handled by client components. This keeps the client-side responsive and user-friendly.
+
+3. **Lazy Load Client Components**: To further optimize performance, you can **lazy load** client components using React’s `Suspense` or dynamic imports in Next.js, ensuring that the browser only loads client components when they are needed.
+
+4. **Hybrid Approach**: A common pattern is to have the initial render handled by a server component, and then progressively enhance or hydrate specific parts of the UI with client components as needed.
+
+---
+
+#### **Best Practices for Server and Client Composition**
+
+1. **Minimize Client-Side JavaScript**: Use server components for anything that doesn’t need interactivity. This reduces the overall size of JavaScript that needs to be sent to the client.
+2. **Only Hydrate What’s Necessary**: Client components should only handle what’s necessary for interactivity. Don’t hydrate the entire page if only a small section requires client-side functionality.
+3. **Use Suspense for Client Components**: To improve the loading experience, you can use React’s `Suspense` to wrap client components and display a fallback while they are loading.
+4. **Optimize Data Fetching**: Keep data-fetching logic in server components to avoid sending unnecessary API requests from the client.
+
+---
+
+### **Server-only Code**
+
+When building Next.js applications with server components, it’s critical to maintain a **clear separation between server-only and client-side code**. Some logic is intended to **run exclusively on the server**, and mistakenly exposing it to the client can result in:
+
+* **Performance issues** due to unnecessarily large JavaScript bundles.
+* **Security risks** such as exposing environment variables or sensitive business logic.
+* **Runtime errors** if server-specific features are used in the browser.
+
+#### **Common Use Cases for Server-only Code**
+
+Examples of server-only logic include:
+
+* Accessing environment variables (`process.env`)
+* Making direct database calls
+* Calling server-side APIs
+* Performing secure calculations
+* Using server-only packages
+
+#### **Problem Accidental Client-side Import**
+
+JavaScript modules can be imported from anywhere, which means **server-only utilities can accidentally be imported in client components**, leading to serious issues. Fortunately, Next.js developers can prevent this using a community package called **`server-only`**.
+
+#### **Using the `server-only` Package**
+
+This package throws a **build-time error** if a module marked as server-only is imported into a client component. Here’s how to implement and use it.
+
+---
+
+#### **Step-by-Step Setup of Server-only Code**
+
+* [**Install the `server-only` Package**](#install-the-server-only-package)
+* [**Create a Server-only Utility**](#create-a-server-only-utility)
+* [**Use It in a Server Component**](#use-it-in-a-server-component)
+* [**Try Importing in a Client Component**](#try-importing-in-a-client-component)
+
+##### **Install the `server-only` Package**
+
+```bash
+npm install server-only
+```
+
+---
+
+##### **Create a Server-only Utility**
+
+Create a file `src/utils/server-utils.ts`:
+
+```ts
+// src/utils/server-utils.ts
+import 'server-only';
+
+export const serverSideFunction = () => {
+  console.log('[server] This is a secure server-side function');
+  return 'Server Result';
+};
+```
+
+The line `import 'server-only';` ensures that this module **can only be used in server components**. If you try to import it in a client component, the build will fail.
+
+---
+
+##### **Use It in a Server Component**
+
+Create a file `app/server-route/page.tsx`:
+
+```tsx
+// app/server-route/page.tsx
+import { serverSideFunction } from '@/utils/server-utils';
+
+export default function ServerRoutePage() {
+  const result = serverSideFunction();
+
+  return <h1>Server Route - Result: {result}</h1>;
+}
+```
+
+When visiting `/server-route` in your browser, you’ll see the log message in the **terminal**, and the result rendered on the page. This confirms the function is running **server-side**.
+
+---
+
+##### **Try Importing in a Client Component**
+
+Create a file `app/client-route/page.tsx`:
+
+```tsx
+// app/client-route/page.tsx
+'use client';
+
+import { serverSideFunction } from '@/utils/server-utils'; //  This will fail the build
+
+export default function ClientRoutePage() {
+  const result = serverSideFunction();
+  return <h1>Client Route - Result: {result}</h1>;
+}
+```
+
+This will cause a **build-time error** like:
+
+```
+Error: Module "server-utils.ts" is marked as server-only but was imported in a client component.
+```
+
+This is exactly what we want — to **prevent accidental inclusion of server-side logic in client bundles**.
+
+---
+
+#### **Why Use `server-only`**
+
+* Prevents security leaks (e.g., exposed environment variables)
+* Reduces bundle size by eliminating server code from client bundles
+* Catches import mistakes early, during build time
+* Enforces clean architectural boundaries between server and client
+
+---
+
+### **Working with Third-Party Packages**
+
+React Server Components have introduced exciting performance and architectural advantages. But not all third-party packages are compatible yet — especially those that rely on browser-only APIs.
+
+Let’s walk through this with a real-world example using [`react-slick`](https://www.npmjs.com/package/react-slick), a popular carousel package.
+
+* [**Step 1 Install `react-slick`**](#step-1-install-react-slick)
+* [**Client-Side Carousel**](#client-side-carousel)
+* [**Server Component Carousel**](#server-component-carousel)
+
+---
+
+#### **Step 1 Install `react-slick`**
+
+Run the following command in your terminal:
+
+```bash
+npm install react-slick slick-carousel @types/react-slick --force 
+```
+
+> The --force flag is used to bypass peer dependency warnings if you're using React 19 or a newer version.
+
+Add the necessary CSS from `slick-carousel` to your global stylesheet: **`app/globals.css`**:
+
+```css
+.image-slider-container {
+  margin: 0 auto;
+  width: 400px;
+}
+
+.image-slider-container .slick-prev:before,
+.image-slider-container .slick-next:before {
+  color: black;
+}
+```
+
+---
+
+#### **Client-Side Carousel**
+
+Let’s first create a **client component** where everything works as expected.
+
+**File**: `app/client-route/page.tsx`
+
+```tsx
+"use client";
+
+import React from "react";
+import Slider from "react-slick";
+import "slick-carousel/slick/slick.css";
+import "slick-carousel/slick/slick-theme.css";
+
+export default function ClientRoutePage() {
+  const settings = {
+    dots: true,
+  };
+  return (
+    <div className="image-slider-container">
+      <Slider {...settings}>
+        <div>
+          <img src="https://picsum.photos/400/200" />
+        </div>
+        <div>
+          <img src="https://picsum.photos/400/200" />
+        </div>
+        <div>
+          <img src="https://picsum.photos/400/200" />
+        </div>
+        <div>
+          <img src="https://picsum.photos/400/200" />
+        </div>
+      </Slider>
+    </div>
+  );
+}
+```
+
+> Go to `/client-route` — you’ll see the working carousel.
+
+---
+
+#### **Server Component Carousel**
+
+Let’s try to use the **same carousel** in a **server component**.
+
+**File**: `app/server-route/page.tsx`
+
+```tsx
+// This is a SERVER component — no "use client"
+import { serverSideFunction } from '@/utils/server-utils';
+import React from "react";
+import Slider from "react-slick";
+import "slick-carousel/slick/slick.css";
+import "slick-carousel/slick/slick-theme.css";
+
+export default function ServerRoutePage() {
+  const result = serverSideFunction();
+  const settings = {
+    dots: true,
+  };
+  return (
+    <div className="image-slider-container">
+    <h1>Server Route {result}</h1>
+      <Slider {...settings}>
+        <div>
+          <img src="https://picsum.photos/400/200" />
+        </div>
+        <div>
+          <img src="https://picsum.photos/400/200" />
+        </div>
+        <div>
+          <img src="https://picsum.photos/400/200" />
+        </div>
+        <div>
+          <img src="https://picsum.photos/400/200" />
+        </div>
+      </Slider>
+    </div>
+  );
+}
+```
+
+- Go to `/server-route` — you’ll get an error like:
+
+> `window is not defined` or `react-slick must be used in a client component`
+
+---
+
+##### **Fixing the Error: Encapsulate in a Client Component**
+
+We’ll move the carousel logic into a client component and **import it into our server route**.
+
+---
+
+##### **Step 1: Create a Client Wrapper Component**
+
+**File**: `components/ImageSlider.tsx`
+
+```tsx
+"use client";
+
+import React from "react";
+import Slider from "react-slick";
+import "slick-carousel/slick/slick.css";
+import "slick-carousel/slick/slick-theme.css";
+
+export default function ServerRoutePage() {
+  const settings = {
+    dots: true,
+  };
+  return (
+    <div className="image-slider-container">
+      <Slider {...settings}>
+        <div>
+          <img src="https://picsum.photos/400/200" />
+        </div>
+        <div>
+          <img src="https://picsum.photos/400/200" />
+        </div>
+        <div>
+          <img src="https://picsum.photos/400/200" />
+        </div>
+        <div>
+          <img src="https://picsum.photos/400/200" />
+        </div>
+      </Slider>
+    </div>
+  );
+}
+```
+
+---
+
+##### **Step 2: Use It in the Server Component**
+
+**Update file**: `app/server-route/page.tsx`
+
+```tsx
+import ImageSlider from "@/components/ImageSlider";
+import { serverSideFunction } from "@/utils/server-utils";
+
+export default function ServerRoutePage() {
+  const result = serverSideFunction();
+  return (
+    <>
+      <h1>Server Route {result}</h1>
+      <ImageSlider />
+    </>
+  );
+}
+```
+
+- Go back to `/server-route` — now the carousel works perfectly!
+
+---
+
+**Why This Works**
+
+| Technique                     | Explanation                                                                          |
+| ----------------------------- | ------------------------------------------------------------------------------------ |
+| `use client` in `ImageSlider` | Forces that component and its dependencies (like `react-slick`) to run on the client |
+| Server page stays server      | Keeps access to server-side features like DB, secrets, etc.                          |
+| Clean separation              | Client-side dependencies don’t pollute server-rendered logic                         |
+
+---
+
+### **Working with Context Providers**
+
+In traditional React apps, **Context Providers** are used near the root of the component tree to manage and share global state like themes, authentication, or user settings. However, when working with the **React Server Components (RSC)** architecture in Next.js, there's an important caveat:
+
+> **React context is not supported in server components.**
+
+---
+
+#### **The Problem**
+
+If you attempt to create and use a context provider (via `createContext`) directly in a server component (like `app/layout.tsx`), you’ll encounter the following error:
+
+```tsx
+// File: app/layout.tsx
+
+import './globals.css';
+import { createContext } from 'react';
+
+
+type Theme = {
+  colors: {
+    primary: string;
+    secondary: string;
+  };
+};
+
+const defaultTheme: Theme = {
+  colors: {
+    primary: '#0070f3',
+    secondary: '#666666',
+  },
+};
+
+const ThemeContext = createContext<Theme>(defaultTheme);
+
+export default function RootLayout({ children }: { children: React.ReactNode }) {
+  return (
+    <html lang="en">
+      <body>
+        <ThemeContext.Provider value={defaultTheme}>
+          {children}
+        </ThemeContext.Provider>
+      </body>
+    </html>
+  );
+}
+```
+
+```
+Error: You're importing a component that needs createContext. This React hook only works in a client component.
+```
+
+Turning your entire layout into a client component is **not ideal**, because that forces the entire subtree to be client-side, losing all server component benefits like performance and security.
+
+---
+
+#### **The Solution Use a Client Component as the Provider**
+
+To resolve this, you must:
+
+* Create the context and its provider in a **dedicated client component**.
+* Wrap your application tree with this client component at the appropriate level (like `layout.tsx`).
+
+---
+
+#### **Example Theme Context Provider**
+
+* [**Create the Client Theme Provider**](#create-the-client-theme-provider)
+* [**Wrap the App in `app/layout.tsx`**](#wrap-the-app-in-app/layout.tsx)
+* [**Use the Theme in a Client Component**](#use-the-theme-in-a-client-component)
+
+##### **Create the Client Theme Provider**
+
+Create a file at `src/components/ThemeProvider.tsx`:
+
+```tsx
+'use client';
+
+import { createContext, useContext, ReactNode } from 'react';
+
+type Theme = {
+  colors: {
+    primary: string;
+    secondary: string;
+  };
+};
+
+const defaultTheme: Theme = {
+  colors: {
+    primary: '#0070f3',
+    secondary: '#666666',
+  },
+};
+
+const ThemeContext = createContext<Theme>(defaultTheme);
+
+export function ThemeProvider({ children }: { children: ReactNode }) {
+  return (
+    <ThemeContext.Provider value={defaultTheme}>
+      {children}
+    </ThemeContext.Provider>
+  );
+}
+
+export function useTheme() {
+  return useContext(ThemeContext);
+}
+```
+
+---
+
+##### **Wrap the App in `app/layout.tsx`**
+
+```tsx
+// File: app/layout.tsx
+
+import './globals.css';
+import { ThemeProvider } from '@/components/ThemeProvider';
+
+
+export default function RootLayout({ children }: { children: React.ReactNode }) {
+  return (
+    <html lang="en">
+      <body>
+        <ThemeProvider>
+          {children}
+        </ThemeProvider>
+      </body>
+    </html>
+  );
+}
+```
+
+> `ThemeProvider` is a client component, but the rest of the app can remain server components.
+
+---
+
+##### **Use the Theme in a Client Component**
+
+Update `app/client-route/page.tsx`:
+
+```tsx
+'use client';
+
+import { useTheme } from '@/components/ThemeProvider';
+
+export default function ClientRoutePage() {
+  const theme = useTheme();
+
+  return (
+    <h1 style={{ color: theme.colors.primary }}>
+      Client Route Page
+    </h1>
+  );
+}
+```
+
+In the browser, you'll see the heading styled with the primary theme color. Change it to `theme.colors.secondary`, and the color updates as expected.
+
+---
+
+### **Client-only Code**
+
+Just like we need to isolate server-side logic (e.g., database access, secrets) to server components, it's **equally important** to isolate client-side functionality to **client components**.
+
+* [**What is Client-only Code**](#what-is-client-only-code)
+* [**How to Enforce Client-only Code Separation**](#how-to-enforce-client-only-code-separation)
+* [**Example Client-only Utility**](#example-client-only-utility)
+
+---
+
+#### **What is Client-only Code**
+
+Client-only code is code that:
+
+* Interacts with the **DOM**
+* Uses the **`window` object**
+* Accesses **`localStorage`**, **`sessionStorage`**, or **browser APIs**
+
+Such code **cannot run on the server**, and must be executed only on the browser/client.
+
+---
+
+#### **How to Enforce Client-only Code Separation**
+
+To help ensure client-only code stays client-side, we can use the [**`client-only`**](https://www.npmjs.com/package/client-only) package. It creates a **build-time safety net**, preventing accidental server-side usage of client-side code.
+
+---
+
+#### **Example Client-only Utility**
+
+* [**Install the `client-only` Package**](#install-the-client-only-package)
+* [**Create a Client-side Function**](#create-a-client-side-function)
+* [**Use in a Client Component**](#use-in-a-client-component)
+* [**Misuse in a Server Component Instant Feedback**](#misuse-in-a-server-component-instant-feedback)
+
+---
+
+##### **Install the `client-only` Package**
+
+Install the `client-only` package to help enforce client-only code separation:
+
+```bash
+npm install client-only --force
+```
+
+> The `--force` flag is used to bypass peer dependency warnings if you're using React 19 or a newer version.
+
+---
+
+##### **Create a Client-side Function**
+
+Create a file `src/utils/client-utils.ts`:
+
+```ts
+import clientOnly from 'client-only';
+
+export const clientSideFunction = clientOnly(() => {
+  console.log('use window object');
+  console.log('use local storage');
+  return 'client result';
+});
+```
+
+> `clientOnly()` ensures this function can **only be used in client components**.
+
+---
+
+##### **Use in a Client Component**
+
+Update `app/client-route/page.tsx`:
+
+```tsx
+'use client';
+
+import { clientSideFunction } from '@/utils/client-utils';
+
+export default function ClientRoutePage() {
+  const result = clientSideFunction();
+
+  return (
+    <p>{result}</p>
+  );
+}
+```
+
+When visiting `/client-route` in the browser, you’ll see:
+
+* Logs in the developer console
+* The result `"client result"` rendered
+
+Everything runs **perfectly on the client**, as intended.
+
+---
+
+##### **Misuse in a Server Component Instant Feedback**
+
+If you accidentally use this function in a **server component**, like `app/server-route/page.tsx`:
+
+```tsx
+import { clientSideFunction } from '@/utils/client-utils';
+
+export default function ServerRoutePage() {
+  const clientResult = clientSideFunction(); // Error
+
+  return <h1>{clientResult}</h1>;
+}
+```
+
+You’ll see this **build-time error**:
+
+```
+You're importing a component that imports client-only.
+It only works in a client component, but none of its parents are marked with "use client".
+```
+
+> This safeguards you from runtime errors by **failing early** during development.
+
+**Why This Matters**
+
+By using the `client-only` package:
+
+* You **catch client/server boundary issues early**.
+* You **enforce best practices** for architecture.
+* You **prevent runtime crashes** caused by client code running on the server.
+
+---
+
+### **Client Component Placement**
+
+Not all components need to run on the client. Strategically **placing client components as low as possible** in the tree helps optimize your app’s performance.
+
+* [**Example Structure for Client Component Placement**](#example-structure-for-client-component-placement)
+* [**Problem Putting `use client` Too High**](#problem-putting-use-client-too-high)
+* [**Solution Push State Lower**](#solution-push-state-lower)
+* [**Debugging Tip**](#debugging-tip)
+
+**Why This Matters**
+
+In Next.js with React Server Components (RSC), we:
+
+* Want most of the component tree to stay server-side (for performance)
+* Only push components to the client when **state**, **interactivity**, or **browser-only APIs** are needed
+
+> Marking a component with `'use client'` doesn't just affect that component — it affects **all of its children too**.
+
+---
+
+#### **Example Structure for Client Component Placement**
+
+Let’s build a simplified layout for a **landing page**:
+
+* `LandingPage` (server)
+
+  * `Navbar` (server)
+
+    * `NavLinks` (server)
+    * `NavSearch` (needs client state)
+
+```bash
+app/
+  landing-page/
+    page.tsx         # LandingPage
+components/
+  Navbar.tsx         # Contains NavLinks & NavSearch
+  NavLinks.tsx       # Static links
+  NavSearch.tsx      # Search input (uses state)
+```
+
+---
+
+#### **Problem Putting `use client` Too High**
+
+If we add state in `Navbar`:
+
+```tsx
+// components/Navbar.tsx
+'use client';
+
+import { useState } from 'react';
+import NavLinks from './NavLinks';
+import NavSearch from './NavSearch';
+
+export default function Navbar() {
+  const [search, setSearch] = useState('');
+
+  return (
+    <nav>
+      <NavLinks />
+      <NavSearch />
+    </nav>
+  );
+}
+```
+
+Now:
+
+* `Navbar`, `NavLinks`, and `NavSearch` all run on the **client**
+* Even static components like `NavLinks` are forced into client-side rendering
+* Unnecessary JavaScript is sent to the browser
+
+---
+
+#### **Solution Push State Lower**
+
+Move the state logic and `'use client'` **into the `NavSearch` component**, which is the only part needing interactivity:
+
+```tsx
+// components/NavSearch.tsx
+'use client';
+
+import { useState } from 'react';
+
+export default function NavSearch() {
+  const [search, setSearch] = useState('');
+
+  return (
+    <input
+      type="text"
+      value={search}
+      onChange={(e) => setSearch(e.target.value)}
+      placeholder="Search..."
+    />
+  );
+}
+```
+
+Now:
+
+* `NavSearch` is a **leaf client component**
+* `Navbar` and `NavLinks` stay as **server components**
+* You get performance benefits of server components without sacrificing interactivity
+
+---
+
+#### **Debugging Tip**
+
+Use `console.log()` statements to check where components render:
+
+```ts
+console.log('Navbar rendered');
+```
+
+* In dev tools, you'll see **\[server]** or **\[client]** tags in logs
+* This helps confirm where the component is running
+
+---
+
+### **Interleaving Server and Client Components**
+
+Understanding how **Server Components** and **Client Components** interact in a Next.js App Router project is critical. Let’s look at **which combinations are allowed** and **which are not** — along with the **workaround** for unsupported patterns.
+
+* [**Setup Demo Components**](#setup-demo-components)
+* [**Page Setup**](#page-setup)
+* [**Valid Patterns**](#valid-patterns)
+* [**Why Client ➝ Server Fails**](#why-client-➝-server-fails)
+* [**Workaround Pass Server Component as a Prop**](#workaround-pass-server-component-as-a-prop)
+
+---
+
+#### **Setup Demo Components**
+
+We define four components to explore interleaving:
+
+* [**Server Components**](#server-components-3)
+* [**Client Components**](#client-components-3)
+
+##### **Server Components**
+
+```tsx
+// components/ServerComponentOne.tsx
+import fs from 'fs';
+
+export const ServerComponentOne = () => {
+  fs.readFileSync('README.md', 'utf8');
+  return (
+    <div>
+      <h1>Server Component One</h1>
+      <ServerComponentTwo />
+    </div>
+  );
+};
+
+// components/ServerComponentTwo.tsx
+import fs from 'fs';
+
+export const ServerComponentTwo = () => {
+  fs.readFileSync('README.md', 'utf8');
+  return <h1>Server Component Two</h1>;
+};
+```
+
+##### **Client Components**
+
+```tsx
+// components/ClientComponentOne.tsx
+'use client';
+
+import { useState } from 'react';
+import ClientComponentTwo from './ClientComponentTwo';
+
+export default function ClientComponentOne({ children }: { children?: React.ReactNode }) {
+  const [name] = useState('Batman');
+  return (
+    <>
+      <h1>Client Component One</h1>
+      <ClientComponentTwo />
+      {children}
+    </>
+  );
+}
+
+// components/ClientComponentTwo.tsx
+'use client';
+
+export default function ClientComponentTwo() {
+  return <h1>Client Component Two</h1>;
+}
+```
+
+---
+
+#### **Page Setup**
+
+```tsx
+// app/interleaving/page.tsx
+import ServerComponentOne from '@/components/ServerComponentOne';
+import ClientComponentOne from '@/components/ClientComponentOne';
+
+export default function InterleavingPage() {
+  return (
+    <>
+      <h1>Interleaving Page</h1>
+
+      {/* Valid: Server inside Server */}
+      <ServerComponentOne />
+
+      {/* Valid: Client inside Client */}
+      <ClientComponentOne />
+
+      {/* Valid: Client inside Server */}
+      <ServerComponentOne>
+        <ClientComponentOne />
+      </ServerComponentOne>
+
+      {/* Invalid: Server inside Client (will throw error) */}
+      {/* <ClientComponentOne>
+        <ServerComponentOne />
+      </ClientComponentOne> */}
+    </>
+  );
+}
+```
+
+---
+
+#### **Valid Patterns**
+
+| Pattern              | Status        | Description                                                                            |
+| -------------------- | ------------- | -------------------------------------------------------------------------------------- |
+| **Server ➝ Server** | Supported     | Nesting server components works fine                                                   |
+| **Client ➝ Client** | Supported     | Nesting client components is fully allowed                                             |
+| **Server ➝ Client** | Supported     | Server components can render client components inside                                  |
+| **Client ➝ Server** | Not Allowed   | Server component **cannot** be directly imported or rendered inside a client component |
+
+---
+
+#### **Why Client ➝ Server Fails**
+
+When a server component is nested inside a client component:
+
+* It **inherits** the client context
+* **Runs on the client**
+* Fails if it uses server-only features (e.g., `fs` or database queries)
+
+```ts
+// Results in error:
+Module not found: Can't resolve 'fs'
+```
+
+---
+
+#### **Workaround Pass Server Component as a Prop**
+
+React doesn’t require you to render components only via JSX — you can pass server components as **props or children**.
+
+```tsx
+// page.tsx
+<ClientComponentOne>
+  <ServerComponentOne />
+</ClientComponentOne>
+```
+
+```tsx
+// ClientComponentOne.tsx
+'use client';
+
+export default function ClientComponentOne({ children }: { children?: React.ReactNode }) {
+  return (
+    <>
+      <h1>Client Component One</h1>
+      {children}
+    </>
+  );
+}
+```
+
+- This keeps server and client responsibilities clearly separated.
+
+---
+
+## **12. Data Fetching**
+
+💡 *Goal: Fetch blog posts dynamically and understand SSR, SSG, ISR, and caching strategies.*
+
+* [**1. Server Components vs Client Components**](#1.-server-components-vs-client-components)
+* [**2. Fetching Data in a Server Component (`fetch()`)**](#2.-fetching-data-in-a-server-component)
+* [**3. Static vs Dynamic Data Fetching**](#3.-static-vs-dynamic-data-fetching)
+* [**4. Applying Static and Dynamic Fetching**](#4.-applying-static-and-dynamic-fetching)
+* [**5. Fetching a Single Blog Post**](#5.-fetching-a-single-blog-post)
+* [**6. Generate Static Params for SSG**](#6.-generate-static-params-for-ssg)
+* [**Final Result When to Use What?**](#final-result-when-to-use-what?)
+* [**Sequential Data Fetching**](#sequential-data-fetching)
+* [**Parallel Data Fetching**](#parallel-data-fetching)
+
+---
+
+### **1. Server Components vs Client Components**
+
+**What’s the Difference?**
+
+In **Next.js 15**, components are **server-first** by default.
+
+| Feature | Server Components | Client Components |
+| --- | --- | --- |
+| Runs on | The server (before page loads) | The browser (after page loads) |
+| Can access DB/APIs | ✅ Yes (direct fetch) | ❌ No (must use API routes) |
+| Can use React state (`useState`) | ❌ No | ✅ Yes |
+| Bundle size impact | 🚀 Smaller (no JS sent to client) | 📦 Larger (more JS sent) |
+
+> Rule of thumb:
+> 
+> - **Use Server Components for data fetching & rendering**
+>
+> - **Use Client Components when user interaction is needed (`useState`, `useEffect`)**
+
+---
+
+### **2. Fetching Data in a Server Component**
+
+Next.js **automatically optimizes** `fetch()` by default.
+
+```tsx
+// app/blog/page.tsx (Fetching all posts)
+import Link from 'next/link';
+
+async function getPosts() {
+  const res = await fetch('https://jsonplaceholder.typicode.com/posts');
+  return res.json();
+}
+
+export default async function BlogPage() {
+  const posts = await getPosts();
+
+  return (
+    <div className="space-y-6">
+      {posts.slice(0, 5).map((post) => (
+        <div key={post.id}>
+          <h2 className="text-xl font-bold">
+            <Link href={`/blog/${post.id}`} className="hover:underline">
+              {post.title}
+            </Link>
+          </h2>
+          <p className="text-gray-600">{post.body.slice(0, 80)}...</p>
+        </div>
+      ))}
+    </div>
+  );
+}
+
+```
+
+> 🔹 Why does this work?
+> 
+> - Runs **server-side** before the page loads.
+> - No API calls happen **in the browser**.
+> - **SEO-friendly** since HTML is generated before it reaches the client.
+
+---
+
+### **3. Static vs Dynamic Data Fetching**
+
+By default, Next.js **caches** every `fetch()` request.
+
+**How do we control when it updates?**
+
+Next.js gives us **three main cache options:**
+
+| Fetch Option | Behavior | Use Case |
+| --- | --- | --- |
+| `{ cache: 'force-cache' }` *(default)* | Static (cached at build time) | Blog posts, product pages |
+| `{ cache: 'no-store' }` | Fetches fresh data every request | User data, real-time data |
+| `{ next: { revalidate: 60 } }` | Static, but updates every X seconds | News, price listings |
+
+---
+
+### **4. Applying Static and Dynamic Fetching**
+
+* [**Static Rendering Cache Forever**](#static-rendering-cache-forever)
+* [**Dynamic Rendering Fresh Data on Every Request**](#dynamic-rendering-fresh-data-on-every-request)
+* [**ISR Hybrid Mode**](#isr-hybrid-mode)
+
+#### **Static Rendering Cache Forever**
+
+Fetch posts **once at build time** (Fastest method).
+
+```tsx
+async function getStaticPosts() {
+  return fetch('https://jsonplaceholder.typicode.com/posts', {
+    cache: 'force-cache', // Default
+  }).then((res) => res.json());
+}
+
+```
+
+---
+
+#### **Dynamic Rendering Fresh Data on Every Request**
+
+Use this when data **changes frequently**.
+
+```tsx
+async function getSSRPosts() {
+  return fetch('https://jsonplaceholder.typicode.com/posts', {
+    cache: 'no-store', // Never cache
+  }).then((res) => res.json());
+}
+
+```
+
+---
+
+#### **ISR Hybrid Mode**
+
+Fetches **once**, **caches** it, but **updates** every 60 seconds.
+
+```tsx
+async function getISRPosts() {
+  return fetch('https://jsonplaceholder.typicode.com/posts', {
+    next: { revalidate: 60 }, // Updates every 60s
+  }).then((res) => res.json());
+}
+
+```
+
+---
+
+### **5. Fetching a Single Blog Post**
+
+Let's apply what we learned to **fetch a single blog post**.
+
+**`app/blog/[id]/page.tsx`**
+
+```tsx
+async function getPost(id: string) {
+  return fetch(`https://jsonplaceholder.typicode.com/posts/${id}`, {
+    next: { revalidate: 60 }, // ISR: Updates every 60s
+  }).then((res) => res.json());
+}
+
+export default async function BlogPostPage({ params }: { params: { id: string } }) {
+  const post = await getPost(params.id);
+
+  if (!post) return <p>Post not found.</p>;
+
+  return (
+    <article className="prose">
+      <h1>{post.title}</h1>
+      <p>{post.body}</p>
+    </article>
+  );
+}
+
+```
+
+---
+
+### **6. Generate Static Params for SSG**
+
+> ✅ For static pages (SSG), we pre-build them at deploy time.
+> 
+
+**`generateStaticParams()`**
+
+```tsx
+export async function generateStaticParams() {
+  const posts = await fetch('https://jsonplaceholder.typicode.com/posts').then((res) => res.json());
+
+  return posts.slice(0, 5).map((post) => ({
+    id: post.id.toString(),
+  }));
+}
+
+```
+
+> 🔹 Next.js builds only the first 5 blog posts at deploy time.
+> 
+> 
+> 🔹 Other posts are **generated dynamically when visited (ISR fallback).**
+> 
+
+---
+
+### **Final Result When to Use What?**
+
+| Use Case | Solution | Cache Setting |
+| --- | --- | --- |
+| Blog posts that rarely change | **SSG** | `{ cache: 'force-cache' }` |
+| User profiles, live comments | **SSR** | `{ cache: 'no-store' }` |
+| News articles, price listings | **ISR** | `{ next: { revalidate: 60 } }` |
+
+---
+
+### **Sequential Data Fetching**
+
+In some scenarios, fetching data in **sequential** order is necessary when one request depends on the result of another. This can lead to longer loading times, but it's a common pattern for certain use cases, such as fetching posts and then fetching their authors.
+
+* [**Example Blog Page with Posts and Authors**](#example-blog-page-with-posts-and-authors)
+* [**Setup Folder for Sequential Data Fetching**](#setup-folder-for-sequential-data-fetching)
+* [**Typescript Type for Posts**](#typescript-type-for-posts)
+* [**Fetching Posts Sequentially**](#fetching-posts-sequentially)
+* [**Fetching the Author for Each Post**](#fetching-the-author-for-each-post)
+* [**Integrating Author Component**](#integrating-author-component)
+* [**Adding Suspense for Streaming**](#adding-suspense-for-streaming)
+
+---
+
+#### **Example Blog Page with Posts and Authors**
+
+We’ll create a simple blog-like page by using the **Json Placeholder** API, fetching posts and their associated authors sequentially.
+
+---
+
+#### **Setup Folder for Sequential Data Fetching**
+
+1. Inside your **`app`** folder, create a new folder:
+
+   ```
+   /app/posts-sequential
+   ```
+
+2. Add a `page.tsx` file inside this folder.
+
+---
+
+#### **Typescript Type for Posts**
+
+Let’s start by defining the type for our posts:
+
+```ts
+type Post = {
+  userId: number;
+  id: number;
+  title: string;
+  body: string;
+};
+```
+
+---
+
+#### **Fetching Posts Sequentially**
+
+We will first fetch all the posts and then display each one. For each post, we'll later fetch the author based on the `userId` in the post.
+
+```tsx
+// app/posts-sequential/page.tsx
+export default async function PostsSequential() {
+  const response = await fetch('https://jsonplaceholder.typicode.com/posts');
+  const posts: Post[] = await response.json();
+  
+  // Filter to include only posts with an ID divisible by 10
+  const filteredPosts = posts.filter(post => post.id % 10 === 0);
+
+  return (
+    <div>
+      {filteredPosts.map((post) => (
+        <div key={post.id} className="p-4 border-b border-gray-200">
+          <h2 className="font-semibold">{post.title}</h2>
+          <p>{post.body}</p>
+          <div>Author: <span>Loading...</span></div> {/* Author will be rendered later */}
+        </div>
+      ))}
+    </div>
+  );
+}
+```
+
+---
+
+#### **Fetching the Author for Each Post**
+
+Next, we will create a new **`author.tsx`** component to fetch the author of each post:
+
+```tsx
+// app/posts-sequential/author.tsx
+type AuthorProps = {
+  userId: number;
+};
+
+type Author = {
+  id: number;
+  name: string;
+};
+
+export default async function Author({ userId }: AuthorProps) {
+  const response = await fetch(`https://jsonplaceholder.typicode.com/users/${userId}`);
+  const author: Author = await response.json();
+
+  return <span>{author.name}</span>;
+}
+```
+
+---
+
+#### **Integrating Author Component**
+
+In `page.tsx`, import the `Author` component and replace the placeholder "Loading..." text with the `Author` component.
+
+```tsx
+import Author from './author';
+
+export default async function PostsSequential() {
+  const response = await fetch('https://jsonplaceholder.typicode.com/posts');
+  const posts: Post[] = await response.json();
+
+  const filteredPosts = posts.filter(post => post.id % 10 === 0);
+
+  return (
+    <div>
+      {filteredPosts.map((post) => (
+        <div key={post.id} className="p-4 border-b border-gray-200">
+          <h2 className="font-semibold">{post.title}</h2>
+          <p>{post.body}</p>
+          <div>
+            Author: <Author userId={post.userId} />
+          </div>
+        </div>
+      ))}
+    </div>
+  );
+}
+```
+
+---
+
+#### **Adding Suspense for Streaming**
+
+Instead of blocking the UI while fetching the author, we can use **React Suspense** to show the post first and then stream in the author name in the background.
+
+1. Wrap the `Author` component in a `<Suspense>` boundary:
+
+```tsx
+import { Suspense } from 'react';
+import Author from './author';
+
+export default async function PostsSequential() {
+  const response = await fetch('https://jsonplaceholder.typicode.com/posts');
+  const posts: Post[] = await response.json();
+  const filteredPosts = posts.filter(post => post.id % 10 === 0);
+
+  return (
+    <div>
+      {filteredPosts.map((post) => (
+        <div key={post.id} className="p-4 border-b border-gray-200">
+          <h2 className="font-semibold">{post.title}</h2>
+          <p>{post.body}</p>
+          <div>
+            Author: 
+            <Suspense fallback={<span>Loading author...</span>}>
+              <Author userId={post.userId} />
+            </Suspense>
+          </div>
+        </div>
+      ))}
+    </div>
+  );
+}
+```
+
+2. Add a 1-second artificial delay in the `Author` component to demonstrate Suspense:
+
+```tsx
+await new Promise(resolve => setTimeout(resolve, 1000));  // 1 second delay
+```
+
+Now, when you reload the page, the post content will show first, and after a short delay, the author name will appear.
+
+---
+
+### **Parallel Data Fetching**
+
+Parallel data fetching is the process of initiating multiple requests simultaneously, reducing the total loading time when the requests don’t depend on each other. This pattern is useful when you need to fetch independent pieces of data and display them together.
+
+* [**Example User Profile Page with Posts and Albums**](#example-user-profile-page-with-posts-and-albums)
+* [**Setup Folder for Parallel Data Fetching**](#setup-folder-for-parallel-data-fetching)
+* [**Typescript Types for Posts and Albums**](#typescript-types-for-posts-and-albums)
+* [**Fetching Posts and Albums**](#fetching-posts-and-albums)
+* [**Component for User Profile**](#component-for-user-profile)
+* [**Adding a Loading State**](#adding-a-loading-state)
+* [**Creating a Loading Spinner**](#creating-a-loading-spinner)
+* [**Wrapping with Suspense**](#wrapping-with-suspense)
+
+---
+
+#### **Example User Profile Page with Posts and Albums**
+
+In this example, we'll create a **user profile page** by fetching both the user's posts and albums concurrently using **Json Placeholder API**.
+
+---
+
+#### **Setup Folder for Parallel Data Fetching**
+
+1. Inside your **`app`** folder, create a new folder:
+
+   ```
+   /app/user-parallel
+   ```
+
+2. Inside **`user-parallel`**, create a dynamic route folder:
+
+   ```
+   /app/user-parallel/[id]
+   ```
+
+3. Inside this folder, add a `page.tsx` file.
+
+---
+
+#### **Typescript Types for Posts and Albums**
+
+We’ll define the types for the posts and albums. The `userId` is common across both types:
+
+```ts
+type Post = {
+  userId: number;
+  id: number;
+  title: string;
+  body: string;
+};
+
+type Album = {
+  userId: number;
+  id: number;
+  title: string;
+};
+```
+
+---
+
+#### **Fetching Posts and Albums**
+
+We will create two functions to fetch the user's posts and albums. These functions will be defined outside the component to keep things clean.
+
+1. **Fetching Posts**:
+
+```ts
+async function getUserPosts(userId: number) {
+  const res = await fetch(`https://jsonplaceholder.typicode.com/posts?userId=${userId}`);
+  return res.json();
+}
+```
+
+2. **Fetching Albums**:
+
+```ts
+async function getUserAlbums(userId: number) {
+  const res = await fetch(`https://jsonplaceholder.typicode.com/albums?userId=${userId}`);
+  return res.json();
+}
+```
+
+---
+
+#### **Component for User Profile**
+
+Now, let’s create the component that will fetch both posts and albums in parallel using `Promise.all`:
+
+```tsx
+// app/user-parallel/[id]/page.tsx
+import { Suspense } from 'react';
+
+export default async function UserProfile({ params }: { params: { id: string } }) {
+  const userId = parseInt(params.id, 10); // Get user ID from route params
+
+  // Fetch both posts and albums in parallel
+  const [posts, albums] = await Promise.all([
+    getUserPosts(userId),
+    getUserAlbums(userId)
+  ]);
+
+  return (
+    <div className="flex">
+      <div className="w-1/2 p-4">
+        <h2 className="font-semibold">Posts</h2>
+        {posts.map((post: Post) => (
+          <div key={post.id} className="mb-4">
+            <h3>{post.title}</h3>
+            <p>{post.body}</p>
+          </div>
+        ))}
+      </div>
+      <div className="w-1/2 p-4">
+        <h2 className="font-semibold">Albums</h2>
+        {albums.map((album: Album) => (
+          <div key={album.id} className="mb-4">
+            <h3>{album.title}</h3>
+          </div>
+        ))}
+      </div>
+    </div>
+  );
+}
+```
+
+---
+
+#### **Adding a Loading State**
+
+To simulate a loading state and show how both posts and albums are fetched simultaneously, let’s add a delay to the fetching functions:
+
+```ts
+async function getUserPosts(userId: number) {
+  await new Promise(resolve => setTimeout(resolve, 1000)); // 1-second delay
+  const res = await fetch(`https://jsonplaceholder.typicode.com/posts?userId=${userId}`);
+  return res.json();
+}
+
+async function getUserAlbums(userId: number) {
+  await new Promise(resolve => setTimeout(resolve, 1000)); // 1-second delay
+  const res = await fetch(`https://jsonplaceholder.typicode.com/albums?userId=${userId}`);
+  return res.json();
+}
+```
+
+---
+
+#### **Creating a Loading Spinner**
+
+Create a new `loading.tsx` file in the same folder to show a loading spinner. This will be used while the data is being fetched:
+
+```tsx
+// app/user-parallel/[id]/loading.tsx
+export default function Loading() {
+  return (
+    <div className="flex justify-center items-center p-10">
+      <div className="spinner-border animate-spin border-4 border-t-4 border-gray-600 rounded-full w-12 h-12"></div>
+    </div>
+  );
+}
+```
+
+---
+
+#### **Wrapping with Suspense**
+
+Wrap the `UserProfile` component with a `Suspense` boundary to show the loading spinner during data fetching:
+
+```tsx
+import { Suspense } from 'react';
+import Loading from './loading';
+
+export default function UserProfilePage({ params }: { params: { id: string } }) {
+  return (
+    <Suspense fallback={<Loading />}>
+      <UserProfile params={params} />
+    </Suspense>
+  );
+}
+```
 
 ---
