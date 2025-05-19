@@ -5373,7 +5373,7 @@ export function middleware(request: NextRequest) {
 Instead of changing the visible URL, you can **serve different content** while **keeping the original URL**.
 
 ```ts
-if (request.nextUrl.pathname === "/profile") {
+if (pathname === "/profile") {
   return NextResponse.rewrite(new URL("/hello", request.url));
 }
 ```
@@ -5388,28 +5388,47 @@ if (request.nextUrl.pathname === "/profile") {
 You can set or read cookies easily:
 
 ```ts
-export function middleware(request: NextRequest) {
-  const response = NextResponse.next();
+import { NextRequest, NextResponse } from "next/server";
 
+export function middleware(request: NextRequest) {
   const theme = request.cookies.get("theme");
 
+  // If theme cookie doesn't exist, set it
   if (!theme) {
+    const response = NextResponse.next();
     response.cookies.set("theme", "dark");
+    return response;
   }
 
-  return response;
+  // If theme cookie exists, just continue
+  return NextResponse.next();
 }
 ```
 
-* If the `theme` cookie doesn’t exist, it will be set to `"dark"`.
-* Cookies can persist across requests and personalize user experiences.
+**here's how you can test it:**
+
+**1.** **Open DevTools** in the browser.
+**2.** Go to the **Network tab**, refresh the page.
+**3.** Click on the request (e.g., to `/`) and inspect the **Response Headers → Set-Cookie**.
+**4.** You should see something like:
+
+```
+Set-Cookie: theme=dark; Path=/; ...
+```
+
+> * If the `theme` cookie doesn’t exist, it will be set to `"dark"`.
+> 
+> * Cookies can persist across requests and personalize user experiences.
 
 ---
 
 ### **Adding Custom Headers**
 
 ```ts
-export function middleware(request: NextRequest) {
+import { NextResponse } from "next/server";
+
+export function middleware() {
+
   const response = NextResponse.next();
 
   response.headers.set("x-custom-header", "custom-value");
