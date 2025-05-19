@@ -10,7 +10,7 @@
 * [**4. Styling**](#4.-styling)
 * [**5. Routing**](#5.-routing)
 * [**6. Data Fetching**](#6.-data-fetching)
-* [**7. API Routes Replacement in App Router**](#7.-api-routes-replacement-in-app-router)
+* [**7. Route Handlers**](#7.-route-handlers)
 * [**8. Using TypeScript in Next.js 15**](#8.-using-typescript-in-next.js-15)
 
 **Day 2**
@@ -5092,206 +5092,579 @@ export default function UserProfilePage({ params }: { params: { id: string } }) 
 
 ---
 
-## **7. API Routes Replacement in App Router**
+## **7. Route Handlers**
 
-💡 *Goal: Replace traditional `pages/api/*` routes with modern `app/api/*/route.ts` handlers in Next.js 15.*
+Next.js Route Handlers let you build **custom RESTful API endpoints** directly inside your app—no need for Express or a separate server. They are a powerful alternative to `pages/api` in the old Pages Router and work seamlessly within the App Router structure.
 
-We’ll build a real **API layer** for our blog:
-
-- `GET /api/posts` – List all posts
-- `GET /api/posts/:id` – Get a single post
-- `POST /api/posts` – Add a new post (simulated)
-- Handle errors and JSON parsing
-
----
-
-> Note: In real apps, you’d hit a DB or external API.
-
-Here, we’ll use an in-memory array to simulate persistence.
+* [**What Are Route Handlers**](#what-are-route-handlers)
+* [**Benefits of Route Handlers**](#benefits-of-route-handlers)
+* [**Getting Started Your First Route Handler**](#getting-started-your-first-route-handler)
+* [**Folder Organization**](#folder-organization)
+* [**Avoid Route Handler Conflicts**](#avoid-route-handler-conflicts)
 
 ---
 
-### **1. Folder & File Structure**
+### **What Are Route Handlers**
+
+* **Defined in**: `route.ts` (or `route.js`)
+* **Located in**: Any folder inside `/app`
+* **Purpose**: Handle HTTP requests like GET, POST, PUT, PATCH, DELETE, HEAD, OPTIONS
+* **Use Cases**:
+
+  * CRUD operations with a database
+  * Calling third-party APIs
+  * Securing server-side logic like secret keys
+
+---
+
+### **Benefits of Route Handlers**
+
+- Fully integrated—no need for a separate backend
+- Keeps secrets server-side (e.g., API keys)
+- Supports RESTful conventions out of the box
+- Share folder structure with page routes (but no conflicts!)
+
+---
+
+### **Getting Started Your First Route Handler**
+
+* [**Create a New App**](#create-a-new-app)
+* [**Create a Simple GET Handler**](#create-a-simple-get-handler)
+* [**Test It**](#test-it)
+
+#### **Create a New App**
+
+```bash
+npx create-next-app@latest route-handlers-demo
+cd route-handlers-demo
+```
+
+#### **Create a Simple GET Handler**
+
+```bash
+mkdir app/hello
+touch app/hello/route.ts
+```
+
+```ts
+// app/hello/route.ts
+export async function GET() {
+  return new Response("Hello World")
+}
+```
+
+#### **Test It**
+
+Visit: [http://localhost:3000/hello](http://localhost:3000/hello)
+
+- You should see: `Hello World`
+
+---
+
+### **Folder Organization**
+
+Route handlers can be nested just like page routes:
+
+```bash
+app/
+├── hello/
+│   └── route.ts       # GET /hello
+├── dashboard/
+│   └── route.ts       # GET /dashboard
+│   └── users/
+│       └── route.ts   # GET /dashboard/users
+```
+
+**Example**
+
+```ts
+// app/dashboard/route.ts
+export async function GET() {
+  return new Response("Dashboard data")
+}
+```
+
+```ts
+// app/dashboard/users/route.ts
+export async function GET() {
+  return new Response("User data")
+}
+```
+
+---
+
+### **Avoid Route Handler Conflicts**
+
+If you define both a `page.tsx` and a `route.ts` in the same folder, the **route handler will take precedence**.
+
+* [**Conflict Example**](#conflict-example)
+* [**Fix Use an `api` Subfolder**](#fix-use-an-api-subfolder)
+
+#### **Conflict Example**
 
 ```
 app/
-└── api/
-    └── posts/
-        ├── route.ts        ← GET / POST
-        └── [id]/
-            └── route.ts    ← GET /api/posts/:id
-
+└── profile/
+    ├── page.tsx       # Won't be used
+    └── route.ts       # Takes over
 ```
+
+#### **Fix Use an `api` Subfolder**
+
+```bash
+mkdir app/profile/api
+mv app/profile/route.ts app/profile/api/route.ts
+```
+
+Now:
+
+* `/profile` renders your page.
+* `/profile/api` handles API requests.
 
 ---
 
-### **2. Setup Fake DB**
+## **GET Requests**
 
-✅ Create `lib/fake-db.ts`:
+In this section, we'll explore how to handle `GET` requests using **Route Handlers** in the **App Router**. Rather than building a UI, we’ll use **Thunder Client**, a REST API client for VS Code, to test our endpoints.
 
+* [**Setup Install Thunder Client**](#setup-install-thunder-client)
+* [**Step 1 Create Sample Data**](#step-1-create-sample-data)
+* [**Step 2 Create the GET Route Handler**](#step-2-create-the-get-route-handler)
+* [**Step 3 Test with Thunder Client**](#step-3-test-with-thunder-client)
+
+---
+
+### **Setup Install Postman**
+
+Install the [Postman](https://marketplace.visualstudio.com/items?itemName=Postman.postman-for-vscode/) application if you haven't already. It allows you to quickly send requests to your local server for testing API endpoints.
+
+---
+
+### **Step 1 Create Sample Data**
+
+Create a folder for storing comments:
+
+```bash
+mkdir app/comments
+touch app/comments/data.ts
 ```
-export type Post = {
-  id: number;
-  title: string;
-  body: string;
-};
 
-let posts: Post[] = [
-  { id: 1, title: 'Hello from API', body: 'This is an API-powered post.' },
-  { id: 2, title: 'Server Actions & Route Handlers', body: 'Let’s build APIs in app/api.' },
+Add some sample data in `data.ts`:
+
+```ts
+// app/comments/data.ts
+export const comments = [
+  { id: 1, text: "First comment" },
+  { id: 2, text: "Second comment" },
+  { id: 3, text: "Third comment" },
 ];
-
-export function getPosts() {
-  return posts;
-}
-
-export function getPostById(id: number) {
-  return posts.find(p => p.id === id);
-}
-
-export function addPost(post: Omit<Post, 'id'>) {
-  const newPost = { ...post, id: Date.now() };
-  posts.unshift(newPost);
-  return newPost;
-}
-
 ```
+
+> These comments are stored in memory. They will reset every time the app restarts or reloads—which is fine for learning purposes.
 
 ---
 
-### **3. Implement `GET` and `POST` Routes**
+### **Step 2 Create the GET Route Handler**
 
-`app/api/posts/route.ts`
+Create the route handler file:
 
+```bash
+touch api/comments/route.ts
 ```
-import { NextResponse } from 'next/server';
-import { getPosts, addPost } from '@/lib/fake-db';
+
+Then define the `GET` handler:
+
+```ts
+// api/comments/route.ts
+import { comments } from "./data";
 
 export async function GET() {
-  const posts = getPosts();
-  return NextResponse.json(posts);
+  return Response.json(comments);
 }
-
-export async function POST(req: Request) {
-  try {
-    const body = await req.json();
-    if (!body.title || !body.body) {
-      return NextResponse.json({ error: 'Missing fields' }, { status: 400 });
-    }
-
-    const newPost = addPost({ title: body.title, body: body.body });
-    return NextResponse.json(newPost, { status: 201 });
-  } catch (e) {
-    return NextResponse.json({ error: 'Invalid JSON' }, { status: 400 });
-  }
-}
-
 ```
 
-### **Test with `curl` or Postman**
+> `Response.json(data)` is a shortcut for returning a JSON-formatted HTTP response in Next.js.
 
-```bash
-curl http://localhost:3000/api/posts
+---
 
+### **Step 3 Test with Postman**
+
+1. Open the Postman tab in VS Code.
+2. Click **New Request**.
+3. Set method to `GET`.
+4. Enter the URL: `http://localhost:3000/api/comments`.
+5. Click **Send**.
+
+You should see:
+
+```json
+[
+  { "id": 1, "text": "First comment" },
+  { "id": 2, "text": "Second comment" },
+  { "id": 3, "text": "Third comment" }
+]
 ```
 
-```bash
-curl -X POST http://localhost:3000/api/posts \
-  -H "Content-Type: application/json" \
-  -d '{"title": "New from client", "body": "Just testing"}'
+>  Response status: **200 OK**
+>  Your GET route handler is working as expected!
 
+---
+
+## **POST Requests**
+
+In this section, we'll learn how to create and test a **POST request** using Route Handlers in the App Router. We’ll continue using **Postman** to simulate API calls.
+
+* [**Step 1 Prepare Your POST Request in Postman**](#step-1-prepare-your-post-request-in-postman)
+* [**Step 2 Define the POST Handler**](#step-2-define-the-post-handler)
+* [**Step 3 Test POST Request**](#step-3-test-post-request)
+* [**Step 4 Verify with GET**](#step-4-verify-with-get)
+
+---
+
+### **Step 1 Prepare Your POST Request in Postman**
+
+1. Open Postman in VS Code.
+2. Create a **New Request**.
+3. Set **HTTP Method** to `POST`.
+4. Set the **URL** to: `http://localhost:3000/api/comments`.
+5. Switch to the **Body** tab, select `JSON`, and enter:
+
+```json
+{
+  "text": "New comment"
+}
+```
+
+> At this point, if you hit **Send**, you’ll get a `405 Method Not Allowed` error — because we haven’t defined a `POST` handler yet.
+
+---
+
+### **Step 2 Define the POST Handler**
+
+Open the `api/comments/route.ts` file, and add a `POST` handler:
+
+```ts
+// api/comments/route.ts
+import { comments } from "./data";
+
+// GET handler (already defined)
+export async function GET() {
+  return Response.json(comments);
+}
+
+// POST handler
+export async function POST(request: Request) {
+  const comment = await request.json();
+
+  const newComment = {
+    id: comments.length + 1,
+    text: comment.text,
+  };
+
+  comments.push(newComment);
+
+  return new Response(JSON.stringify(newComment), {
+    status: 201,
+    headers: { "Content-Type": "application/json" },
+  });
+}
+```
+
+> The function name **must match** the HTTP verb (`POST`).
+> We use `Response` to return a proper JSON response with status `201 Created`.
+
+---
+
+### **Step 3 Test POST Request**
+
+1. Go back to your POST request in Postman.
+2. Click **Send**.
+
+You should get a response like:
+
+```json
+{
+  "id": 4,
+  "text": "New comment"
+}
+```
+
+> Status: **201 Created**
+
+---
+
+### **Step 4 Verify with GET**
+
+1. Switch back to your earlier `GET` request tab.
+2. Click **Send** again.
+
+You should now see the fourth comment appended to the list:
+
+```json
+[
+  { "id": 1, "text": "First comment" },
+  { "id": 2, "text": "Second comment" },
+  { "id": 3, "text": "Third comment" },
+  { "id": 4, "text": "New comment" }
+]
 ```
 
 ---
 
-### **4. Implement `GET /api/posts/:id`**
+## **Dynamic Route Handlers**
 
-**`app/api/posts/[id]/route.ts`**
+We’ve already handled `GET` and `POST` requests for our `/api/comments` endpoint. Now, let’s explore **dynamic route handlers** — a necessary step before implementing `PATCH` and `DELETE` requests, which operate on **individual comments by ID**.
+
+* [**Why Dynamic Routes**](#why-dynamic-routes)
+* [**Step 1 Set Up the Dynamic Route Folder**](#step-1-set-up-the-dynamic-route-folder)
+* [**Step 2 Create the GET Handler for a Specific Comment**](#step-2-create-the-get-handler-for-a-specific-comment)
+* [**Step 3 Test with Postman Dynamic Route**](#step-3-test-with-postman-dynamic-route)
+
+---
+
+### **Why Dynamic Routes**
+
+To update or delete a specific comment (e.g., comment with ID `1`), the request must target a route like:
 
 ```
-import { NextResponse } from 'next/server';
-import { getPostById } from '@/lib/fake-db';
+/api/comments/1
+/api/comments/2
+```
 
-export async function GET(_: Request, { params }: { params: { id: string } }) {
-  const id = parseInt(params.id);
-  const post = getPostById(id);
+Each `ID` is a **dynamic segment**, and we handle this in Next.js just like dynamic pages — using `[id]` in the folder name.
 
-  if (!post) {
-    return NextResponse.json({ error: 'Not found' }, { status: 404 });
-  }
+---
 
-  return NextResponse.json(post);
-}
+### **Step 1 Set Up the Dynamic Route Folder**
 
+Within the `api/comments` directory:
+
+1. Create a folder named `[id]` (square brackets indicate dynamic route).
+2. Inside `[id]`, create a file named `route.ts`.
+
+The structure should look like:
+
+```
+api/
+  comments/
+    [id]/
+      route.ts
 ```
 
 ---
 
-### **Client-side Fetch Example**
+### **Step 2 Create the GET Handler for a Specific Comment**
 
-Let’s create a Client Component to call our API:
+Edit `api/comments/[id]/route.ts`:
 
-**`components/blog/NewPostForm.tsx`**
+```ts
+// api/comments/[id]/route.ts
+import { comments } from "../data";
 
-```tsx
-'use client';
+export async function GET(
+  _request: Request,
+  context: { params: { id: string } }
+) {
+  const { id } = context.params;
 
-import { useState } from 'react';
+  const comment = comments.find(c => c.id === parseInt(id));
 
-export default function NewPostForm() {
-  const [title, setTitle] = useState('');
-  const [body, setBody] = useState('');
-  const [success, setSuccess] = useState(false);
-
-  async function handleSubmit(e: React.FormEvent) {
-    e.preventDefault();
-    const res = await fetch('/api/posts', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ title, body }),
-    });
-
-    if (res.ok) setSuccess(true);
-  }
-
-  return (
-    <form onSubmit={handleSubmit} className="space-y-4">
-      <input
-        placeholder="Title"
-        value={title}
-        onChange={(e) => setTitle(e.target.value)}
-        className="border p-2 w-full"
-      />
-      <textarea
-        placeholder="Body"
-        value={body}
-        onChange={(e) => setBody(e.target.value)}
-        className="border p-2 w-full"
-      />
-      <button className="bg-blue-600 text-white px-4 py-2 rounded" type="submit">
-        Add Post
-      </button>
-      {success && <p className="text-green-600">Post added!</p>}
-    </form>
-  );
+  return Response.json(comment);
 }
-
 ```
 
-Use it in `app/page.tsx` or `app/blog/page.tsx` temporarily to test.
+> `context.params.id` provides the dynamic segment from the URL.
+> We use `parseInt(id)` because comment IDs are numbers.
 
 ---
 
-### **Recap of This Session**
+### **Step 3 Test with Postman Dynamic Route**
 
-| Concept | Used In |
-| --- | --- |
-| Route Handlers | `app/api/*/route.ts` |
-| Method routing (GET/POST) | Server functions |
-| JSON parsing | `await req.json()` |
-| Error handling | Manual with status codes |
-| Simulated persistence | `lib/fake-db.ts` |
-| API calling from UI | `fetch('/api/posts')` |
+1. Open your `GET` request in Postman.
+2. Update the URL to: `http://localhost:3000/api/comments/1`
+3. Click **Send**.
+
+> You should see:
+
+```json
+{
+  "id": 1,
+  "text": "First comment"
+}
+```
+
+Try `.../2` and `.../3` as well — each should return the corresponding comment.
+
+---
+
+## **PATCH Request**
+
+Now that we can fetch a single comment using dynamic routes, let’s learn how to **update** one using the `PATCH` method. This is useful for making **partial changes**—like updating just the `text` of a comment.
+
+* [**Step 1 Test a PATCH Request in Postman**](#step-1-test-a-patch-request-in-postman)
+* [**Step 2 Add PATCH Handler**](#step-2-add-patch-handler)
+* [**Step 3 Re-Test in Postman**](#step-3-re-test-in-postman)
+
+---
+
+### **Step 1 Test a PATCH Request in Postman**
+
+1. Open Postman and create a **new request**.
+
+2. Set the HTTP method to `PATCH`.
+
+3. Use this URL:
+
+   ```
+   http://localhost:3000/api/comments/3
+   ```
+
+4. Go to the **Body** tab → Select `JSON`, and paste:
+
+   ```json
+   {
+     "text": "Updated comment"
+   }
+   ```
+
+5. Click **Send** — you’ll see a `405 Method Not Allowed` error for now.
+
+Let’s fix that.
+
+---
+
+### **Step 2 Add PATCH Handler**
+
+In `api/comments/[id]/route.ts`, add the following handler:
+
+```ts
+import { comments } from "../data";
+
+export async function PATCH(
+  request: Request,
+  context: { params: { id: string } }
+) {
+  const { id } = context.params;
+  const body = await request.json();
+  const { text } = body;
+
+  const index = comments.findIndex(c => c.id === parseInt(id));
+
+  if (index === -1) {
+    return new Response("Comment not found", { status: 404 });
+  }
+
+  comments[index].text = text;
+
+  return Response.json(comments[index]);
+}
+```
+
+---
+
+**Happening Here**
+
+* We extract the `id` from the dynamic route using `context.params.id`.
+* We parse the request body to get the new `text`.
+* We locate the comment’s **index** using `findIndex()`.
+* If the comment exists, we update its text and return it in the response.
+* If it doesn’t exist, we return a `404 Not Found`.
+
+---
+
+### **Step 3 Re-Test in Postman**
+
+* Send the `PATCH` request again with the new text.
+* You’ll receive a `200 OK` response and see:
+
+```json
+{
+  "id": 3,
+  "text": "Updated comment"
+}
+```
+
+* Switch to your `GET /api/comments` tab and hit **Send**:
+
+  * You’ll see the updated text reflected for comment ID `3`.
+
+---
+
+## **DELETE Request**
+
+A `DELETE` request allows us to **remove a resource**, in this case, a comment by its ID. Let’s walk through the setup and test it using Postman.
+
+* [**Step 1 Test a DELETE Request in Postman**](#step-1-test-a-delete-request-in-postman)
+* [**Step 2 Add DELETE Handler**](#step-2-add-delete-handler)
+* [**Step 3 Re-Test the Request**](#step-3-re-test-the-request)
+
+---
+
+### **Step 1 Test a DELETE Request in Postman**
+
+1. Open the Postman tab where you're testing the dynamic comment route.
+2. Change the HTTP method to `DELETE`.
+3. Use this URL:
+
+   ```
+   http://localhost:3000/api/comments/3
+   ```
+
+4. No need to add anything in the body.
+5. Click **Send**. You’ll see a `405 Method Not Allowed` error — let’s fix that.
+
+---
+
+### **Step 2 Add DELETE Handler**
+
+In the same file: `api/comments/[id]/route.ts`, add the following function:
+
+```ts
+import { comments } from "../data";
+
+export async function DELETE(
+  request: Request,
+  context: { params: { id: string } }
+) {
+  const { id } = context.params;
+
+  const index = comments.findIndex(c => c.id === parseInt(id));
+
+  if (index === -1) {
+    return new Response("Comment not found", { status: 404 });
+  }
+
+  const deletedComment = comments[index];
+  comments.splice(index, 1);
+
+  return Response.json(deletedComment);
+}
+```
+
+---
+
+**What’s Happening Here**
+
+* We extract the comment `id` from the URL.
+* Use `findIndex()` to locate the comment’s position.
+* If it exists, we store it in a variable, remove it from the array using `splice()`, and return it.
+* If it’s not found, we respond with a `404 Not Found`.
+
+---
+
+### **Step 3 Re-Test the Request**
+
+* Click **Send** on the `DELETE` request again.
+* You’ll receive a `200 OK` response with the deleted comment:
+
+```json
+{
+  "id": 3,
+  "text": "Updated comment"
+}
+```
+
+* Now switch to the `GET /api/comments` request and send it — you should now see only two comments left.
 
 ---
 
