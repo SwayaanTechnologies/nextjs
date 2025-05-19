@@ -5711,21 +5711,8 @@ This architecture provides the best of both worlds by combining the efficiency o
 
 In the React Server Components (RSC) architecture, we learned about the distinction between **server components** and **client components**. In this section, we’ll put that knowledge into practice by creating both types of components in a **Next.js** application.
 
-* [**Setting Up the Project**](#setting-up-the-project)
 * [**Understanding the Default Server Component**](#understanding-the-default-server-component)
 * [**Creating a Client Component**](#creating-a-client-component)
-
----
-
-#### **Setting Up the Project**
-
-To begin, we create a new Next.js project using the following command:
-
-```bash
-npx create-next-app@latest rendering-demo
-```
-
-Once the command is run, you will have a basic Next.js project structure.
 
 ---
 
@@ -5756,7 +5743,11 @@ export default function AboutPage() {
 To verify this is a **server component**, add the following:
 
 ```tsx
-console.log("About Server Component");
+// app/about/page.tsx
+export default function About() {
+  console.log("About Server Component");
+  return <h1>About Me</h1>;
+}
 ```
 
 Now, when you navigate to the `about` page in the browser, you will see the console log message labeled with a **server tag** in both the browser and the terminal. This confirms the component is running as a server component.
@@ -5775,7 +5766,11 @@ For example, if we try to use `useState` in the **About page**:
 ```tsx
 import { useState } from 'react';
 
-const [name, setName] = useState('');
+export default function About() {
+  const [name, setName] = useState('');
+  console.log("About Server Component");
+  return <h1>About Me</h1>;
+}
 ```
 
 We will get an error because `useState` requires a **client-side environment**.
@@ -5786,11 +5781,12 @@ We will get an error because `useState` requires a **client-side environment**.
 
 Next, let’s create a **client component**. We'll create a **Dashboard page** in the `app` folder that uses **state** to manage user input:
 
-1. Inside the `app` folder, create a new file called `dashboard.tsx`.
+1. Inside the `app` folder, create a new file called `dashboard/page.tsx`.
 
 Add the following code:
 
 ```tsx
+// app/dashboard/page.tsx
 import { useState } from 'react';
 
 export default function DashboardPage() {
@@ -5810,6 +5806,8 @@ export default function DashboardPage() {
 }
 ```
 
+This code will throw an error because `useState` is a **client-side** feature, and we are trying to use it in a **server component**.
+
 ---
 
 ##### **Using the `use client` Directive**
@@ -5818,6 +5816,24 @@ To make this a **client component**, we need to add the following directive at t
 
 ```tsx
 'use client';
+
+import { useState } from 'react';
+
+export default function DashboardPage() {
+    const [name, setName] = useState('');
+
+    return (
+        <div>
+            <h1>Dashboard</h1>
+            <input 
+                type="text" 
+                value={name} 
+                onChange={(e) => setName(e.target.value)} 
+            />
+            <p>Hello, {name}</p>
+        </div>
+    );
+}
 ```
 
 This tells **Next.js** that this component, along with any imported components, should be executed on the client side. As a result, this component can handle **state** and **interactivity** using browser APIs.
@@ -5829,6 +5845,7 @@ This tells **Next.js** that this component, along with any imported components, 
 In the **Root Page**, add a link to the **Dashboard** page:
 
 ```tsx
+// app/page.tsx
 import Link from 'next/link';
 
 export default function HomePage() {
@@ -5850,7 +5867,27 @@ Now, when you visit the homepage and click on the **Dashboard** link, the **Dash
 To see the **client component’s rendering behavior**, add a console log to the **Dashboard page**:
 
 ```tsx
-console.log("Dashboard Client Component");
+// app/dashboard/page.tsx
+"use client";
+
+import { useState } from 'react';
+
+export default function DashboardPage() {
+    const [name, setName] = useState('');
+    console.log("Dashboard Client Component");
+
+    return (
+        <div>
+            <h1>Dashboard</h1>
+            <input 
+                type="text" 
+                value={name} 
+                onChange={(e) => setName(e.target.value)} 
+            />
+            <p>Hello, {name}</p>
+        </div>
+    );
+}
 ```
 
 1. When you click the **Dashboard** link, the log appears in the browser console, but without the **server tag**.
