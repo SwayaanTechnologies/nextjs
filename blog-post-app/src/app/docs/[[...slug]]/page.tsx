@@ -1,14 +1,15 @@
 // app/docs/[...slug]/page.tsx
 
 type Params = {
-    params: {
+    params: Promise<{
       slug?: string[];
-    };
+    }>;
   };
   
   export default async function DocsPage({ params }: Params) {
-    const slug = await params.slug ?? [];
-  
+    const resolvedParams = await params;
+    const slug = resolvedParams.slug ?? [];
+
     if (slug.length === 2) {
       return <h1>Viewing docs for feature { slug[0] } and concept { slug[1]}</h1>;
     }

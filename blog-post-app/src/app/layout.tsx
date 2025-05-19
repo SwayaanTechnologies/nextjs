@@ -36,6 +36,28 @@
 
 
 
+
+
+// File: app/layout.tsx
+
+import './globals.css';
+import ErrorWrapper from './ErrorWrapper';
+
+export default function RootLayout({ children }: { children: React.ReactNode }) {
+  return (
+    <html lang="en">
+      <body>
+        <ErrorWrapper>
+          {children}
+        </ErrorWrapper>
+      </body>
+    </html>
+  );
+}
+
+
+
+
 // // File: app/layout.tsx this will throw an error you’ll encounter the following error:
 
 // Error: You're importing a component that needs createContext. This React hook only works in a client component.
@@ -75,20 +97,28 @@
 
 
 
+
+
+
+
+
+
+
+
 // File: app/layout.tsx
 
-import './globals.css';
-import { ThemeProvider } from '@/components/ThemeProvider';
+// import './globals.css';
+// import { ThemeProvider } from '@/components/ThemeProvider';
 
 
-export default function RootLayout({ children }: { children: React.ReactNode }) {
-  return (
-    <html lang="en">
-      <body>
-        <ThemeProvider>
-          {children}
-        </ThemeProvider>
-      </body>
-    </html>
-  );
-}
+// export default function RootLayout({ children }: { children: React.ReactNode }) {
+//   return (
+//     <html lang="en">
+//       <body>
+//         <ThemeProvider>
+//           {children}
+//         </ThemeProvider>
+//       </body>
+//     </html>
+//   );
+// }

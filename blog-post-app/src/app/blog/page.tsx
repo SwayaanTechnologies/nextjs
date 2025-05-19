@@ -41,7 +41,55 @@
 
 
 
-export default async function BlogPage() {
-  await new Promise((resolve) => setTimeout(resolve, 2000)); // 2 sec delay
-  return <h1>Blog Page Content</h1>;
+// export default async function BlogPage() {
+//   await new Promise((resolve) => setTimeout(resolve, 2000)); // 2 sec delay
+//   return <h1>Blog Page Content</h1>;
+// }
+
+
+
+
+
+// app/blog/page.tsx
+// import Link from 'next/link';
+
+// export default function BlogPage() {
+//   return (
+//     <div>
+//       <h1>Featured Blog Posts</h1>
+//       <ul>
+//         <li><Link href="/blog/1">Blog Post 1</Link></li>
+//         <li><Link href="/blog/2">Blog Post 2</Link></li>
+//         <li><Link href="/blog/3">Blog Post 3</Link></li>
+//       </ul>
+//     </div>
+//   );
+// }
+
+
+
+
+
+
+
+
+
+
+// app/blog/page.tsx
+import { Suspense } from 'react';
+import { BlogComponent } from '@/components/BlogComponent';
+import { CommentComponent } from '@/components/CommentComponent';
+
+export default function BlogPage() {
+  return (
+    <div>
+      <h1>Blog Post</h1>
+      <Suspense fallback={<p>Loading blog post...</p>}>
+        <BlogComponent />
+      </Suspense>
+      <Suspense fallback={<p>Loading comments...</p>}>
+        <CommentComponent />
+      </Suspense>
+    </div>
+  );
 }

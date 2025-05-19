@@ -3,11 +3,12 @@
 // import { notFound } from "next/navigation";
 
 // type Params = {
-//   params: {
+//   params: Promise<{
 //     blogId: string;
 //     commentId: string;
-//   };
+//   }>;
 // };
+
 
 // export default async function CommentDetails({ params }: Params) {
 //   const { blogId, commentId } = await params;
@@ -21,6 +22,22 @@
 
 
 
+// app/blog/[blogId]/comments/[commentId]/page.tsx
+import { notFound } from 'next/navigation';
+
+export default async function BlogComment({ params }: { params: Promise<{ commentId: string }> }) {
+  const awaitedParams = await params;
+  const commentId = parseInt(awaitedParams.commentId);
+
+  if (commentId > 1000) {
+    notFound();
+  }
+
+  return <h1>Comment ID: {commentId}</h1>;
+}
+
+
+
 
 
 // File: app/blog/[blogId]/comments/[commentId]/page.tsx
@@ -29,7 +46,7 @@
 // export default async function BlogComment({
 //   params,
 // }: {
-//    params: { blogId: string; commentId: string };
+//    params: Promise<{ blogId: string; commentId: string }>;
 // }) {
 //   const awaitedParams = await params;
 //   const commentId = parseInt(awaitedParams.commentId);
@@ -51,15 +68,15 @@
 
 
 
-function getRandomInt(max: number) {
-  return Math.floor(Math.random() * max);
-}
+// function getRandomInt(max: number) {
+//   return Math.floor(Math.random() * max);
+// }
 
-export default function CommentPage() {
-  const random = getRandomInt(2);
-  if (random === 1) {
-    throw new Error("Error loading comment");
-  }
+// export default function CommentPage() {
+//   const random = getRandomInt(2);
+//   if (random === 1) {
+//     throw new Error("Error loading comment");
+//   }
 
-  return <h1>Comment Page</h1>;
-}
+//   return <h1>Comment Page</h1>;
+// }
