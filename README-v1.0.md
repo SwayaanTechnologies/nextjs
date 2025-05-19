@@ -5408,8 +5408,11 @@ export function middleware(request: NextRequest) {
 **here's how you can test it:**
 
 **1.** **Open DevTools** in the browser.
+
 **2.** Go to the **Network tab**, refresh the page.
+
 **3.** Click on the request (e.g., to `/`) and inspect the **Response Headers → Set-Cookie**.
+
 **4.** You should see something like:
 
 ```
