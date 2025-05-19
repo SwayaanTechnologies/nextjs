@@ -5101,6 +5101,11 @@ Next.js Route Handlers let you build **custom RESTful API endpoints** directly i
 * [**Getting Started Your First Route Handler**](#getting-started-your-first-route-handler)
 * [**Folder Organization**](#folder-organization)
 * [**Avoid Route Handler Conflicts**](#avoid-route-handler-conflicts)
+* [**GET Requests**](#get-requests)
+* [**POST Requests**](#post-requests)
+* [**Dynamic Route Handlers**](#dynamic-route-handlers)
+* [**PATCH Request**](#patch-request)
+* [**DELETE Request**](#delete-request)
 
 ---
 
@@ -5128,16 +5133,8 @@ Next.js Route Handlers let you build **custom RESTful API endpoints** directly i
 
 ### **Getting Started Your First Route Handler**
 
-* [**Create a New App**](#create-a-new-app)
 * [**Create a Simple GET Handler**](#create-a-simple-get-handler)
 * [**Test It**](#test-it)
-
-#### **Create a New App**
-
-```bash
-npx create-next-app@latest route-handlers-demo
-cd route-handlers-demo
-```
 
 #### **Create a Simple GET Handler**
 
@@ -5223,7 +5220,7 @@ Now:
 
 ---
 
-## **GET Requests**
+### **GET Requests**
 
 In this section, we'll explore how to handle `GET` requests using **Route Handlers** in the **App Router**. Rather than building a UI, we’ll use **Thunder Client**, a REST API client for VS Code, to test our endpoints.
 
@@ -5234,13 +5231,13 @@ In this section, we'll explore how to handle `GET` requests using **Route Handle
 
 ---
 
-### **Setup Install Postman**
+#### **Setup Install Postman**
 
 Install the [Postman](https://marketplace.visualstudio.com/items?itemName=Postman.postman-for-vscode/) application if you haven't already. It allows you to quickly send requests to your local server for testing API endpoints.
 
 ---
 
-### **Step 1 Create Sample Data**
+#### **Step 1 Create Sample Data**
 
 Create a folder for storing comments:
 
@@ -5264,7 +5261,7 @@ export const comments = [
 
 ---
 
-### **Step 2 Create the GET Route Handler**
+#### **Step 2 Create the GET Route Handler**
 
 Create the route handler file:
 
@@ -5287,7 +5284,7 @@ export async function GET() {
 
 ---
 
-### **Step 3 Test with Postman**
+#### **Step 3 Test with Postman**
 
 1. Open the Postman tab in VS Code.
 2. Click **New Request**.
@@ -5310,7 +5307,7 @@ You should see:
 
 ---
 
-## **POST Requests**
+### **POST Requests**
 
 In this section, we'll learn how to create and test a **POST request** using Route Handlers in the App Router. We’ll continue using **Postman** to simulate API calls.
 
@@ -5321,7 +5318,7 @@ In this section, we'll learn how to create and test a **POST request** using Rou
 
 ---
 
-### **Step 1 Prepare Your POST Request in Postman**
+#### **Step 1 Prepare Your POST Request in Postman**
 
 1. Open Postman in VS Code.
 2. Create a **New Request**.
@@ -5339,7 +5336,7 @@ In this section, we'll learn how to create and test a **POST request** using Rou
 
 ---
 
-### **Step 2 Define the POST Handler**
+#### **Step 2 Define the POST Handler**
 
 Open the `api/comments/route.ts` file, and add a `POST` handler:
 
@@ -5375,7 +5372,7 @@ export async function POST(request: Request) {
 
 ---
 
-### **Step 3 Test POST Request**
+#### **Step 3 Test POST Request**
 
 1. Go back to your POST request in Postman.
 2. Click **Send**.
@@ -5393,7 +5390,7 @@ You should get a response like:
 
 ---
 
-### **Step 4 Verify with GET**
+#### **Step 4 Verify with GET**
 
 1. Switch back to your earlier `GET` request tab.
 2. Click **Send** again.
@@ -5411,7 +5408,7 @@ You should now see the fourth comment appended to the list:
 
 ---
 
-## **Dynamic Route Handlers**
+### **Dynamic Route Handlers**
 
 We’ve already handled `GET` and `POST` requests for our `/api/comments` endpoint. Now, let’s explore **dynamic route handlers** — a necessary step before implementing `PATCH` and `DELETE` requests, which operate on **individual comments by ID**.
 
@@ -5422,7 +5419,7 @@ We’ve already handled `GET` and `POST` requests for our `/api/comments` endpoi
 
 ---
 
-### **Why Dynamic Routes**
+#### **Why Dynamic Routes**
 
 To update or delete a specific comment (e.g., comment with ID `1`), the request must target a route like:
 
@@ -5435,7 +5432,7 @@ Each `ID` is a **dynamic segment**, and we handle this in Next.js just like dyna
 
 ---
 
-### **Step 1 Set Up the Dynamic Route Folder**
+#### **Step 1 Set Up the Dynamic Route Folder**
 
 Within the `api/comments` directory:
 
@@ -5453,7 +5450,7 @@ api/
 
 ---
 
-### **Step 2 Create the GET Handler for a Specific Comment**
+#### **Step 2 Create the GET Handler for a Specific Comment**
 
 Edit `api/comments/[id]/route.ts`:
 
@@ -5478,7 +5475,7 @@ export async function GET(
 
 ---
 
-### **Step 3 Test with Postman Dynamic Route**
+#### **Step 3 Test with Postman Dynamic Route**
 
 1. Open your `GET` request in Postman.
 2. Update the URL to: `http://localhost:3000/api/comments/1`
@@ -5497,7 +5494,7 @@ Try `.../2` and `.../3` as well — each should return the corresponding comment
 
 ---
 
-## **PATCH Request**
+### **PATCH Request**
 
 Now that we can fetch a single comment using dynamic routes, let’s learn how to **update** one using the `PATCH` method. This is useful for making **partial changes**—like updating just the `text` of a comment.
 
@@ -5507,7 +5504,7 @@ Now that we can fetch a single comment using dynamic routes, let’s learn how t
 
 ---
 
-### **Step 1 Test a PATCH Request in Postman**
+#### **Step 1 Test a PATCH Request in Postman**
 
 1. Open Postman and create a **new request**.
 
@@ -5533,7 +5530,7 @@ Let’s fix that.
 
 ---
 
-### **Step 2 Add PATCH Handler**
+#### **Step 2 Add PATCH Handler**
 
 In `api/comments/[id]/route.ts`, add the following handler:
 
@@ -5572,7 +5569,7 @@ export async function PATCH(
 
 ---
 
-### **Step 3 Re-Test in Postman**
+#### **Step 3 Re-Test in Postman**
 
 * Send the `PATCH` request again with the new text.
 * You’ll receive a `200 OK` response and see:
@@ -5590,7 +5587,7 @@ export async function PATCH(
 
 ---
 
-## **DELETE Request**
+### **DELETE Request**
 
 A `DELETE` request allows us to **remove a resource**, in this case, a comment by its ID. Let’s walk through the setup and test it using Postman.
 
@@ -5600,7 +5597,7 @@ A `DELETE` request allows us to **remove a resource**, in this case, a comment b
 
 ---
 
-### **Step 1 Test a DELETE Request in Postman**
+#### **Step 1 Test a DELETE Request in Postman**
 
 1. Open the Postman tab where you're testing the dynamic comment route.
 2. Change the HTTP method to `DELETE`.
@@ -5615,7 +5612,7 @@ A `DELETE` request allows us to **remove a resource**, in this case, a comment b
 
 ---
 
-### **Step 2 Add DELETE Handler**
+#### **Step 2 Add DELETE Handler**
 
 In the same file: `api/comments/[id]/route.ts`, add the following function:
 
@@ -5652,7 +5649,7 @@ export async function DELETE(
 
 ---
 
-### **Step 3 Re-Test the Request**
+#### **Step 3 Re-Test the Request**
 
 * Click **Send** on the `DELETE` request again.
 * You’ll receive a `200 OK` response with the deleted comment:
