@@ -6237,6 +6237,42 @@ In traditional React apps, **Context Providers** are used near the root of the c
 
 If you attempt to create and use a context provider (via `createContext`) directly in a server component (like `app/layout.tsx`), you’ll encounter the following error:
 
+```tsx
+// File: app/layout.tsx
+
+import './globals.css';
+import { createContext } from 'react';
+
+
+type Theme = {
+  colors: {
+    primary: string;
+    secondary: string;
+  };
+};
+
+const defaultTheme: Theme = {
+  colors: {
+    primary: '#0070f3',
+    secondary: '#666666',
+  },
+};
+
+const ThemeContext = createContext<Theme>(defaultTheme);
+
+export default function RootLayout({ children }: { children: React.ReactNode }) {
+  return (
+    <html lang="en">
+      <body>
+        <ThemeContext.Provider value={defaultTheme}>
+          {children}
+        </ThemeContext.Provider>
+      </body>
+    </html>
+  );
+}
+```
+
 ```
 Error: You're importing a component that needs createContext. This React hook only works in a client component.
 ```
@@ -6303,14 +6339,11 @@ export function useTheme() {
 #### **Wrap the App in `app/layout.tsx`**
 
 ```tsx
-// app/layout.tsx
+// File: app/layout.tsx
+
 import './globals.css';
 import { ThemeProvider } from '@/components/ThemeProvider';
 
-export const metadata = {
-  title: 'My App',
-  description: 'Using RSC with Context',
-};
 
 export default function RootLayout({ children }: { children: React.ReactNode }) {
   return (
@@ -6383,15 +6416,28 @@ To help ensure client-only code stays client-side, we can use the [**`client-onl
 
 ### **Example Client-only Utility**
 
+* [**Install the `client-only` Package**](#install-the-client-only-package)
 * [**Create a Client-side Function**](#create-a-client-side-function)
 * [**Use in a Client Component**](#use-in-a-client-component)
 * [**Misuse in a Server Component Instant Feedback**](#misuse-in-a-server-component-instant-feedback)
 
 ---
 
+#### **Install the `client-only` Package**
+
+Install the `client-only` package to help enforce client-only code separation:
+
+```bash
+npm install client-only --force
+```
+
+> The `--force` flag is used to bypass peer dependency warnings if you're using React 19 or a newer version.
+
+---
+
 #### **Create a Client-side Function**
 
-Create a file `src/utils/client.ts`:
+Create a file `src/utils/client-utils.ts`:
 
 ```ts
 import clientOnly from 'client-only';
@@ -6414,7 +6460,7 @@ Update `app/client-route/page.tsx`:
 ```tsx
 'use client';
 
-import { clientSideFunction } from '@/utils/client';
+import { clientSideFunction } from '@/utils/client-utils';
 
 export default function ClientRoutePage() {
   const result = clientSideFunction();
@@ -6439,12 +6485,12 @@ Everything runs **perfectly on the client**, as intended.
 If you accidentally use this function in a **server component**, like `app/server-route/page.tsx`:
 
 ```tsx
-import { clientSideFunction } from '@/utils/client';
+import { clientSideFunction } from '@/utils/client-utils';
 
 export default function ServerRoutePage() {
-  const result = clientSideFunction(); // Error
+  const clientResult = clientSideFunction(); // Error
 
-  return <h1>{result}</h1>;
+  return <h1>{clientResult}</h1>;
 }
 ```
 
