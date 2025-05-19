@@ -5222,12 +5222,12 @@ Now:
 
 ### **GET Requests**
 
-In this section, we'll explore how to handle `GET` requests using **Route Handlers** in the **App Router**. Rather than building a UI, we’ll use **Thunder Client**, a REST API client for VS Code, to test our endpoints.
+In this section, we'll explore how to handle `GET` requests using **Route Handlers** in the **App Router**. Rather than building a UI, we’ll use **Postman**, a REST API client for VS Code, to test our endpoints.
 
-* [**Setup Install Thunder Client**](#setup-install-thunder-client)
+* [**Setup Install Postman**](#setup-install-postman)
 * [**Step 1 Create Sample Data**](#step-1-create-sample-data)
 * [**Step 2 Create the GET Route Handler**](#step-2-create-the-get-route-handler)
-* [**Step 3 Test with Thunder Client**](#step-3-test-with-thunder-client)
+* [**Step 3 Test with Postman**](#step-3-test-with-postman)
 
 ---
 
