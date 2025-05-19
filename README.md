@@ -6051,7 +6051,7 @@ Add the necessary CSS from `slick-carousel` to your global stylesheet: **`app/gl
 
 .image-slider-container .slick-prev:before,
 .image-slider-container .slick-next:before {
-  color: white;
+  color: black;
 }
 ```
 
