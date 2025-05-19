@@ -17,9 +17,9 @@
 * [**8. Middleware**](#8.-middleware)
 * [**9. Rendering**](#9.-rendering)
 * [**10. Rendering Strategies**](#10.-rendering-strategies)
-* [**Data Fetching**](#data-fetching)
 * [**11. Component Composition Patterns and Code Boundaries**](#11.-component-composition-patterns-and-code-boundaries)
 * [**12. Data Fetching**](#12.-data-fetching)
+* [**13. Metadata Management**](#13.-metadata-management)
 
 ## **1. Introduction**
 
@@ -7397,211 +7397,338 @@ export default function ClientComponentOne({ children }: { children?: React.Reac
 
 💡 *Goal: Fetch blog posts dynamically and understand SSR, SSG, ISR, and caching strategies.*
 
-* [**1. Server Components vs Client Components**](#1.-server-components-vs-client-components)
-* [**2. Fetching Data in a Server Component (`fetch()`)**](#2.-fetching-data-in-a-server-component)
-* [**3. Static vs Dynamic Data Fetching**](#3.-static-vs-dynamic-data-fetching)
-* [**4. Applying Static and Dynamic Fetching**](#4.-applying-static-and-dynamic-fetching)
-* [**5. Fetching a Single Blog Post**](#5.-fetching-a-single-blog-post)
-* [**6. Generate Static Params for SSG**](#6.-generate-static-params-for-ssg)
-* [**Final Result When to Use What?**](#final-result-when-to-use-what?)
+* [**Data Fetching Introduction**](#data-fetching-introduction)
+* [**Fetching Data in Client Components**](#fetching-data-in-client-components)
+* [**Fetching Data in Server Components**](#fetching-data-in-server-components)
+* [**Loading and Error States**](#loading-and-error-states)
 * [**Sequential Data Fetching**](#sequential-data-fetching)
 * [**Parallel Data Fetching**](#parallel-data-fetching)
 
 ---
 
-### **1. Server Components vs Client Components**
+### **Data Fetching Introduction**
 
-**What’s the Difference?**
+Now that we've explored routing and rendering, it's time to dive into **data fetching** — one of the most essential aspects of real-world applications.
 
-In **Next.js 15**, components are **server-first** by default.
+So far, we've worked with **hardcoded content**, but in production-grade apps, data is typically fetched from **external sources** such as APIs, databases, or file systems.
 
-| Feature | Server Components | Client Components |
-| --- | --- | --- |
-| Runs on | The server (before page loads) | The browser (after page loads) |
-| Can access DB/APIs | ✅ Yes (direct fetch) | ❌ No (must use API routes) |
-| Can use React state (`useState`) | ❌ No | ✅ Yes |
-| Bundle size impact | 🚀 Smaller (no JS sent to client) | 📦 Larger (more JS sent) |
-
-> Rule of thumb:
-> 
-> - **Use Server Components for data fetching & rendering**
->
-> - **Use Client Components when user interaction is needed (`useState`, `useEffect`)**
+* [**Why Fetch Data in Server Components**](#why-fetch-data-in-server-components)
 
 ---
 
-### **2. Fetching Data in a Server Component**
+#### **Why Fetch Data in Server Components**
 
-Next.js **automatically optimizes** `fetch()` by default.
+Next.js App Router is built on **React Server Components (RSC)**, which opens up multiple data fetching strategies. While you *can* fetch data on the client, **server components are the recommended place** for most data operations.
+
+**Benefits of Using Server Components for Data Fetching**
+
+* **Direct access** to file systems and databases
+* **Better performance**: fetches happen closer to the data source
+* **Smaller client bundles**: client components don't carry the data logic
+* **Increased security**: API keys and sensitive logic stay on the server
+
+---
+
+### **Fetching Data in Client Components**
+
+While the Next.js App Router encourages data fetching in server components for performance and security, there are still valid scenarios where client-side fetching is necessary — such as when the data depends on user interactions or needs real-time updates.
+
+* [**Data Source JSONPlaceholder**](#data-source-jsonplaceholder)
+* [**Setting Up the Route**](#setting-up-the-route)
+* [**Define the User Type**](#define-the-user-type)
+* [**Implement the Client Component**](#implement-the-client-component)
+* [**When to Use Client-side Fetching**](#when-to-use-client-side-fetching)
+
+---
+
+#### **Data Source JSONPlaceholder**
+
+We'll use [JSONPlaceholder](https://jsonplaceholder.typicode.com/users), a free fake API that provides mock data. Specifically, we’ll be working with the `/users` endpoint, which returns an array of 10 user objects.
+
+---
+
+#### **Setting Up the Route**
+
+Create a new route in your `app` directory:
+
+```bash
+/app/users-client/page.tsx
+```
+
+We’re calling this route `users-client` to reflect that the data is being fetched on the **client side**.
+
+---
+
+#### **Define the User Type**
+
+Inside `page.tsx`, define a TypeScript type to represent the user:
+
+```ts
+type User = {
+  id: number;
+  name: string;
+  username: string;
+  email: string;
+  phone: string;
+};
+```
+
+---
+
+#### **Implement the Client Component**
+
+Now let’s create the client component that fetches and renders the users:
 
 ```tsx
-// app/blog/page.tsx (Fetching all posts)
-import Link from 'next/link';
+'use client';
 
-async function getPosts() {
-  const res = await fetch('https://jsonplaceholder.typicode.com/posts');
-  return res.json();
-}
+import { useEffect, useState } from 'react';
 
-export default async function BlogPage() {
-  const posts = await getPosts();
+type User = {
+  id: number;
+  name: string;
+  username: string;
+  email: string;
+  phone: string;
+};
+
+export default function UsersClient() {
+  const [users, setUsers] = useState<User[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
+
+  useEffect(() => {
+    const fetchUsers = async () => {
+      try {
+        const res = await fetch('https://jsonplaceholder.typicode.com/users');
+        if (!res.ok) throw new Error('Failed to fetch users');
+        const data: User[] = await res.json();
+        setUsers(data);
+      } catch (err: any) {
+        setError(err.message || 'An unknown error occurred');
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    fetchUsers();
+  }, []);
+
+  if (loading) return <p className="text-blue-600">Loading...</p>;
+  if (error) return <p className="text-red-500">{error}</p>;
 
   return (
-    <div className="space-y-6">
-      {posts.slice(0, 5).map((post) => (
-        <div key={post.id}>
-          <h2 className="text-xl font-bold">
-            <Link href={`/blog/${post.id}`} className="hover:underline">
-              {post.title}
-            </Link>
-          </h2>
-          <p className="text-gray-600">{post.body.slice(0, 80)}...</p>
+    <div className="space-y-4 p-4">
+      <h1 className="text-xl font-bold">Client-side Users</h1>
+      {users.map((user) => (
+        <div key={user.id} className="border p-3 rounded shadow-sm">
+          <p><strong>Name:</strong> {user.name}</p>
+          <p><strong>Username:</strong> {user.username}</p>
+          <p><strong>Email:</strong> {user.email}</p>
+          <p><strong>Phone:</strong> {user.phone}</p>
         </div>
       ))}
     </div>
   );
 }
-
-```
-
-> 🔹 Why does this work?
-> 
-> - Runs **server-side** before the page loads.
-> - No API calls happen **in the browser**.
-> - **SEO-friendly** since HTML is generated before it reaches the client.
-
----
-
-### **3. Static vs Dynamic Data Fetching**
-
-By default, Next.js **caches** every `fetch()` request.
-
-**How do we control when it updates?**
-
-Next.js gives us **three main cache options:**
-
-| Fetch Option | Behavior | Use Case |
-| --- | --- | --- |
-| `{ cache: 'force-cache' }` *(default)* | Static (cached at build time) | Blog posts, product pages |
-| `{ cache: 'no-store' }` | Fetches fresh data every request | User data, real-time data |
-| `{ next: { revalidate: 60 } }` | Static, but updates every X seconds | News, price listings |
-
----
-
-### **4. Applying Static and Dynamic Fetching**
-
-* [**Static Rendering Cache Forever**](#static-rendering-cache-forever)
-* [**Dynamic Rendering Fresh Data on Every Request**](#dynamic-rendering-fresh-data-on-every-request)
-* [**ISR Hybrid Mode**](#isr-hybrid-mode)
-
-#### **Static Rendering Cache Forever**
-
-Fetch posts **once at build time** (Fastest method).
-
-```tsx
-async function getStaticPosts() {
-  return fetch('https://jsonplaceholder.typicode.com/posts', {
-    cache: 'force-cache', // Default
-  }).then((res) => res.json());
-}
-
 ```
 
 ---
 
-#### **Dynamic Rendering Fresh Data on Every Request**
+#### **When to Use Client-side Fetching**
 
-Use this when data **changes frequently**.
+Use **client-side fetching only when necessary**, such as:
 
-```tsx
-async function getSSRPosts() {
-  return fetch('https://jsonplaceholder.typicode.com/posts', {
-    cache: 'no-store', // Never cache
-  }).then((res) => res.json());
-}
+* Fetching data based on client-side interactions
+* Handling real-time data updates
+* Working with authenticated sessions in the browser
 
+---
+
+### **Fetching Data in Server Components**
+
+The **React Server Components (RSC)** architecture in Next.js makes server-side data fetching incredibly simple. With built-in support for `async`/`await`, you can fetch data like regular JavaScript — no need for `useEffect`, `useState`, or prop drilling.
+
+* [**Data Source JSONPlaceholder Fetching Data in Server Components**](#data-source-jsonplaceholder-fetching-data-in-server-components)
+* [**Creating the Server Route**](#creating-the-server-route)
+* [**Define the User Type for Server Component**](#define-the-user-type-for-server-component)
+* [**Create the Async Server Component**](#create-the-async-server-component)
+
+---
+
+#### **Data Source JSONPlaceholder Fetching Data in Server Components**
+
+We’ll continue using the `/users` endpoint from [JSONPlaceholder](https://jsonplaceholder.typicode.com/users), which provides an array of mock user data.
+
+---
+
+#### **Creating the Server Route**
+
+In your `app` directory, create a new route:
+
+```bash
+/app/users-server/page.tsx
+```
+
+We name it `users-server` to indicate that the data fetching occurs in a **server component**.
+
+---
+
+#### **Define the User Type for Server Component**
+
+Start by defining the same `User` type:
+
+```ts
+type User = {
+  id: number;
+  name: string;
+  username: string;
+  email: string;
+  phone: string;
+};
 ```
 
 ---
 
-#### **ISR Hybrid Mode**
+#### **Create the Async Server Component**
 
-Fetches **once**, **caches** it, but **updates** every 60 seconds.
-
-```tsx
-async function getISRPosts() {
-  return fetch('https://jsonplaceholder.typicode.com/posts', {
-    next: { revalidate: 60 }, // Updates every 60s
-  }).then((res) => res.json());
-}
-
-```
-
----
-
-### **5. Fetching a Single Blog Post**
-
-Let's apply what we learned to **fetch a single blog post**.
-
-**`app/blog/[id]/page.tsx`**
+Now create a server component that fetches and displays users:
 
 ```tsx
-async function getPost(id: string) {
-  return fetch(`https://jsonplaceholder.typicode.com/posts/${id}`, {
-    next: { revalidate: 60 }, // ISR: Updates every 60s
-  }).then((res) => res.json());
-}
+// app/users-server/page.tsx
+import React from 'react';
 
-export default async function BlogPostPage({ params }: { params: { id: string } }) {
-  const post = await getPost(params.id);
+type User = {
+  id: number;
+  name: string;
+  username: string;
+  email: string;
+  phone: string;
+};
 
-  if (!post) return <p>Post not found.</p>;
+export default async function UsersServer() {
+  const response = await fetch('https://jsonplaceholder.typicode.com/users');
+  const users: User[] = await response.json();
 
   return (
-    <article className="prose">
-      <h1>{post.title}</h1>
-      <p>{post.body}</p>
-    </article>
+    <div className="space-y-4 p-4">
+      <h1 className="text-xl font-bold">Server-side Users</h1>
+      {users.map((user) => (
+        <div key={user.id} className="border p-3 rounded shadow-sm">
+          <p><strong>Name:</strong> {user.name}</p>
+          <p><strong>Username:</strong> {user.username}</p>
+          <p><strong>Email:</strong> {user.email}</p>
+          <p><strong>Phone:</strong> {user.phone}</p>
+        </div>
+      ))}
+    </div>
   );
 }
+```
 
+> No `useState`, no `useEffect`, no hydration required — just clean, direct fetching logic.
+
+---
+
+### **Loading and Error States**
+
+While client components require you to manually manage loading and error states via `useState` and conditional rendering, **server components** in Next.js simplify this using **convention-based files**:
+
+* `loading.tsx` for loading state
+* `error.tsx` for error state
+
+Let’s see how to implement both.
+
+* [**Setup Folder**](#setup-folder)
+* [**`loading.tsx` Loading State**](#loading.tsx-loading-state)
+* [**`error.tsx` Error State**](#error.tsx-error-state)
+* [**Testing the Error UI**](#testing-the-error-ui)
+
+---
+
+#### **Setup Folder**
+
+This assumes you’ve already created:
+
+```
+/app/users-server/page.tsx
 ```
 
 ---
 
-### **6. Generate Static Params for SSG**
+#### **`loading.tsx` Loading State**
 
-> ✅ For static pages (SSG), we pre-build them at deploy time.
-> 
+Create a file:
 
-**`generateStaticParams()`**
+```
+/app/users-server/loading.tsx
+```
+
+Then add a simple loading UI:
 
 ```tsx
-export async function generateStaticParams() {
-  const posts = await fetch('https://jsonplaceholder.typicode.com/posts').then((res) => res.json());
-
-  return posts.slice(0, 5).map((post) => ({
-    id: post.id.toString(),
-  }));
+// app/users-server/loading.tsx
+export default function LoadingPage() {
+  return (
+    <div className="flex justify-center items-center h-40">
+      <div className="animate-spin rounded-full h-10 w-10 border-t-4 border-blue-500"></div>
+      <span className="ml-4 text-gray-700 font-medium">Loading users...</span>
+    </div>
+  );
 }
-
 ```
 
-> 🔹 Next.js builds only the first 5 blog posts at deploy time.
-> 
-> 
-> 🔹 Other posts are **generated dynamically when visited (ISR fallback).**
-> 
+> To simulate a loading delay, add this inside `page.tsx` (just before the fetch call):
+
+```ts
+await new Promise((resolve) => setTimeout(resolve, 2000));
+```
+
+This artificial delay gives the loading spinner time to appear.
 
 ---
 
-### **Final Result When to Use What?**
+#### **`error.tsx` Error State**
 
-| Use Case | Solution | Cache Setting |
-| --- | --- | --- |
-| Blog posts that rarely change | **SSG** | `{ cache: 'force-cache' }` |
-| User profiles, live comments | **SSR** | `{ cache: 'no-store' }` |
-| News articles, price listings | **ISR** | `{ next: { revalidate: 60 } }` |
+Create a file:
+
+```
+/app/users-server/error.tsx
+```
+
+Add the following code:
+
+```tsx
+'use client';
+
+import { useEffect } from 'react';
+
+export default function ErrorPage({ error }: { error: Error }) {
+  useEffect(() => {
+    console.error('Error fetching users:', error);
+  }, [error]);
+
+  return (
+    <div className="text-red-600 font-semibold p-4 border border-red-400 rounded bg-red-50">
+      Error fetching users data.
+    </div>
+  );
+}
+```
+
+> This file **must be a client component**, which is why we use the `'use client'` directive.
+
+---
+
+#### **Testing the Error UI**
+
+To simulate an error, change the fetch URL in `page.tsx` to something invalid:
+
+```ts
+await fetch('https://jsonplaceholder.typicode.com/users123');
+```
+
+Reload the page in the browser, and you should see the red error message.
 
 ---
 
@@ -7961,5 +8088,270 @@ export default function UserProfilePage({ params }: { params: { id: string } }) 
   );
 }
 ```
+
+---
+
+## **13. Metadata Management**
+
+* [**Routing Metadata**](#routing-metadata)
+* [**`title` Metadata**](#title-metadata)
+
+### **Routing Metadata**
+
+Next.js makes it easy to manage **SEO and social preview information** through the **metadata API**, which allows you to define page titles, descriptions, Open Graph tags, and more.
+
+You can configure metadata in both:
+
+* `layout.tsx` → metadata applies to **all nested pages**
+* `page.tsx` → metadata applies **only to that specific page**
+
+* [**Static Metadata**](#static-metadata)
+* [**Dynamic Metadata with `generateMetadata`**](#dynamic-metadata-with-generatemetadata)
+* [**Metadata and `use client`**](#metadata-and-use-client)
+
+---
+
+#### **Static Metadata**
+
+The simplest way to define metadata is by exporting a static object.
+
+* [**Example Root `layout.tsx`**](#example-root-layout.tsx)
+* [**Example `about/page.tsx`**](#example-about/page.tsx)
+
+##### **Example Root `layout.tsx`**
+
+```tsx
+// app/layout.tsx
+export const metadata = {
+  title: "Next.js App",
+  description: "Generated by Next.js",
+};
+```
+
+##### **Example `about/page.tsx`**
+
+```tsx
+// app/about/page.tsx
+export const metadata = {
+  title: "About | Code Evolution",
+};
+```
+
+**How it works**:
+
+* Metadata is **merged top-down**
+* Deeper segments (like `page.tsx`) **override** values defined at the layout level
+* In the example above:
+
+  * Title = "About | Code Evolution"
+  * Description = "Generated by Next.js" (inherited)
+
+---
+
+#### **Dynamic Metadata with `generateMetadata`**
+
+For dynamic routes or data-driven content, you can define metadata using the `generateMetadata` function.
+
+**Use Case Dynamic Product Page**
+
+```tsx
+// app/products/[productId]/page.tsx
+import { Metadata } from 'next';
+
+type Props = {
+  params: { productId: string };
+};
+
+export async function generateMetadata({ params }: Props): Promise<Metadata> {
+  const { productId } = params;
+
+  // Simulate fetching data
+  const title = await new Promise((resolve) => {
+    setTimeout(() => resolve(`iPhone ${productId}`), 100);
+  });
+
+  return {
+    title: `Product | ${title}`,
+  };
+}
+```
+
+**When to use `generateMetadata`**:
+
+* Dynamic route segments (like `[id]`)
+* Data from an API or database
+* Metadata based on route parameters
+
+---
+
+#### **Metadata and `use client`**
+
+> You **cannot** export `metadata` or `generateMetadata` in a file using the `use client` directive.
+
+**This will throw an error**
+
+```tsx
+// app/counter/page.tsx
+'use client';
+
+export const metadata = {
+  title: 'Counter',
+};
+
+// Will cause: Error - cannot export metadata from client component
+```
+
+---
+
+##### **Correct Pattern for Client Components**
+
+Split your logic into:
+
+* A **server component** (for metadata export)
+* A **client component** (for interactivity like `useState`, `useEffect`)
+
+**Example Structure:**
+
+```bash
+app/
+├── counter/
+│   ├── Counter.tsx       ← Client component
+│   └── page.tsx          ← Server component (exports metadata)
+```
+
+**`Counter.tsx` (Client)**
+
+```tsx
+'use client';
+
+import { useState } from 'react';
+
+export function Counter() {
+  const [count, setCount] = useState(0);
+
+  return (
+    <div>
+      <p>Count: {count}</p>
+      <button onClick={() => setCount(count + 1)}>Increment</button>
+    </div>
+  );
+}
+```
+
+**`page.tsx` (Server)**
+
+```tsx
+import { Counter } from './Counter';
+
+export const metadata = {
+  title: 'Counter',
+};
+
+export default function Page() {
+  return <Counter />;
+}
+```
+
+- Now the page renders with metadata **and** interactive logic — no errors.
+
+---
+
+### **`title` Metadata**
+
+The `title` field in metadata is essential for setting the browser tab title and optimizing search engine visibility. Next.js supports **two ways** to define it:
+
+* [**Simple Title**](#simple-title)
+* [**Advanced Title**](#advanced-title)
+
+#### **Simple Title**
+
+Set a title using a plain string:
+
+```tsx
+// page.tsx
+export const metadata = {
+  title: "About | Code Evolution",
+};
+```
+
+> This directly renders the string into the `<title>` tag of the HTML document.
+
+---
+
+#### **Advanced Title**
+
+For more control, define `title` as an **object** with optional fields:
+
+```tsx
+import type { Metadata } from 'next';
+
+export const metadata: Metadata = {
+  title: {
+    default: "Next.js Tutorial – Code Evolution",
+    template: "%s | Code Evolution",
+  },
+};
+```
+
+Let’s break down the options:
+
+* [**`default`**](#default)
+* [**`template`**](#template)
+* [**`absolute`**](#absolute)
+
+##### **`default`**
+
+* Acts as a **fallback** for any child routes that don’t specify their own title.
+* Useful for global defaults.
+
+```tsx
+title: {
+  default: "Next.js Tutorial – Code Evolution",
+}
+```
+
+##### **`template`**
+
+* Formats child page titles using a pattern.
+* `%s` is replaced by the child route’s title.
+
+```tsx
+title: {
+  template: "%s | Code Evolution"
+}
+```
+
+Example:
+If a page’s metadata sets `title: "Blog"`, the final title becomes:
+
+```text
+Blog | Code Evolution
+```
+
+##### **`absolute`**
+
+* Use this to **bypass inherited title templates** from parent segments.
+* Gives you a completely independent title.
+
+```tsx
+export const metadata = {
+  title: {
+    absolute: "Blog",
+  },
+};
+```
+
+Result: The title will simply be `Blog`, ignoring any template logic from higher up in the route tree.
+
+---
+
+#### **Summary Choosing the Right Title Strategy**
+
+| Use Case                      | Approach                        |
+| ----------------------------- | ------------------------------- |
+| Simple, static pages          | `title: "Static Title"`         |
+| Consistent formatting needed  | `title.template` + child titles |
+| Break template inheritance    | `title.absolute`                |
+| Global fallback for all pages | `title.default`                 |
 
 ---
