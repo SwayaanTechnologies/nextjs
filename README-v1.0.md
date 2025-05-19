@@ -6006,6 +6006,7 @@ Each rendering strategy has its use cases and trade-offs, and understanding how 
 * [**`generateStaticParams`**](#generateStaticParams)
 * [**`dynamicParams`**](#dynamicParams)
 * [**Streaming**](#streaming)
+* [**Code Splitting with Dynamic Imports**](#code-splitting-with-dynamic-imports)
 
 ### **Static Rendering**
 
@@ -6049,40 +6050,38 @@ Next.js also displays a **static route indicator** during development to help yo
 
 #### **Building and Inspecting the Output**
 
-1. First, **stop the dev server** and clean up the generated Next.js files.
+**1.** First, **stop the dev server** and clean up the generated Next.js files.
 
-2. In the `app/page.tsx`, let's add a link to the **about page** in the root page (`index.tsx`).
+**2.** In the `app/page.tsx`, let's add a link to the **about page** in the root page (`index.tsx`).
 
-    * Duplicate the dashboard link, change the `href`, and update the text accordingly.
-    * Render the current time on the about page to demonstrate how content is static at build time (e.g., `new Date().toLocaleTimeString()`).
+* Duplicate the dashboard link, change the `href`, and update the text accordingly.
+* Render the current time on the about page to demonstrate how content is static at build time (e.g., `new Date().toLocaleTimeString()`).
 
-    ```tsx
-    // app/page.tsx
-    "use client";
+  ```tsx
+  // app/page.tsx
+  "use client";
+  import Link from 'next/link';
+  import { useState } from 'react';
+  export default function HomePage() {
+      const [time] = useState(new Date().toLocaleTimeString());
+      return (
+          <div>
+              <h1>Home Page</h1>
+              <Link href="/dashboard">Go to Dashboard</Link>
+              <Link href="/about">Go to About</Link>
+              <p>Current Time: {time}</p>
+          </div>
+      );
+  }
+  ```
 
-    import Link from 'next/link';
-    import { useState } from 'react';
+**3.** In the terminal, run:
 
-    export default function HomePage() {
-        const [time] = useState(new Date().toLocaleTimeString());
-        return (
-            <div>
-                <h1>Home Page</h1>
-                <Link href="/dashboard">Go to Dashboard</Link>
-                <Link href="/about">Go to About</Link>
-                <p>Current Time: {time}</p>
-            </div>
-        );
-    }
-    ```
+```bash
+npm run build
+```
 
-3. In the terminal, run:
-
-   ```bash
-   npm run build
-   ```
-
-   This command creates an **optimized production build**. The output will be in the `next` folder, and it will differ significantly from the development setup.
+This command creates an **optimized production build**. The output will be in the `next` folder, and it will differ significantly from the development setup.
 
 ---
 
@@ -6530,6 +6529,60 @@ This is **Progressive Rendering in action**, where parts of the UI load as soon 
 * **Faster Initial Load**: The page feels faster because users can see parts of the content immediately, without waiting for everything to load.
 * **Better UX for Slow Data Fetches**: If parts of your page depend on slow data fetches (e.g., from an external API), you can improve the page's responsiveness by streaming data instead of blocking the entire page.
 * **Built-in Support in Next.js**: Streaming is integrated with the **App Router**, which makes it easy to implement and doesn't require complex setup.
+
+---
+
+### **Code Splitting with Dynamic Imports**
+
+* [**What is Code Splitting**](#what-is-code-splitting)
+* [**Dynamic Imports**](#dynamic-imports)
+
+#### **What is Code Splitting**
+
+**Code splitting** is a technique used in web development to split your JavaScript code into smaller chunks, which can be loaded on demand. This helps improve the performance of your application by reducing the initial load time and ensuring that only the necessary code is loaded when needed.
+
+In **Next.js**, code splitting is done automatically for each page. When you navigate to a new page, only the code required for that page is loaded, rather than loading the entire application upfront. This is particularly useful for large applications with many routes and components.
+
+#### **Dynamic Imports**
+
+Dynamic imports allow you to load JavaScript modules on demand, rather than including them in the initial bundle. This is particularly useful for large components or libraries that are not needed immediately.
+
+In **Next.js**, you can use dynamic imports with the `next/dynamic` function to load components only when they are needed. This can significantly reduce the size of the initial JavaScript bundle and improve performance.
+
+Create a component `/src/components/DynamicComponent.tsx`:
+
+```tsx
+const DynamicComponent = async () => {
+  await new Promise((resolve) => setTimeout(resolve, 2000)); // Simulate a 2-second delay
+  return <p>Dynamic Component Loaded...</p>;
+}
+
+export default DynamicComponent;
+```
+
+Then, in your page component, you can use `next/dynamic` to load this component dynamically:
+
+```tsx
+// app/dynamic-import/page.tsx
+import dynamic from 'next/dynamic';
+
+const DynamicComponent = dynamic(() => import('@/components/DynamicComponent').then(mod => mod.default), {
+  loading: () => <p>Loading Component...</p>,
+//   ssr: false, // Optional: disable server-side render if purely client-side
+});
+
+export default function AnalyticsPage() {
+  return (
+    <div>
+      <h1>Analytics</h1>
+      <DynamicComponent />
+    </div>
+  );
+}
+```
+
+Test the dynamic import by navigating to `/dynamic-import` in your browser. You should see the loading fallback text while the `DynamicComponent` is being fetched. After 2 seconds, the `DynamicComponent` will be displayed.
+This is particularly useful for components that are not critical for the initial render, such as modals, charts, or any other heavy components.
 
 ---
 
