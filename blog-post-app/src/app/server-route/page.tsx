@@ -1,4 +1,4 @@
-// // app/server-route/page.tsx
+// app/server-route/page.tsx
 // import { serverSideFunction } from '@/utils/server-utils';
 // import React from "react";
 // import Slider from "react-slick";
@@ -31,6 +31,10 @@
 //   );
 // }
 
+
+
+
+
 import ImageSlider from "@/components/ImageSlider";
 import { serverSideFunction } from "@/utils/server-utils";
 
@@ -43,3 +47,21 @@ export default function ServerRoutePage() {
     </>
   );
 }
+
+
+
+
+
+
+
+
+
+
+
+// import { clientSideFunction } from '@/utils/client-utils';
+
+// export default function ServerRoutePage() {
+//   const clientResult = clientSideFunction(); // Error
+
+//   return <h1>{clientResult}</h1>;
+// }
