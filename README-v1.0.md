@@ -7425,7 +7425,6 @@ Understanding how **Server Components** and **Client Components** interact in a 
 * [**Page Setup**](#page-setup)
 * [**Valid Patterns**](#valid-patterns)
 * [**Why Client ➝ Server Fails**](#why-client-➝-server-fails)
-* [**Workaround Pass Server Component as a Prop**](#workaround-pass-server-component-as-a-prop)
 
 ---
 
@@ -7439,20 +7438,29 @@ We define four components to explore interleaving:
 ##### **Server Components**
 
 ```tsx
-// components/ServerComponentOne.tsx
+// src/components/ServerComponentOne.tsx
 import fs from 'fs';
+import { ServerComponentTwo } from './ServerComponentTwo';
+// import ClientComponentOne from './ClientComponentOne';
 
 export const ServerComponentOne = () => {
   fs.readFileSync('README.md', 'utf8');
   return (
     <div>
+
       <h1>Server Component One</h1>
+      {/* Valid: Server inside Server */}
       <ServerComponentTwo />
+
+      {/* Client inside Server */}
+      {/* <ClientComponentOne /> */}
     </div>
   );
 };
 
-// components/ServerComponentTwo.tsx
+
+
+// src/components/ServerComponentTwo.tsx
 import fs from 'fs';
 
 export const ServerComponentTwo = () => {
@@ -7464,24 +7472,37 @@ export const ServerComponentTwo = () => {
 ##### **Client Components**
 
 ```tsx
-// components/ClientComponentOne.tsx
+// src/components/ClientComponentOne.tsx
 'use client';
 
 import { useState } from 'react';
 import ClientComponentTwo from './ClientComponentTwo';
+// import { ServerComponentOne } from './ServerComponentOne';
 
 export default function ClientComponentOne({ children }: { children?: React.ReactNode }) {
   const [name] = useState('Batman');
   return (
     <>
-      <h1>Client Component One</h1>
+      <h1>Client Component One </h1>
+      {/* Client Component inside Client Component */}
+
+
       <ClientComponentTwo />
+      { /* Server Inside Client */ }
+      {/* <ServerComponentOne /> */}
+      {/* Server Component inside Client Component will throw an error, because server component renders 
+      first and cannot be interleaved with client components */}
+
+      
       {children}
     </>
   );
 }
 
-// components/ClientComponentTwo.tsx
+
+
+
+// src/components/ClientComponentTwo.tsx
 'use client';
 
 export default function ClientComponentTwo() {
@@ -7495,29 +7516,20 @@ export default function ClientComponentTwo() {
 
 ```tsx
 // app/interleaving/page.tsx
-import ServerComponentOne from '@/components/ServerComponentOne';
+// import { ServerComponentOne } from '@/components/ServerComponentOne';
 import ClientComponentOne from '@/components/ClientComponentOne';
-
+ 
 export default function InterleavingPage() {
   return (
     <>
       <h1>Interleaving Page</h1>
 
       {/* Valid: Server inside Server */}
-      <ServerComponentOne />
+      {/* <ServerComponentOne /> */}
 
       {/* Valid: Client inside Client */}
       <ClientComponentOne />
 
-      {/* Valid: Client inside Server */}
-      <ServerComponentOne>
-        <ClientComponentOne />
-      </ServerComponentOne>
-
-      {/* Invalid: Server inside Client (will throw error) */}
-      {/* <ClientComponentOne>
-        <ServerComponentOne />
-      </ClientComponentOne> */}
     </>
   );
 }
@@ -7548,35 +7560,6 @@ When a server component is nested inside a client component:
 // Results in error:
 Module not found: Can't resolve 'fs'
 ```
-
----
-
-#### **Workaround Pass Server Component as a Prop**
-
-React doesn’t require you to render components only via JSX — you can pass server components as **props or children**.
-
-```tsx
-// page.tsx
-<ClientComponentOne>
-  <ServerComponentOne />
-</ClientComponentOne>
-```
-
-```tsx
-// ClientComponentOne.tsx
-'use client';
-
-export default function ClientComponentOne({ children }: { children?: React.ReactNode }) {
-  return (
-    <>
-      <h1>Client Component One</h1>
-      {children}
-    </>
-  );
-}
-```
-
-- This keeps server and client responsibilities clearly separated.
 
 ---
 
