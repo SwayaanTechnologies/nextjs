@@ -7,7 +7,12 @@ export const NavSearch = () => {
      const [search, setSearch] = useState("");
     return (
         <div>
-            Nav Search Input
+            <input
+                type="text"
+                value={search}
+                onChange={(e) => setSearch(e.target.value)}
+                placeholder="Nav Search Input"
+            />
         </div>
     );
 }

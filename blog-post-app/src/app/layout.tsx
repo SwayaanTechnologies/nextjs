@@ -41,7 +41,7 @@
 // File: app/layout.tsx
 
 import './globals.css';
-import ErrorWrapper from './ErrorWrapper';
+import { ErrorWrapper }  from './ErrorWrapper';
 
 export default function RootLayout({ children }: { children: React.ReactNode }) {
   return (

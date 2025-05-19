@@ -1,19 +1,23 @@
-// File: app/global-error.tsx
+"use client"; // Error boundaries must be Client Components
 
-'use client';
+import "./globals.css";
 
-export default function GlobalError({ error }: { error: Error }) {
+export default function GlobalError() {
   return (
-    <html>
-      <body className="flex flex-col items-center justify-center min-h-screen p-6 text-center bg-red-50 text-red-800">
-        <h2 className="text-2xl font-bold mb-4">Something went wrong</h2>
-        <p className="mb-4">{error.message}</p>
-        <button
-          onClick={() => window.location.reload()}
-          className="bg-red-600 text-white px-4 py-2 rounded"
-        >
-          Refresh
-        </button>
+    <html lang="en">
+      <body>
+        <div className="flex flex-col items-center justify-center min-h-screen">
+          <h2 className="text-2xl font-bold mb-4">Something went wrong!</h2>
+          <button
+            onClick={() => {
+              // refresh the page
+              window.location.reload();
+            }}
+            className="bg-blue-500 hover:bg-blue-700 text-white font-bold py-2 px-4 rounded"
+          >
+            Refresh
+          </button>
+        </div>
       </body>
     </html>
   );
