@@ -9167,6 +9167,8 @@ npm run dev
 
 Open [http://localhost:3000/data](http://localhost:3000/data) in your browser.
 
+![images](images/graphql-1.png)
+
 You should see:
 
 * A list of users with email addresses
