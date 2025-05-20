@@ -24,6 +24,7 @@
 **Day 3**
 
 * [**14. Setup GraphQL Server**](#14-setup-graphql-server)
+* [**15. GraphQL Data Display in Next.js with Apollo Client**](#15-graphql-data-display-in-nextjs-with-apollo-client)
 
 ## **1. Introduction**
 
@@ -8971,5 +8972,205 @@ query FetchData {
 ![images](images/graphql.png)
 
 You should see a structured JSON response in the Response panel, showing the data returned by your server for `users`, `blogs`, and `products`.
+
+---
+
+## **15. GraphQL Data Display in Next.js with Apollo Client**
+
+This guide walks you through creating a simple Next.js App Router project that fetches data from a GraphQL server and displays it using Apollo Client.
+
+* [**Project Structure**](#project-structure-2)
+* [**Step 1: Install Dependencies**](#step-1-install-dependencies)
+* [**Step 2: Setup Apollo Client**](#step-2-setup-apollo-client)
+* [**Step 3: Define GraphQL Query**](#step-3-define-graphql-query)
+* [**Step 4: Create DataDisplay Component**](#step-4-create-datadisplay-component)
+* [**Step 5: Create Page to Display Component**](#step-5-create-page-to-display-component)
+* [**Step 6: Run the App**](#step-6-run-the-app)
+
+---
+
+###  **Project Structure**
+
+```
+
+my-app/
+├── app/
+│   └── data/
+│       └── page.tsx
+├── components/
+│   └── DataDisplay.tsx
+├── graphql/
+│   └── queries.ts
+├── lib/
+│   └── apollo-client.ts
+├── package.json
+└── README.md
+
+```
+
+---
+
+### **Step 1: Install Dependencies**
+
+In your Next.js project root, run:
+
+```bash
+npm install @apollo/client graphql
+```
+
+---
+
+### **Step 2: Setup Apollo Client**
+
+Create the Apollo Client instance.
+
+**`/lib/apollo-client.ts`**
+
+```ts
+import { ApolloClient, InMemoryCache } from '@apollo/client';
+
+const client = new ApolloClient({
+  uri: 'http://localhost:4000/graphql', // Replace with your GraphQL endpoint
+  cache: new InMemoryCache(),
+});
+
+export default client;
+```
+
+---
+
+### **Step 3: Define GraphQL Query**
+
+Create a query to fetch users, blogs, and products.
+
+**`/graphql/queries.ts`**
+
+```ts
+import { gql } from '@apollo/client';
+
+export const FETCH_DATA = gql`
+  query FetchData {
+    users {
+      id
+      name
+      email
+    }
+    blogs {
+      id
+      title
+      author {
+        name
+      }
+    }
+    products {
+      id
+      name
+      price
+    }
+  }
+`;
+```
+
+---
+
+### **Step 4: Create DataDisplay Component**
+
+This component fetches and renders data using the query.
+
+**`/components/DataDisplay.tsx`**
+
+```tsx
+'use client';
+
+import { useQuery } from '@apollo/client';
+import client from '@/lib/apollo-client';
+import { FETCH_DATA } from '@/graphql/queries';
+
+export default function DataDisplay() {
+  const { loading, error, data } = useQuery(FETCH_DATA, { client });
+
+  if (loading) return <p>Loading...</p>;
+  if (error) return <p>Error: {error.message}</p>;
+
+  return (
+    <div className="space-y-8 p-6">
+      {/* Users */}
+      <section>
+        <h2 className="text-xl font-bold mb-2">Users</h2>
+        <ul className="space-y-2">
+          {data.users.map((user: any) => (
+            <li key={user.id} className="p-2 border rounded">
+              {user.name} ({user.email})
+            </li>
+          ))}
+        </ul>
+      </section>
+
+      {/* Blogs */}
+      <section>
+        <h2 className="text-xl font-bold mb-2">Blogs</h2>
+        <ul className="space-y-2">
+          {data.blogs.map((blog: any) => (
+            <li key={blog.id} className="p-2 border rounded">
+              {blog.title} by {blog.author.name}
+            </li>
+          ))}
+        </ul>
+      </section>
+
+      {/* Products */}
+      <section>
+        <h2 className="text-xl font-bold mb-2">Products</h2>
+        <ul className="space-y-2">
+          {data.products.map((product: any) => (
+            <li key={product.id} className="p-2 border rounded">
+              {product.name} - ${product.price}
+            </li>
+          ))}
+        </ul>
+      </section>
+    </div>
+  );
+}
+```
+
+---
+
+### **Step 5: Create Page to Display Component**
+
+Render the component in a route like `/data`.
+
+**`/app/data/page.tsx`**
+
+```tsx
+import DataDisplay from '@/components/DataDisplay';
+
+export default function DataPage() {
+  return (
+    <main className="max-w-4xl mx-auto mt-10">
+      <h1 className="text-3xl font-semibold mb-6">All Fetched Data</h1>
+      <DataDisplay />
+    </main>
+  );
+}
+```
+
+---
+
+### **Step 6: Run the App**
+
+Start your Next.js development server:
+
+```bash
+npm run dev
+```
+
+Open [http://localhost:3000/data](http://localhost:3000/data) in your browser.
+
+You should see:
+
+* A list of users with email addresses
+* Blog posts with author names
+* Products with names and prices
 
 ---
