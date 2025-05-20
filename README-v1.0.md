@@ -28,6 +28,7 @@
 * [**16. Authentication using next-auth with CredentialsProvider and Middleware**](#16-authentication-using-next-auth-with-credentialsprovider-and-middleware)
 * [**17. Authentication using Github Provider**](#17-authentication-using-github-provider)
 * [**18. Robots.txt**](#18-robotstxt)
+* [**19. Testing with Jest and React Testing Library**](#19-testing-with-jest-and-react-testing-library)
 
 ## **1. Introduction**
 
@@ -9873,5 +9874,191 @@ export default function PrivacyPage() {
 | `robots` meta tag | Fine-tune indexing for each page   |
 
 Use these tools to **control visibility**, **protect sensitive routes**, and **optimize your site’s SEO**.
+
+---
+
+## **19. Testing with Jest and React Testing Library**
+
+Jest and React Testing Library are frequently used together for **Unit Testing** and **Snapshot Testing**. This guide will show you how to set up Jest with Next.js and write your first tests.
+
+> **Good to know:** Since `async` Server Components are new to the React ecosystem, Jest currently does not support them. While you can still run **unit tests** for synchronous Server and Client Components, we recommend using an **E2E tests** for `async` components.
+
+### **Installation**
+
+You can use `create-next-app` with the Next.js [with-jest](https://github.com/vercel/next.js/tree/canary/examples/with-jest) example to quickly get started:
+
+```bash filename="Terminal"
+npx create-next-app@latest --example with-jest with-jest-app
+```
+
+### **Manual setup**
+
+Since the release of [Next.js 12](https://nextjs.org/blog/next-12), Next.js now has built-in configuration for Jest.
+
+To set up Jest, install `jest` and the following packages as dev dependencies:
+
+```bash filename="Terminal"
+npm install -D jest jest-environment-jsdom @testing-library/react @testing-library/dom @testing-library/jest-dom ts-node @types/jest
+```
+
+Generate a basic Jest configuration file by running the following command:
+
+```bash filename="Terminal"
+npm init jest@latest
+```
+
+This will take you through a series of prompts to setup Jest for your project, including automatically creating a `jest.config.ts|js` file.
+
+Update your config file to use `next/jest`. This transformer has all the necessary configuration options for Jest to work with Next.js:
+
+```ts filename="jest.config.ts" switcher
+import type { Config } from 'jest'
+import nextJest from 'next/jest.js'
+
+const createJestConfig = nextJest({
+  // Provide the path to your Next.js app to load next.config.js and .env files in your test environment
+  dir: './',
+})
+
+// Add any custom config to be passed to Jest
+const config: Config = {
+  coverageProvider: 'v8',
+  testEnvironment: 'jsdom',
+  // Add more setup options before each test is run
+  // setupFilesAfterEnv: ['<rootDir>/jest.setup.ts'],
+}
+
+// createJestConfig is exported this way to ensure that next/jest can load the Next.js config which is async
+export default createJestConfig(config)
+```
+
+### **Creating your first test**
+
+Your project is now ready to run tests. Create a folder called `__tests__` in your project's root directory.
+
+For example, we can add a test to check if the `<Page />` component successfully renders a heading:
+
+```jsx filename="app/page.js"
+// app/page.js
+import Link from 'next/link'
+
+export default function Page() {
+  return (
+    <div>
+      <h1>Home</h1>
+      <Link href="/about">About</Link>
+    </div>
+  )
+}
+```
+
+```jsx filename="__tests__/page.test.jsx"
+// __tests__/page.test.jsx
+import '@testing-library/jest-dom'
+import { render, screen } from '@testing-library/react'
+import Page from '../app/page'
+
+describe('Page', () => {
+  it('renders a heading', () => {
+    render(<Page />)
+
+    const heading = screen.getByRole('heading', { level: 1 })
+
+    expect(heading).toBeInTheDocument()
+  })
+
+  //   it('Check content of head is "Home', () => {
+  //   render(<Page />)
+ 
+  //   const heading = screen.getByRole('heading', 
+  //     { name: /home/i } // Use regex to match the text
+  //   )
+ 
+  //   expect(heading).toBeInTheDocument()
+  // })
+
+
+  // it('Check content of head is "Home', () => {
+  //   render(<Page />)
+ 
+  //   const text = screen.getByText(/home/i)
+ 
+  //   expect(text).toBeInTheDocument()
+  // })
+})
+```
+
+#### **Running your tests**
+
+Then, run the following command to run your tests:
+
+```bash filename="Terminal"
+npm run test
+```
+
+### **Creating a test for a component**
+
+Create a folder called `components` in your project's root directory. Inside the `components` folder, create a file called `Card.tsx` and add the following code:
+
+```tsx filename="app/components/Card.tsx"
+// app/components/Card.tsx
+
+export default function Card({ children }: { children: React.ReactNode }) {
+  return (
+    <div style={{ padding: '20px', border: '1px solid #ccc', borderRadius: '8px' }}>
+      {children}
+    </div>
+  );
+}
+```
+
+Next, create a test file for the `Card` component in the `__tests__` folder. Create a file called `Card.test.tsx` and add the following code:
+
+```tsx filename="__tests__/Card.test.tsx"
+// __tests__/Card.test.tsx
+import '@testing-library/jest-dom';
+import { render, screen } from '@testing-library/react';
+import Card from '@/components/Card';
+
+describe('Card', () => {
+  it('renders children correctly', () => {
+    render(<Card>Test Content</Card>);
+
+    const content = screen.getByText(/Test Content/i);
+    expect(content).toBeInTheDocument();
+  });
+
+  it('has correct styles', () => {
+    const { container } = render(<Card>Styled Content</Card>);
+    const card = container.firstChild;
+
+    expect(card).toHaveStyle({
+      padding: '20px',
+      border: '1px solid #ccc',
+      borderRadius: '8px',
+    });
+  });
+});
+```
+
+#### **Running your tests**
+
+Then, run the following command to run your tests:
+
+```bash filename="Terminal"
+npm run test
+```
+
+You should see the test results in your terminal, indicating whether the tests passed or failed.
+
+#### **Running tests in watch mode**
+
+You can run your tests in watch mode by using the `--watch` flag:
+
+```bash filename="Terminal"
+npm run test -- --watch
+```
+
+This will re-run the tests whenever you make changes to your code.
 
 ---
