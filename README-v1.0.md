@@ -27,6 +27,7 @@
 * [**15. GraphQL Data Display in Next.js with Apollo Client**](#15-graphql-data-display-in-nextjs-with-apollo-client)
 * [**16. Authentication using next-auth with CredentialsProvider and Middleware**](#16-authentication-using-next-auth-with-credentialsprovider-and-middleware)
 * [**17. Authentication using Github Provider**](#17-authentication-using-github-provider)
+* [**18. Robots.txt**](#18-robotstxt)
 
 ## **1. Introduction**
 
@@ -9775,3 +9776,102 @@ Open your browser and navigate to `http://localhost:3000`. You should see the ho
 
 ---
 
+## **18. Robots.txt**
+
+Search engine crawlers index your site to make it discoverable, but there are times when you want to **prevent specific pages from being indexed** — like admin dashboards or privacy pages. In Next.js 15 with App Router, you can do this in two ways:
+
+1. **Using a `robots.txt` file** (global, static or dynamic)
+2. **Using the `robots` meta field** in individual page metadata (fine-grained control)
+
+---
+
+### **Option 1: Dynamic `robots.txt` File**
+
+You can generate the `robots.txt` file dynamically using the built-in metadata route system.
+
+**Step 1: Create `app/robots.ts`**
+
+> **Filename must be exact**: `robots.ts`
+
+```ts
+// app/robots.ts
+
+export default function robots() {
+  return {
+    rules: [
+      {
+        userAgent: '*',
+        allow: ['/'],
+        disallow: ['/admin', '/privacy'],
+      },
+    ],
+    sitemap: 'https://acme.com/sitemap.xml',
+    host: 'https://acme.com',
+  };
+}
+```
+
+**Visit `/robots.txt`**
+
+When you go to `http://localhost:3000/robots.txt`, you’ll see output like:
+
+```txt
+User-agent: *
+Allow: /
+Disallow: /admin
+Disallow: /privacy
+Sitemap: https://acme.com/sitemap.xml
+Host: https://acme.com
+```
+
+> `robots.txt` is not required, but if you want to **prevent crawlers** from accessing certain paths, this is the way to do it.
+
+---
+
+### **Option 2: Robots Meta Tag (Per-Page Control)**
+
+You can also control indexing **on a per-page basis** using the `robots` field in a page’s metadata.
+
+**Example: `app/privacy/page.tsx`**
+
+```tsx
+export const metadata = {
+  title: 'Privacy Policy',
+  description: 'Read our privacy policy',
+  robots: {
+    index: false,    // Don’t index this page
+    follow: true,    // But allow crawlers to follow links on it
+  },
+};
+
+export default function PrivacyPage() {
+  return (
+    <main>
+      <h1>Privacy Policy</h1>
+      <p>Our privacy terms...</p>
+    </main>
+  );
+}
+```
+
+> Use `index: false` to hide the page from search results, and `follow: true` to still let crawlers follow its links.
+
+---
+
+### **Which One Takes Precedence?**
+
+* If a page is **disallowed** in `robots.txt`, then search engines won’t access it at all — so its page-level `robots` meta tag is ignored.
+* Use both if you want full flexibility — `robots.txt` for global control, and `robots` meta for per-page SEO rules.
+
+---
+
+### **Summary**
+
+| Technique         | Purpose                            |
+| ----------------- | ---------------------------------- |
+| `robots.txt`      | Tell crawlers which routes to skip |
+| `robots` meta tag | Fine-tune indexing for each page   |
+
+Use these tools to **control visibility**, **protect sensitive routes**, and **optimize your site’s SEO**.
+
+---
