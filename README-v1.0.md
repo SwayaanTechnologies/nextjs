@@ -26,6 +26,7 @@
 * [**14. Setup GraphQL Server**](#14-setup-graphql-server)
 * [**15. GraphQL Data Display in Next.js with Apollo Client**](#15-graphql-data-display-in-nextjs-with-apollo-client)
 * [**16. Authentication using next-auth with CredentialsProvider and Middleware**](#16-authentication-using-next-auth-with-credentialsprovider-and-middleware)
+* [**17. Authentication using Github Provider**](#17-authentication-using-github-provider)
 
 ## **1. Introduction**
 
@@ -9202,33 +9203,33 @@ A simple Next.js 15 project demonstrating authentication using `next-auth` with 
 ### **Project Structure**
 
 ```bash
-/my-nextjs-demo
-  /src
-    /app
-      /api
-        /auth
-          [...nextauth]/route.ts 
-      /dashboard
-        layout.tsx
-        page.tsx
-      /blog
-        page.tsx
-      layout.tsx
-      page.tsx
-    /components
-      Navbar.tsx
-      NavbarSession.tsx
-      SessionProviderWrapper.tsx
-    /lib
-      auth.ts
-    middleware.ts
-  /public
-    logo.png
-  /styles
-    globals.css
-  next.config.js
-  tsconfig.json
-  package.json
+.
+├── src
+│   ├── app
+│   │   ├── api
+│   │   │   └── auth
+│   │   │       └── [...nextauth]
+│   │   │           └── route.ts
+│   │   ├── blog
+│   │   │   └── page.tsx
+│   │   ├── dashboard
+│   │   │   ├── layout.tsx
+│   │   │   └── page.tsx
+│   │   ├── login
+│   │   │   └── page.tsx
+│   │   ├── layout.tsx
+│   │   └── page.tsx
+│   ├── components
+│   │   ├── Navbar.tsx
+│   │   ├── NavbarSession.tsx
+│   │   └── SessionProviderWrapper.tsx
+│   ├── lib
+│   │    └── auth.ts
+│   └── middleware.ts
+├── .env
+├── .env.local
+├── next.config.js
+└── package.json
 ```
 
 ---
@@ -9566,3 +9567,211 @@ Open your browser and navigate to `http://localhost:3000`. You should see the ho
 - You should see that the dashboard page is now accessible.
 
 ---
+
+## **17. Authentication using Github Provider**
+
+A simple Next.js 15 project demonstrating authentication using `next-auth` with `GithubProvider` and middleware for route protection.
+
+- [**Project Structure**](#project-structure-4)
+- [**Step 1: Update API Route for Authentication**](#step-1-update-api-route-for-authentication)
+- [**Step 2: Update the login page**](#step-2-update-the-login-page)
+- [**Step 3: Create OAuth Application in Github**](#step-3-create-oauth-application-in-github)
+- [**Step 4: Create the Environment Variables**](#step-4-update-the-environment-variables)
+- [**Step 5: Run the App**](#step-5-run-the-app)
+- [**Step 6: Test the App**](#step-6-test-the-app)
+
+---
+
+### **Project Structure**
+
+```bash
+.
+├── src
+│   ├── app
+│   │   ├── api
+│   │   │   └── auth
+│   │   │       └── [...nextauth]
+│   │   │           └── route.ts
+│   │   ├── blog
+│   │   │   └── page.tsx
+│   │   ├── dashboard
+│   │   │   ├── layout.tsx
+│   │   │   └── page.tsx
+│   │   ├── login
+│   │   │   └── page.tsx
+│   │   ├── layout.tsx
+│   │   └── page.tsx
+│   ├── components
+│   │   ├── Navbar.tsx
+│   │   ├── NavbarSession.tsx
+│   │   └── SessionProviderWrapper.tsx
+│   ├── lib
+│   │    └── auth.ts
+│   └── middleware.ts
+├── .env
+├── .env.local
+├── next.config.js
+└── package.json
+```
+
+---
+
+### **Step 1: Update API Route for Authentication**
+
+```tsx
+// src/app/api/auth/[...nextauth]/route.ts
+import  NextAuth from 'next-auth';
+import CredentialsProvider from 'next-auth/providers/credentials';
+import GitHubProvider from "next-auth/providers/github";
+import type { AuthOptions } from 'next-auth';
+
+export const authOptions: AuthOptions = {
+  session: {
+   strategy: 'jwt',
+  },
+  providers: [
+    CredentialsProvider({
+      name: 'Credentials',
+      credentials: {
+        username: { label: 'Username', type: 'text' },
+        password: { label: 'Password', type: 'password' },
+      },
+      async authorize(credentials) {
+        if (credentials?.username === 'admin' && credentials?.password === 'admin') {
+          return { id: '1', name: 'Admin User', email: 'admin@example.com' };
+        }
+        return null;
+      },
+    }),
+  ],
+  secret: process.env.NEXTAUTH_SECRET || 'supersecretkey',
+  pages: {
+    signIn: '/login',
+  },
+};
+
+export const authOptions1: AuthOptions = {
+  providers: [
+     GitHubProvider({
+        clientId: process.env.GITHUB_CLIENT_ID || "",
+        clientSecret: process.env.GITHUB_CLIENT_SECRET || "",
+        authorization: {
+            params: {
+                prompt: "consent",
+                access_type: "offline",
+                response_type: "code",
+            },
+        },
+    }),
+  ],
+};
+
+const handler = NextAuth({...authOptions,...authOptions1});
+
+
+export { handler as GET, handler as POST, handler as auth, handler as signIn, handler as signOut };
+```
+
+---
+
+### **Step 2: Update the login page**
+
+```tsx
+// src/app/login/page.tsx
+'use client';
+
+import { signIn } from 'next-auth/react';
+import { useSearchParams } from 'next/navigation';
+
+export default function LoginPage() {
+  const searchParams = useSearchParams();
+  const callbackUrl = searchParams.get('callbackUrl') || '/';
+
+  const handleLogin = async (e: React.FormEvent<HTMLFormElement>) => {
+    e.preventDefault();
+    const formData = new FormData(e.currentTarget);
+    await signIn('credentials', {
+      username: formData.get('username'),
+      password: formData.get('password'),
+      callbackUrl,
+    });
+  };
+
+  const doSocialLogin = async () => {
+    await signIn('github', { callbackUrl });
+  };
+
+  return (
+    <><form onSubmit={handleLogin}>
+      <input name="username" placeholder="Username" required />
+      <input type="password" name="password" placeholder="Password" required />
+      <button type="submit">Login</button>
+    </form>
+    <form action={doSocialLogin}>
+        <button className="bg-black text-white p-1 rounded-md m-1 text-lg" type="submit" name="action" value="github">
+          Sign In With GitHub
+        </button>
+      </form>
+      </>
+  );
+}
+```
+
+---
+
+### **Step 3: Create OAuth Application in Github**
+
+**1.** Go to [GitHub Developer Settings](https://github.com/settings/apps).
+
+**2.** Click on **OAuth Apps**.
+
+**3.** Click on **New OAuth App**.
+
+**4.** Fill in the details:
+
+- **Application name**: Your app name
+- **Homepage URL**: `http://localhost:3000`
+- **Authorization callback URL**: `http://localhost:3000/api/auth/callback/github`
+
+**5.** Click on **Register application**.
+
+**6.** After registering, you will get a **Client ID** Copy the value.
+
+**7.** Click on **Generate a new client secret** and copy the value.
+
+**8.** Save the **Client ID** and **Client Secret** for later use.
+
+---
+
+### **Step 4: Update the Environment Variables**
+
+Create a `.env` file in the root of your project and add the following environment variables:
+
+```bash
+GITHUB_CLIENT_ID = "<YOUR_GITHUB_CLIENT_ID>"
+GITHUB_CLIENT_SECRET = "<YOUR_GITHUB_CLIENT_SECRET>"
+```
+
+---
+
+### **Step 5: Run the App**
+
+```bash
+npm run dev
+```
+
+### **Step 6: Test the App**
+
+Open your browser and navigate to `http://localhost:3000`. You should see the homepage of your Next.js app.
+
+**Navigate to the Dashboard**
+
+* Now, navigate to `http://localhost:3000/dashboard`. You should see the dashboard page, which is protected by authentication.
+* If you are not logged in, you will be redirected to the login page.
+* Click on the **Sign In With GitHub** button.
+* You will be redirected to GitHub for authentication.
+* After successful authentication, you will be redirected back to your app and logged in.
+* You should see that the dashboard page is now accessible.
+
+---
+
