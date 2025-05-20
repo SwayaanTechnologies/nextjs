@@ -9450,18 +9450,56 @@ export default function DashboardLayout({ children }: { children: ReactNode }) {
 
 ```
 
----
-
-### **Step 11: Create a lib/auth.ts file**
+### **Step 11: Update the Root Layout**
 
 ```tsx
-// src/app/lib/auth.ts
+// src/app/layout.tsx
+import './globals.css';
+import Navbar from '@/components/Navbar';
+import { ReactNode } from 'react';
+import SessionProviderWrapper from '@/components/SessionProviderWrapper';
+
+
+export const metadata = {
+  title: 'Next.js 15 Mini Project',
+  description: 'Routing, Auth, Assets, Data Sharing',
+};
+
+export default function RootLayout({ children }: { children: ReactNode }) {
+  return (
+    <html lang="en">
+      <body>
+        <SessionProviderWrapper>
+        <Navbar />
+        {children}
+        </SessionProviderWrapper>
+      </body>
+    </html>
+  );
+}
+```
+
+### **Step 12: Update the root page**
+
+```tsx
+// src/app/page.tsx
+export default function HomePage() {
+  return <h1>🏠 Welcome to Next.js 15 Mini Project!</h1>;
+}
+```
+
+---
+
+### **Step 13: Create a lib/auth.ts file**
+
+```tsx
+// src/lib/auth.ts
 export { authOptions } from '../app/api/auth/[...nextauth]/route';
 ```
 
 ---
 
-### **Step 12: Create a Middleware for Auth Protection**
+### **Step 14: Create a Middleware for Auth Protection**
 
 ```tsx
 // src/middleware.ts
@@ -9497,8 +9535,34 @@ export const config = {
 
 ---
 
-### **Step 13: Run the App**
+### **Step 15: Run the App**
+
+Update the package.json file to include the following script:
+
+```json
+"scripts": {
+  "dev": "next dev --turbopack",
+}
+```
+
+Then, run the app:
 
 ```bash
 npm run dev
 ```
+
+### **16. Test the App**
+
+Open your browser and navigate to `http://localhost:3000`. You should see the homepage of your Next.js app.
+
+**Navigate to the Dashboard**
+
+* Now, navigate to `http://localhost:3000/dashboard`. You should see the dashboard page, which is protected by authentication.
+* If you are not logged in, you will be redirected to the login page.
+
+**Login with Credentials**
+
+- Enter your credentials and submit the form. If the credentials are valid, you will be redirected to the dashboard.
+- You should see that the dashboard page is now accessible.
+
+---
