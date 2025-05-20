@@ -8363,26 +8363,32 @@ export const metadata = {
 
 For dynamic routes or data-driven content, you can define metadata using the `generateMetadata` function.
 
-**Use Case Dynamic Product Page**
+**Use Case Dynamic Blog Page**
 
 ```tsx
-// app/products/[productId]/page.tsx
+// app/blog/[blogId]/page.tsx
 import { Metadata } from 'next';
 
 type Props = {
-  params: { productId: string };
+  params: { blogId: string };
 };
 
+export default async function BlogDetails({ params } : { params : { blogId: string } }) {
+  const { blogId } = await params;
+  return <h1>Details about Blog {blogId}</h1>;
+}
+
+
 export async function generateMetadata({ params }: Props): Promise<Metadata> {
-  const { productId } = params;
+  const { blogId } = await params;
 
   // Simulate fetching data
   const title = await new Promise((resolve) => {
-    setTimeout(() => resolve(`iPhone ${productId}`), 100);
+    setTimeout(() => resolve(`Blog Post ${blogId}`), 100);
   });
 
   return {
-    title: `Product | ${title}`,
+    title: `Blog | ${title}`,
   };
 }
 ```
@@ -8479,7 +8485,7 @@ The `title` field in metadata is essential for setting the browser tab title and
 Set a title using a plain string:
 
 ```tsx
-// page.tsx
+// app/page.tsx
 export const metadata = {
   title: "About | Code Evolution",
 };
@@ -8494,7 +8500,16 @@ export const metadata = {
 For more control, define `title` as an **object** with optional fields:
 
 ```tsx
+// app/page.tsx
 import type { Metadata } from 'next';
+
+export default function Home() {
+  return (
+    <h1 className="text-3xl font-bold underline">
+      Hello world!
+    </h1>
+  )
+}
 
 export const metadata: Metadata = {
   title: {
