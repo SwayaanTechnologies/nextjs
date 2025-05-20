@@ -25,6 +25,7 @@
 
 * [**14. Setup GraphQL Server**](#14-setup-graphql-server)
 * [**15. GraphQL Data Display in Next.js with Apollo Client**](#15-graphql-data-display-in-nextjs-with-apollo-client)
+* [**16. Authentication using next-auth with CredentialsProvider and Middleware**](#16-authentication-using-next-auth-with-credentialsprovider-and-middleware)
 
 ## **1. Introduction**
 
