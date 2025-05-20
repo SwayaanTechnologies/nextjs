@@ -3069,12 +3069,17 @@ If you add an input in `layout.tsx` with a React state:
 ```tsx
 'use client';
 import { useState } from 'react';
+import Link from 'next/link';
 
 export default function AuthLayout({ children }: { children: React.ReactNode }) {
   const [input, setInput] = useState('');
-
   return (
     <>
+        <nav className="mb-4">
+          <Link href="/login">Login</Link> <br />
+          <Link href="/register">Register</Link> <br /> 
+          <Link href="/forgot-password">Forgot Password</Link>
+        </nav>
       <input value={input} onChange={(e) => setInput(e.target.value)} />
       {children}
     </>
