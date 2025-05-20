@@ -1,12 +1,15 @@
+import express from 'express';
 import { ApolloServer } from '@apollo/server';
-import { startStandaloneServer } from '@apollo/server/standalone';
+import { expressMiddleware } from '@apollo/server/express4';
+import cors from 'cors';
+import bodyParser from 'body-parser';
 import fs from 'fs';
 import path from 'path';
 // Load JSON data
 const users = JSON.parse(fs.readFileSync(path.resolve('./data/user.json'), 'utf8'));
 const blogs = JSON.parse(fs.readFileSync(path.resolve('./data/blog.json'), 'utf8'));
 const products = JSON.parse(fs.readFileSync(path.resolve('./data/products.json'), 'utf8'));
-// Define GraphQL schema with types for User, Blog, Product and Queries
+// Define GraphQL schema
 const typeDefs = `#graphql
   type User {
     id: ID!
@@ -33,7 +36,7 @@ const typeDefs = `#graphql
     products: [Product!]!
   }
 `;
-// Resolvers to fetch data from JSON arrays
+// Define resolvers
 const resolvers = {
     Query: {
         users: () => users,
@@ -42,17 +45,17 @@ const resolvers = {
         products: () => products,
     },
     Blog: {
-        // Resolve the 'author' field of a blog by looking up user by authorId
         author: (blog) => users.find(user => user.id === blog.authorId),
     },
 };
-// Create Apollo Server
-const server = new ApolloServer({
-    typeDefs,
-    resolvers,
-});
-// Start server
-const { url } = await startStandaloneServer(server, {
-    listen: { port: 4000 },
-});
-console.log(`🚀 Server ready at ${url}`);
+// Start Apollo Server with Express
+const startServer = async () => {
+    const app = express();
+    const server = new ApolloServer({ typeDefs, resolvers });
+    await server.start();
+    app.use('/graphql', cors(), bodyParser.json(), expressMiddleware(server));
+    app.listen({ port: 4000 }, () => {
+        console.log(`🚀 Server ready at http://localhost:4000/graphql`);
+    });
+};
+startServer();
