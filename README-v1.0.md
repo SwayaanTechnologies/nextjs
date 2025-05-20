@@ -9176,3 +9176,328 @@ You should see:
 * Products with names and prices
 
 ---
+
+## **16. Authentication using next-auth with CredentialsProvider and Middleware**
+
+A simple Next.js 15 project demonstrating authentication using `next-auth` with `CredentialsProvider` and middleware for route protection.
+
+- [**Project Structure**](#project-structure-3)
+- [**Step 1: Create a Next.js App**](#step-1-create-a-nextjs-app)
+- [**Step 2: Install Dependencies**](#step-2-install-dependencies)
+- [**Step 3: Create API Route for Authentication**](#step-3-create-api-route-for-authentication)
+- [**Step 4: Create a Session Provider Wrapper**](#step-4-create-a-session-provider-wrapper)
+- [**Step 5: Create a Navbar Component**](#step-5-create-a-navbar-component)
+- [**Step 6: Create a Navbar Session Component**](#step-6-create-a-navbar-session-component)
+- [**Step 7: Create a Blog Page**](#step-7-create-a-blog-page)
+- [**Step 8: Create a Login Page**](#step-8-create-a-login-page)
+- [**Step 9: Create a Dashboard Page**](#step-9-create-a-dashboard-page)
+- [**Step 10: Create a layout.tsx file for the dashboard**](#step-10-create-a-layouttsx-file-for-the-dashboard)
+- [**Step 11: Create a lib/auth.ts file**](#step-11-create-a-libauthts-file)
+- [**Step 12: Create a Middleware for Auth Protection**](#step-12-create-a-middleware-for-auth-protection)
+- [**Step 13: Run the App**](#step-13-run-the-app)
+
+---
+
+### **Project Structure**
+
+```bash
+/my-nextjs-demo
+  /src
+    /app
+      /api
+        /auth
+          [...nextauth]/route.ts 
+      /dashboard
+        layout.tsx
+        page.tsx
+      /blog
+        page.tsx
+      layout.tsx
+      page.tsx
+    /components
+      Navbar.tsx
+      NavbarSession.tsx
+      SessionProviderWrapper.tsx
+    /lib
+      auth.ts
+    middleware.ts
+  /public
+    logo.png
+  /styles
+    globals.css
+  next.config.js
+  tsconfig.json
+  package.json
+```
+
+---
+
+### **Step 1: Create a Next.js App**
+
+```bash
+npx create-next-app@latest auth-demo -ts
+cd auth-demo
+```
+
+---
+
+### **Step 2: Install Dependencies**
+
+```bash
+npm install next-auth
+```
+
+---
+
+### **Step 3: Create API Route for Authentication**
+
+```tsx
+// src/app/api/auth/[...nextauth]/route.ts
+import  NextAuth from 'next-auth';
+import CredentialsProvider from 'next-auth/providers/credentials';
+import type { AuthOptions } from 'next-auth';
+
+export const authOptions: AuthOptions = {
+  session: {
+   strategy: 'jwt',
+  },
+  providers: [
+    CredentialsProvider({
+      name: 'Credentials',
+      credentials: {
+        username: { label: 'Username', type: 'text' },
+        password: { label: 'Password', type: 'password' },
+      },
+      async authorize(credentials) {
+        if (credentials?.username === 'admin' && credentials?.password === 'admin') {
+          return { id: '1', name: 'Admin User', email: 'admin@example.com' };
+        }
+        return null;
+      },
+    }),
+  ],
+  secret: process.env.NEXTAUTH_SECRET || 'supersecretkey',
+  pages: {
+    signIn: '/login',
+  },
+};
+
+const handler = NextAuth(authOptions);
+
+export { handler as GET, handler as POST };
+```
+
+---
+
+### **Step 4: Create a Session Provider Wrapper**
+
+```tsx
+// src/components/SessionProviderWrapper.tsx
+'use client';
+
+import { SessionProvider } from 'next-auth/react';
+import { ReactNode } from 'react';
+
+export default function SessionProviderWrapper({ children }: { children: ReactNode }) {
+  return <SessionProvider>{children}</SessionProvider>;
+}
+```
+
+---
+
+### **Step 5: Create a Navbar Component**
+
+```tsx
+// src/components/Navbar.tsx
+'use client';
+
+import { usePathname } from 'next/navigation';
+import Link from 'next/link';
+import NavbarSession from './NavbarSession';
+
+export default function Navbar() {
+  const pathname = usePathname();
+
+  const linkClass = (path: string) =>
+    pathname === path ? 'underline font-semibold' : '';
+
+  return (
+    <nav className="flex gap-4 mb-6 border-b pb-4 items-center">
+      <h1 className="font-bold">My App</h1>
+      
+      <Link className={linkClass('/')} href="/">Home</Link>
+      <Link className={linkClass('/dashboard')} href="/dashboard">Dashboard</Link>
+      <Link className={linkClass('/blog')} href="/blog">Blog</Link>
+
+      <div className="ml-auto">
+        <NavbarSession />
+      </div>
+    </nav>
+  );
+}
+```
+
+---
+
+### **Step 6: Create a Navbar Session Component**
+
+```tsx
+// src/components/NavbarSession.tsx
+'use client';
+
+import { useSession, signIn, signOut } from 'next-auth/react';
+
+export default function NavbarSession() {
+  const { data: session } = useSession();
+
+  return (
+    <div>
+      {session ? (
+        <>
+          <span>Welcome, {session.user?.name}</span>
+          <button onClick={() => signOut()}>Logout</button>
+        </>
+      ) : (
+        <button onClick={() => signIn()}>Login</button>
+      )}
+    </div>
+  );
+}
+```
+
+---
+
+### **Step 7: Create a Blog Page**
+
+```tsx
+// src/app/blog/page.tsx
+export default function BlogList() {
+    return (
+      <div>
+        <h1>Blog List</h1>
+        <h2>Blog 1</h2>
+        <h2>Blog 2</h2>
+        <h2>Blog 3</h2>
+      </div>
+    );
+  }
+```
+
+---
+
+### **Step 8: Create a Login Page**
+
+```tsx
+// src/app/login/page.tsx
+'use client';
+
+import { signIn } from 'next-auth/react';
+import { useSearchParams } from 'next/navigation';
+
+export default function LoginPage() {
+  const searchParams = useSearchParams();
+  const callbackUrl = searchParams.get('callbackUrl') || '/';
+
+  const handleLogin = async (e: React.FormEvent<HTMLFormElement>) => {
+    e.preventDefault();
+    const formData = new FormData(e.currentTarget);
+    await signIn('credentials', {
+      username: formData.get('username'),
+      password: formData.get('password'),
+      callbackUrl,
+    });
+  };
+
+  return (
+    <form onSubmit={handleLogin}>
+      <input name="username" placeholder="Username" required />
+      <input type="password" name="password" placeholder="Password" required />
+      <button type="submit">Login</button>
+    </form>
+  );
+}
+```
+
+---
+
+### **Step 9: Create a Dashboard Page**
+
+```tsx
+// src/app/dashboard/page.tsx
+import { authOptions } from '@/lib/auth';
+import { getServerSession } from 'next-auth/next';
+
+export default async function DashboardPage() {
+  const session = await getServerSession(authOptions);
+
+  return <h1>🚀 Welcome to Dashboard, {session?.user?.name}!</h1>;
+}
+```
+
+---
+
+### **Step 10: Create a layout.tsx file for the dashboard**
+
+```tsx
+// src/app/dashboard/layout.tsx
+import SessionProviderWrapper from '@/components/SessionProviderWrapper';
+import { ReactNode } from 'react';
+
+export default function DashboardLayout({ children }: { children: ReactNode }) {
+  return <SessionProviderWrapper>{children}</SessionProviderWrapper>;
+}
+
+```
+
+---
+
+### **Step 11: Create a lib/auth.ts file**
+
+```tsx
+// src/app/lib/auth.ts
+export { authOptions } from '../app/api/auth/[...nextauth]/route';
+```
+
+---
+
+### **Step 12: Create a Middleware for Auth Protection**
+
+```tsx
+// src/middleware.ts
+import { NextResponse } from 'next/server';
+import type { NextRequest } from 'next/server';
+import { getToken } from 'next-auth/jwt';
+
+export async function middleware(request: NextRequest) {
+  const token = await getToken({ req: request, secret: process.env.NEXTAUTH_SECRET || 'supersecretkey' });
+
+  const protectedPaths = [ '/dashboard','/blog'];
+
+  const isProtectedRoute = protectedPaths.some((path) => request.nextUrl.pathname.startsWith(path));
+
+  console.log(isProtectedRoute, token);
+
+  if (isProtectedRoute && !token) {
+    const callbackUrl = request.nextUrl.clone();
+    const loginUrl = new URL('/login', request.url);
+
+    loginUrl.searchParams.set('callbackUrl', callbackUrl.toString())
+
+    return NextResponse.redirect(loginUrl);
+  }
+  console.log(request.nextUrl.pathname, request.url)
+  return NextResponse.next();
+}
+
+export const config = {
+  matcher: ['/dashboard/:path*', '/blog/:path*'],
+};
+```
+
+---
+
+### **Step 13: Run the App**
+
+```bash
+npm run dev
+```
