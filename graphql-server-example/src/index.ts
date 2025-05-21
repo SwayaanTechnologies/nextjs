@@ -37,6 +37,10 @@ const typeDefs = `#graphql
     blogs: [Blog!]!
     products: [Product!]!
   }
+
+  type Mutation {
+    addUser(name: String!, email: String!): User!
+  }
 `;
 
 // Define resolvers
@@ -49,6 +53,13 @@ const resolvers = {
   },
   Blog: {
     author: (blog) => users.find(user => user.id === blog.authorId),
+  },
+  Mutation: {
+    addUser: (_, { name, email }) => {
+      const user = { id: String(users.length + 1), name, email };
+      users.push(user);
+      return user;
+    },
   },
 };
 

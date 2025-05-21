@@ -25,9 +25,10 @@
 
 * [**14. Setup GraphQL Server**](#14-setup-graphql-server)
 * [**15. GraphQL Data Display in Next.js with Apollo Client**](#15-graphql-data-display-in-nextjs-with-apollo-client)
-* [**16. Authentication using next-auth with CredentialsProvider and Middleware**](#16-authentication-using-next-auth-with-credentialsprovider-and-middleware)
-* [**17. Authentication using Github Provider**](#17-authentication-using-github-provider)
-* [**18. Testing with Jest and React Testing Library**](#18-testing-with-jest-and-react-testing-library)
+* [**16. Post data from next.js to Apollo Client**](#16.-post-data-from-next.js-to-apollo-client)
+* [**17. Authentication using next-auth with CredentialsProvider and Middleware**](#17-authentication-using-next-auth-with-credentialsprovider-and-middleware)
+* [**18. Authentication using Github Provider**](#18-authentication-using-github-provider)
+* [**19. Testing with Jest and React Testing Library**](#19-testing-with-jest-and-react-testing-library)
 
 ## **1. Introduction**
 
@@ -9331,7 +9332,201 @@ You should see:
 
 ---
 
-## **16. Authentication using next-auth with CredentialsProvider and Middleware**
+## **16. Post data from next.js to Apollo Client**
+
+To **post (mutate) data from Next.js to a GraphQL API using Apollo Client**, you need to use the `useMutation` hook from `@apollo/client`. Here's a complete guide to help you do that.
+
+* [**Step 1: Define a GraphQL Mutation**](#step-1-define-a-graphql-mutation)
+* [**Step 2: Create a `UserForm` Component**](#step-2-create-a-userform-component)
+* [**Step 3: Use `UserForm` on a Page**](#step-3-use-userform-on-a-page)
+* [**Step 4: Update the Server Schema**](#step-4-update-the-server-schema)
+* [**Step 5: Update Mutation Resolver**](#step-5-update-mutation-resolver)
+* [**Step 6: Run and Test**](#step-6-run-and-test)
+
+---
+
+### **Step 1 Define a GraphQL Mutation**
+
+Create a mutation in your `/graphql/mutations.ts` file:
+
+```ts
+// /graphql/mutations.ts
+import { gql } from '@apollo/client';
+
+export const ADD_USER = gql`
+  mutation AddUser($name: String!, $email: String!) {
+    addUser(name: $name, email: $email) {
+      id
+      name
+      email
+    }
+  }
+`;
+```
+
+> ⚠️ Replace `addUser` with the actual mutation name in your GraphQL server.
+
+---
+
+### **Step 2 Create a `UserForm` Component**
+
+This component will collect form data and call the mutation.
+
+```tsx
+// /components/UserForm.tsx
+'use client';
+
+import { useState } from 'react';
+import { useMutation } from '@apollo/client';
+import client from '@/lib/apollo-client';
+import { ADD_USER } from '@/graphql/mutations';
+
+export default function UserForm() {
+  const [name, setName] = useState('');
+  const [email, setEmail] = useState('');
+
+  const [addUser, { loading, error, data }] = useMutation(ADD_USER, { client });
+
+  const handleSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    try {
+      await addUser({
+        variables: {
+          name,
+          email,
+        },
+      });
+      setName('');
+      setEmail('');
+      alert('User added successfully!');
+    } catch (err) {
+      console.error(err);
+    }
+  };
+
+  return (
+    <form onSubmit={handleSubmit} className="space-y-4 p-6 border rounded">
+      <div>
+        <label className="block mb-1 font-medium">Name:</label>
+        <input
+          type="text"
+          value={name}
+          onChange={(e) => setName(e.target.value)}
+          className="border p-2 w-full rounded"
+          required
+        />
+      </div>
+      <div>
+        <label className="block mb-1 font-medium">Email:</label>
+        <input
+          type="email"
+          value={email}
+          onChange={(e) => setEmail(e.target.value)}
+          className="border p-2 w-full rounded"
+          required
+        />
+      </div>
+      <button
+        type="submit"
+        disabled={loading}
+        className="bg-blue-600 text-white px-4 py-2 rounded hover:bg-blue-700"
+      >
+        {loading ? 'Submitting...' : 'Add User'}
+      </button>
+
+      {error && <p className="text-red-500 mt-2">Error: {error.message}</p>}
+      {data && <p className="text-green-600 mt-2">User Added: {data.addUser.name}</p>}
+    </form>
+  );
+}
+```
+
+---
+
+### **Step 3 Use `UserForm` on a Page**
+
+```tsx
+// /app/user/new/page.tsx
+import UserForm from '@/components/UserForm';
+
+export default function NewUserPage() {
+  return (
+    <main className="max-w-xl mx-auto mt-10">
+      <h1 className="text-2xl font-bold mb-6">Add a New User</h1>
+      <UserForm />
+    </main>
+  );
+}
+```
+
+### **Step 4 Update the Server Schema**
+
+Your GraphQL server must define a `Mutation` type.
+
+Example (in Apollo Server update index.ts):
+
+```ts
+const typeDefs = gql`
+  type User {
+    id: ID!
+    name: String!
+    email: String!
+  }
+
+  type Query {
+    users: [User!]!
+  }
+
+  type Mutation {
+    addUser(name: String!, email: String!): User!
+  }
+`;
+```
+
+Make sure you:
+
+* Have a `Mutation` type
+* Export the schema with it
+* Define a corresponding resolver for `addUser`
+
+---
+
+### **Step 5 Update Mutation Resolver**
+
+In your resolver setup (e.g., `index.ts`):
+
+```ts
+const resolvers = {
+  Query: {
+    users: () => getUsers(),
+  },
+  Mutation: {
+    addUser: (_: any, { name, email }) => {
+      const newUser = { id: uuid(), name, email };
+      users.push(newUser);
+      return newUser;
+    },
+  },
+};
+```
+
+> Ensure to restart your GraphQL server after making changes to the schema or resolvers.
+
+---
+
+### **Run and Test**
+
+Start your app:
+
+```bash
+npm run dev
+```
+
+Navigate to: [http://localhost:3000/user/new](http://localhost:3000/user/new) Submit the form to send data via GraphQL mutation.
+
+---
+
+## **17. Authentication using next-auth with CredentialsProvider and Middleware**
 
 A simple Next.js 15 project demonstrating authentication using `next-auth` with `CredentialsProvider` and middleware for route protection.
 
@@ -9720,7 +9915,7 @@ Open your browser and navigate to `http://localhost:3000`. You should see the ho
 
 ---
 
-## **17. Authentication using Github Provider**
+## **18. Authentication using Github Provider**
 
 A simple Next.js 15 project demonstrating authentication using `next-auth` with `GithubProvider` and middleware for route protection.
 
@@ -9927,7 +10122,7 @@ Open your browser and navigate to `http://localhost:3000`. You should see the ho
 
 ---
 
-## **18. Testing with Jest and React Testing Library**
+## **19. Testing with Jest and React Testing Library**
 
 Jest and React Testing Library are frequently used together for **Unit Testing** and **Snapshot Testing**. This guide will show you how to set up Jest with Next.js and write your first tests.
 
