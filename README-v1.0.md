@@ -9524,6 +9524,8 @@ npm run dev
 
 Navigate to: [http://localhost:3000/user/new](http://localhost:3000/user/new) Submit the form to send data via GraphQL mutation.
 
+You should see a success message and the new user added to your database and navigate to `http://localhost:data` to see the updated list of users.
+
 ---
 
 ## **17. Authentication using next-auth with CredentialsProvider and Middleware**
