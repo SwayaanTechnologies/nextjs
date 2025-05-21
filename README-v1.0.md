@@ -7644,6 +7644,9 @@ Module not found: Can't resolve 'fs'
 * [**Loading and Error States**](#loading-and-error-states)
 * [**Sequential Data Fetching**](#sequential-data-fetching)
 * [**Parallel Data Fetching**](#parallel-data-fetching)
+* [**Static Rendering cache**](#static-rendering-cache)
+* [**Dynamic Rendering no-store**](#dynamic-rendering-no-store)
+* [**Revalidate**](#revalidate)
 
 ---
 
@@ -8309,6 +8312,53 @@ export default function Loading() {
 ```
 
 ---
+
+### **Static Rendering cache**
+
+Static rendering is the process of generating HTML at build time. This is useful for pages that don’t change often, like documentation sites.
+
+Fetch posts **once at build time** (Fastest method).
+
+```tsx
+async function getStaticPosts() {
+  return fetch('https://jsonplaceholder.typicode.com/posts', {
+    cache: 'force-cache', // Default
+  }).then((res) => res.json());
+}
+```
+
+---
+
+### **Dynamic Rendering no-store**
+
+Dynamic rendering is useful when you need to fetch the latest data on every request.
+
+Use this when data **changes frequently**.
+
+```tsx
+async function getSSRPosts() {
+  return fetch('https://jsonplaceholder.typicode.com/posts', {
+    cache: 'no-store', // Never cache
+  }).then((res) => res.json());
+}
+
+```
+
+---
+
+### **Revalidate**
+
+Revalidate is a hybrid approach that allows you to fetch data at build time and then revalidate it at a specified interval.
+
+Fetches **once**, **caches** it, but **updates** every 60 seconds.
+
+```tsx
+async function getISRPosts() {
+  return fetch('https://jsonplaceholder.typicode.com/posts', {
+    next: { revalidate: 60 }, // Updates every 60s
+  }).then((res) => res.json());
+}
+```
 
 ## **13. Metadata Management**
 
