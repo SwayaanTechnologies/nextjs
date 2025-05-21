@@ -10062,3 +10062,77 @@ npm run test -- --watch
 This will re-run the tests whenever you make changes to your code.
 
 ---
+
+### **Creating a test for Route Handler**
+
+- The `GET` function returns a `Response` object (from the web API), which works fine in a Node.js/Jest environment if you're using a runtime like Node 18+, which has native `Response`.
+
+- If you're on Node `<18` or using a Jest environment that doesn’t support `Response`, install `@whatwg-node/fetch` or `node-fetch` and polyfill it:
+
+```bash filename="Terminal"
+npm install --save-dev whatwg-fetch
+```
+
+**Create a Jest setup file**
+ 
+If you don’t already have a setup file like `jest.setup.ts`, create one at the root directory.
+
+`jest.setup.ts`
+
+```bash
+import 'whatwg-fetch';
+```
+
+**Update your Jest config**
+
+In your `jest.config.ts`, add the setup file to the setupFilesAfterEnv array:
+
+```ts filename="jest.config.ts"
+const config: Config = {
+  coverageProvider: 'v8',
+  testEnvironment: 'jsdom',
+  setupFilesAfterEnv: ['./jest.setup.ts'],
+}
+```
+
+**Create a folder called `api` in your project's root directory. Inside the `api` folder, create a file called `hello.ts` and add the following code:**
+
+```ts filename="app/api/hello.ts"
+// app/api/hello/route.ts
+
+export async function GET() {
+  return new Response(JSON.stringify({ message: 'Hello from API route!' }), {
+    status: 200,
+    headers: {
+      'Content-Type': 'application/json',
+    },
+  });
+}
+```
+Next, create a test file for the `hello` route in the `__tests__` folder. Create a file called `hello.test.ts` and add the following code:
+
+```ts filename="__tests__/hello.test.ts"
+import { GET } from '@/app/api/hello/route';
+
+describe('GET /api/hello', () => {
+  it('returns a 200 response with JSON message', async () => {
+    const response = await GET();
+    const data = await response.json();
+
+    expect(response.status).toBe(200);
+    expect(data).toEqual({ message: 'Hello from API route!' });
+  });
+});
+```
+
+#### **Running your tests**
+
+Then, run the following command to run your tests:
+
+```bash filename="Terminal"
+npm run test
+```
+
+You should see the test results in your terminal, indicating whether the tests passed or failed.
+
+---
